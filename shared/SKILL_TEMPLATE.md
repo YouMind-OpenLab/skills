@@ -41,6 +41,11 @@ description: |
   <Core feature in one sentence>. <Key differentiator>.
   <Batch/parallel capability if applicable>.
   Use when user wants to "<English trigger>", "<Chinese trigger>", "<Japanese>", "<Korean>".
+triggers:
+  - "<english trigger phrase 1>"
+  - "<english trigger phrase 2>"
+  - "<chinese trigger phrase>"
+  - "<japanese trigger phrase>"
 platforms:
   - openclaw
   - claude-code

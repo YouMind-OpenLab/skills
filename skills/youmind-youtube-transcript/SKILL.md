@@ -9,6 +9,27 @@ description: |
   "transcribe YouTube video", "batch transcribe videos", "get video captions",
   "summarize YouTube video", "YouTube 字幕", "YouTube 文字起こし", "YouTube 자막",
   or "download YouTube transcript".
+triggers:
+  - "youtube transcript"
+  - "video transcript"
+  - "extract subtitles"
+  - "get subtitles"
+  - "youtube subtitles"
+  - "video captions"
+  - "transcribe video"
+  - "transcribe youtube"
+  - "summarize video"
+  - "summarize youtube"
+  - "youtube summary"
+  - "watch video"
+  - "watch youtube"
+  - "video text"
+  - "batch transcribe"
+  - "YouTube 字幕"
+  - "视频字幕"
+  - "字幕提取"
+  - "YouTube 文字起こし"
+  - "YouTube 자막"
 platforms:
   - openclaw
   - claude-code
