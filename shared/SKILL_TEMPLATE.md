@@ -104,6 +104,15 @@ d = json.load(sys.stdin)
 
 Principle: **one tool call = parse → process → output**. Never split into multiple steps.
 
+## Critical Behavior Placement
+
+**Never put must-do behaviors only in `references/*.md`.** Agents often skip referenced files. If a behavior is critical to user experience, write it directly in the SKILL.md workflow step with `⚠️ MANDATORY` prefix. Referenced docs are for supplementary details only.
+
+Examples of critical behaviors that must be inline:
+- Send intermediate results to the user immediately (don't wait for full completion)
+- Use subagent/background for any polling or long-running step
+- Send files as attachments, not pasted inline
+
 ## Polling Pattern
 
 For APIs with async tasks, use this pattern:
