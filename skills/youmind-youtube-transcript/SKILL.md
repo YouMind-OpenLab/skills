@@ -53,44 +53,13 @@ Accepted URL formats:
 
 If more than 5 URLs are provided, process the first 5 and tell the user (in their language): "Processing the first 5 videos. Please submit the remaining ones in a follow-up message."
 
-## Installation
+## Setup
 
-Install the YouMind CLI (lightweight, zero dependencies):
+See [references/setup.md](references/setup.md) for installation and authentication instructions.
 
-```bash
-npm install -g @youmind-ai/cli
-```
+## Environment Configuration
 
-Verify: `youmind --help`
-
-## Authentication
-
-Set your YouMind API key:
-
-```bash
-export YOUMIND_API_KEY=sk-ym-xxx
-```
-
-No API key? Get one free at **https://youmind.com/settings/api-keys**
-
-### Preview Environment (developers only)
-
-```bash
-export YOUMIND_ENV=preview
-export YOUMIND_API_KEY_PREVIEW=sk-ym-xxx
-```
-
-## Environment Detection
-
-| `YOUMIND_ENV` | Endpoint | API Key Variable |
-|---------------|----------|-----------------|
-| *(unset or `production`)* | `https://youmind.com` | `YOUMIND_API_KEY` |
-| `preview` | `https://preview.youmind.com` | `YOUMIND_API_KEY_PREVIEW` |
-
-When preview is active, append to all `youmind call` commands:
-```bash
---endpoint https://preview.youmind.com --api-key $YOUMIND_API_KEY_PREVIEW
-```
+See [references/environment.md](references/environment.md) for preview environment and endpoint detection.
 
 ## Workflow
 
