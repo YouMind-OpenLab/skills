@@ -14,12 +14,20 @@ If not found, install it first before proceeding.
 
 ## Authentication
 
-Check if `YOUMIND_API_KEY` is already set in the environment. If yes, proceed.
+Check if `YOUMIND_API_KEY` is already set in the environment:
 
-If not set, ask the user to provide their YouMind API key. **Do NOT show `export` commands** — most users don't know what that means. Instead:
+```bash
+echo $YOUMIND_API_KEY
+```
 
-1. Ask: "Please provide your YouMind API key. Don't have one? Get a free key at https://youmind.com/settings/api-keys"
-2. Once the user gives the key, the agent sets it: `export YOUMIND_API_KEY=<key the user provided>`
-3. Proceed with the workflow
+If set, proceed to the workflow.
 
-The user should only need to paste the key — the agent handles the rest.
+If not set, tell the user to configure it themselves (do NOT ask them to paste the key in chat):
+
+> "You need a YouMind API key. Get one free at https://youmind.com/settings/api-keys then set it in your environment:
+>
+> `export YOUMIND_API_KEY=sk-ym-your-key-here`
+>
+> Or add it to your `.env` file. Let me know when it's ready!"
+
+Wait for confirmation, then verify with `echo $YOUMIND_API_KEY` before proceeding.
