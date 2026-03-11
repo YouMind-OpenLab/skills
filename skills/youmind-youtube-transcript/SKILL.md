@@ -124,34 +124,35 @@ Once `type` is `"video"`, inspect the `transcript` field:
 
 ### Step 5: Output Transcripts
 
-For each successful video, extract:
-- `title` — video title (top-level field)
-- `transcript.contents[0].plain` — timestamped plain text
-- `transcript.contents[0].language` — language code (e.g., `"en-US"`, `"zh-CN"`)
+**IMPORTANT: Use this one-shot command to extract and write the transcript file directly. Do NOT parse the JSON manually with grep/read — that is slow.**
 
-Format as markdown:
+For each successful video, run a single command that extracts all fields and writes the markdown file:
 
-```markdown
-# [Video Title]
-
-- **Source**: [YouTube URL]
-- **Language**: [transcript language]
-- **YouMind**: https://youmind.com/material/[materialId]
-
----
-
-## Transcript
-
-[transcript.contents[0].plain]
+```bash
+youmind call getMaterial '{"id":"<materialId>","includeBlocks":true}' | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+title = d.get('title', 'Untitled')
+t = d.get('transcript', {}) or {}
+c = t.get('contents', [])
+plain = c[0].get('plain', '') if c else ''
+lang = c[0].get('language', 'unknown') if c else 'unknown'
+words = len(plain.split())
+md = f'# {title}\n\n- **Source**: <YOUTUBE_URL>\n- **Language**: {lang}\n- **YouMind**: https://youmind.com/material/<MATERIAL_ID>\n\n---\n\n## Transcript\n\n{plain}\n'
+with open('transcript-<VIDEO_ID>.md', 'w') as f:
+    f.write(md)
+print(f'Title: {title}')
+print(f'Language: {lang}')
+print(f'Words: {words}')
+print(f'File: transcript-<VIDEO_ID>.md')
+"
 ```
 
-**File naming**: `transcript-<video-id>.md` (extract video ID from URL parameter `v` or youtu.be path).
+Replace `<YOUTUBE_URL>`, `<MATERIAL_ID>`, and `<VIDEO_ID>` with the actual values before running.
 
-**Show summary** for each video:
-- Video title
-- Transcript language
-- Word/character count
-- File path
+This command does everything in one step: parse JSON, extract fields, format markdown, write file, and print summary.
+
+**File naming**: `transcript-<video-id>.md` (extract video ID from URL parameter `v` or youtu.be path).
 
 In batch mode, show a final summary table:
 
