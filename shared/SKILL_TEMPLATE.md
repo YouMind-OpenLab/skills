@@ -1,29 +1,29 @@
-# Skill 开发模板
+# Skill Development Template
 
-新建 YouMind skill 时，复制此模板并替换 `<placeholders>`。
+Copy this template when creating a new YouMind skill. Replace all `<placeholders>`.
 
-## 目录结构
+## Directory Structure
 
 ```
 skills/youmind-<name>/
-  SKILL.md              ← 主文件，agent 读这个
-  references/           ← 自动同步 shared/ 的共享文件 + 本 skill 特有的参考文档
-    setup.md            ← (共享) 自动同步，勿手动编辑
-    environment.md      ← (共享) 自动同步，勿手动编辑
-    error-handling.md   ← (共享) 自动同步，勿手动编辑
+  SKILL.md              ← Main file, read by agents
+  references/           ← Auto-synced shared files + skill-specific docs
+    setup.md            ← (shared) Auto-synced, do not edit manually
+    environment.md      ← (shared) Auto-synced, do not edit manually
+    error-handling.md   ← (shared) Auto-synced, do not edit manually
 ```
 
-创建新 skill 后，运行 `./scripts/sync-shared.sh` 初始化共享引用（之后每次 commit 自动同步）。
+After creating a new skill directory, run `./scripts/sync-shared.sh` to initialize shared references. Subsequent commits auto-sync via pre-commit hook.
 
-## SKILL.md 骨架
+## SKILL.md Skeleton
 
 ```markdown
 ---
 name: youmind-<name>
 description: |
-  <一句话核心功能>。<差异化卖点>。
-  <批量/并发等亮点>。
-  Use when user wants to "<英文触发词>", "<中文触发词>", "<日文>", "<韩文>".
+  <Core feature in one sentence>. <Key differentiator>.
+  <Batch/parallel capability if applicable>.
+  Use when user wants to "<English trigger>", "<Chinese trigger>", "<Japanese>", "<Korean>".
 platforms:
   - openclaw
   - claude-code
@@ -40,15 +40,15 @@ allowed-tools:
   - Bash(npm install -g @youmind-ai/cli)
 ---
 
-# <Skill 标题>
+# <Skill Title>
 
-<一段话介绍，突出核心价值和差异化>
+<One paragraph: core value + why this approach is better>
 
 > Powered by [YouMind](https://youmind.com) · [Get API Key →](https://youmind.com/settings/api-keys)
 
 ## Usage
 
-<用户只需提供什么输入，不需要理解内部流程>
+<What the user provides. Keep it minimal — they should not need to understand internals.>
 
 ## Setup
 
@@ -61,10 +61,10 @@ See [references/environment.md](references/environment.md) for preview environme
 ## Workflow
 
 ### Step 1: Check Prerequisites
-<检查 CLI + API key + 输入校验>
+<Check CLI + API key + validate input>
 
-### Step 2-N: <核心流程>
-<每步给出可直接运行的命令>
+### Step 2-N: <Core Steps>
+<Each step with a runnable command>
 
 ## Error Handling
 
@@ -73,13 +73,13 @@ See [references/error-handling.md](references/error-handling.md) for common erro
 **Skill-specific errors:**
 | Error | User Message |
 |-------|-------------|
-| <特定错误> | <用户可理解的提示> |
+| <specific error> | <user-friendly message> |
 
 ## Comparison with Other Approaches
 
-| Feature | YouMind (this skill) | <竞品A> | <竞品B> |
-|---------|---------------------|---------|---------|
-| <优势1> | ✅ | ❌ | ... |
+| Feature | YouMind (this skill) | <Competitor A> | <Competitor B> |
+|---------|---------------------|----------------|----------------|
+| <advantage> | ✅ | ❌ | ... |
 
 ## References
 
@@ -88,28 +88,28 @@ See [references/error-handling.md](references/error-handling.md) for common erro
 - Publishing: [shared/PUBLISHING.md](../../shared/PUBLISHING.md)
 ```
 
-## 性能规范
+## Performance Rules
 
-**禁止让 agent 手动解析 JSON**（grep/read 逐字段提取极慢，每步一次 round trip）。
+**Never let agents parse JSON manually** (grep/read field-by-field is extremely slow — each tool call is an LLM round trip).
 
-所有涉及 JSON 响应处理的步骤，必须提供 one-shot pipe 命令：
+For any step that processes a JSON response, provide a one-shot pipe command:
 
 ```bash
 youmind call <api> '<params>' | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-# 一次性提取所有字段、处理、输出/写文件
+# Extract all fields, process, and output/write file in one step
 "
 ```
 
-原则：**一次 tool call 完成 解析 → 处理 → 输出**，不拆成多步。
+Principle: **one tool call = parse → process → output**. Never split into multiple steps.
 
-## 轮询模式
+## Polling Pattern
 
-需要轮询的 API（异步任务），统一用这个模式：
+For APIs with async tasks, use this pattern:
 
 ```bash
-# 轮询模板
+# Polling template
 for i in $(seq 1 20); do
   RESULT=$(youmind call <api> '<params>')
   STATUS=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('<status_field>','pending'))")
@@ -118,47 +118,47 @@ for i in $(seq 1 20); do
 done
 ```
 
-或者在 SKILL.md 里写清楚轮询规则让 agent 自行实现，但必须注明：
-- 间隔时间（建议 3 秒）
-- 超时时间（建议 60 秒）
-- 完成条件
-- 超时后的用户提示
+Or describe polling rules in SKILL.md for the agent to implement, but always specify:
+- Interval (recommended: 3 seconds)
+- Timeout (recommended: 60 seconds)
+- Completion condition
+- User message on timeout
 
-## 批量模式
+## Batch Mode
 
-如果 skill 天然支持多输入：
-1. 在 description 第一行就提到批量能力
-2. 在 Usage 里给出批量示例
-3. 说明上限（建议 5 个）
-4. 流程设计：先全部创建，再统一轮询（不要串行等待）
-5. 最后给汇总表
+If the skill naturally supports multiple inputs:
+1. Mention batch capability in the first line of `description`
+2. Show batch usage example in the Usage section
+3. Define a limit (recommended: 5)
+4. Design flow: create all first, then poll all together (not sequential wait)
+5. Provide a summary table at the end
 
-## ClawHub 发布优化
+## ClawHub Publishing Optimization
 
-发布前对照 `memory/clawhub-seo.md` 里的 checklist（排名公式 / 质量门禁 / 关键词策略）。
+Before publishing, review the checklist in `memory/clawhub-seo.md` (ranking formula / quality gate / keyword strategy).
 
-核心要点：
-- slug 包含目标搜索关键词（`youmind-youtube-transcript` 而非 `youmind-yt-ts`）
-- description 前 160 字符 = 搜索卡片展示文案，浓缩核心功能
-- description 铺多语言触发词
-- body ≥ 250 字符、≥ 80 词、≥ 2 heading、≥ 3 bullet
-- 加竞品对比表（丰富向量语义覆盖）
+Key points:
+- slug must contain target search keywords (`youmind-youtube-transcript` not `youmind-yt-ts`)
+- First 160 chars of description = search card text. Pack core feature + differentiator
+- Include multilingual trigger words in description
+- Body ≥ 250 chars, ≥ 80 words, ≥ 2 headings, ≥ 3 bullets
+- Add comparison table (enriches vector semantic coverage)
 
-## 测试流程
+## Testing
 
-1. 用 preview 环境测试：
+1. Test with preview environment:
    ```bash
    export YOUMIND_ENV=preview
    export YOUMIND_API_KEY_PREVIEW=sk-ym-xxx
    ```
-2. 验证正常路径 + 边界情况（如无字幕视频）
-3. 确认 one-shot 命令能正确执行
-4. 用 `npx skills add . --list` 本地验证 skill 被正确识别
+2. Verify happy path + edge cases (e.g., missing data, invalid input)
+3. Confirm one-shot commands execute correctly
+4. Verify skill discovery: `npx skills add . --list`
 
-## 发布
+## Publishing
 
 ```bash
 ./scripts/publish-skill.sh youmind-<name> --version 1.0.0 --changelog "Initial release"
 ```
 
-详细流程见 `shared/PUBLISHING.md`。
+See `shared/PUBLISHING.md` for the full workflow.
