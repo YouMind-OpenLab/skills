@@ -9,7 +9,8 @@ Copy this template when creating a new YouMind skill. Replace all `<placeholders
 - Slash command on Telegram/Discord: `/youmind_<feature>` (auto-converted)
 - Keep it short and searchable. The slug is your #1 SEO lever on ClawHub.
 - New skills must be loaded after `gateway restart` — hot-reload is not supported.
-- **Never ask users to paste API keys in chat** — keys appear in chat history. Guide users to set env vars themselves, agent only verifies. This triggers OpenClaw Code Insight suspicious flag.
+- **Never ask users to paste API keys in chat** — keys appear in chat history. Guide users to set env vars themselves, agent only verifies.
+- **Must declare `metadata.openclaw`** with `primaryEnv`, `requires.env`, `requires.anyBins` — otherwise OpenClaw Code Insight flags as suspicious ("metadata omits requirements"). See apify skill as reference.
 
 ## Directory Structure
 
