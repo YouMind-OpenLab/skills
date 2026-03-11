@@ -9,7 +9,7 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 SHARED_DIR="$REPO_DIR/shared"
 
 # Files to sync (all .md files in shared/ except PUBLISHING.md which is repo-level only)
-SYNC_FILES=("setup.md" "environment.md" "error-handling.md")
+SYNC_FILES=("setup.md" "environment.md" "error-handling.md" "long-running-tasks.md")
 
 changed=0
 

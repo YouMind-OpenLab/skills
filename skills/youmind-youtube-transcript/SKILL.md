@@ -88,15 +88,17 @@ For **each** YouTube URL:
 youmind call createMaterialByUrl '{"url":"<youtube-url>","boardId":"<boardId>"}'
 ```
 
-Extract `id` as `materialId` from each response. Also note `boardIds[0]` as `boardId` (same as Step 2).
+Extract `id` as `materialId` from each response.
 
 **YouMind link format**: `https://<endpoint>/boards/<boardId>?material-id=<materialId>` (where endpoint is `youmind.com` or `preview.youmind.com`). Do NOT use `https://youmind.com/material/<id>` — that URL does not work.
 
-**In batch mode**: fire all `createMaterialByUrl` calls sequentially first, then poll all of them together. Do not wait for one to finish before creating the next.
+**Immediately after each create**, tell the user (in their language) and give the link:
+- Single: "✅ Video saved to YouMind! You can view it here: `<link>`. Extracting transcript now..."
+- Batch: after all creates, list all links: "✅ N videos saved to YouMind! [title1]: `<link1>`, [title2]: `<link2>` ... Extracting transcripts now..."
 
-Tell the user (in their language):
-- Single: "Video saved to YouMind. Extracting transcript — usually takes 10-20 seconds..."
-- Batch: "N videos saved to YouMind. Extracting transcripts — usually takes 10-20 seconds per video..."
+**In batch mode**: fire all `createMaterialByUrl` calls sequentially first, show all links, then poll all of them together.
+
+**⚡ Background processing**: Polling takes 10-60 seconds. See [references/long-running-tasks.md](references/long-running-tasks.md) for the subagent pattern. Suggest running the polling step in the background so the user's session stays responsive.
 
 ### Step 4: Poll for Transcripts
 
