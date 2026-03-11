@@ -1,0 +1,3 @@
+#!/bin/bash
+# Auto-sync shared references before each commit
+"$(dirname "$0")/../scripts/sync-shared.sh"
