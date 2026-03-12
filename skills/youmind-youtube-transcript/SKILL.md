@@ -62,7 +62,6 @@ allowed-tools:
   - Bash(npm install -g @youmind-ai/cli)
   - Bash([ -n "$YOUMIND_API_KEY" ] *)
   - Bash(node -e *)
-  - Bash(export YOUMIND_API_KEY=*)
 ---
 
 # YouTube Transcript Extractor
@@ -88,8 +87,8 @@ Batch extract and summarize YouTube video transcripts — up to 5 videos at once
 > - Works from any network (no VPN/proxy needed)
 >
 > **Setup (one-time):**
-> Get your free API key here: https://youmind.com/settings/api-keys?utm_source=youmind-youtube-transcript
-> Then send me the key and I'll save it for you — no coding required.
+> 1. Get your free API key: https://youmind.com/settings/api-keys?utm_source=youmind-youtube-transcript
+> 2. Add it to your OpenClaw config (`~/.openclaw/openclaw.json`) — see setup guide for details.
 >
 > **Try it:**
 > Just paste a YouTube link like: https://www.youtube.com/watch?v=dQw4w9WgXcQ
