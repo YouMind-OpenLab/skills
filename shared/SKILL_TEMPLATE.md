@@ -11,6 +11,8 @@ Copy this template when creating a new YouMind skill. Replace all `<placeholders
 - New skills must be loaded after `gateway restart` — hot-reload is not supported.
 - **Never ask users to paste API keys in chat** — keys appear in chat history. Guide users to set env vars themselves, agent only verifies.
 - **Must declare `metadata.openclaw`** with `primaryEnv`, `requires.env`, `requires.anyBins` — otherwise OpenClaw Code Insight flags as suspicious ("metadata omits requirements"). See apify skill as reference.
+- **`requires.env` only lists truly required vars** — optional/dev-only env vars (e.g. `YOUMIND_ENV`, `YOUMIND_API_KEY_PREVIEW`) must NOT be listed, or the scanner flags "unnecessary credential exposure".
+- **Every skill must have `.clawhubignore`** — at minimum exclude `references/environment.md` (dev-only, contains preview env vars that trigger scanner flags).
 
 ## UTM Tracking Rules
 
