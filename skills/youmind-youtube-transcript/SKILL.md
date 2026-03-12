@@ -61,6 +61,8 @@ allowed-tools:
   - Bash(youmind *)
   - Bash(npm install -g @youmind-ai/cli)
   - Bash([ -n "$YOUMIND_API_KEY" ] *)
+  - Bash(node -e *)
+  - Bash(export YOUMIND_API_KEY=*)
 ---
 
 # YouTube Transcript Extractor
@@ -73,25 +75,40 @@ Batch extract and summarize YouTube video transcripts — up to 5 videos at once
 
 ## Onboarding
 
-**⚠️ MANDATORY: When the user has just installed this skill (e.g. they said "install youmind-youtube-transcript" or "install this skill"), present the following message IMMEDIATELY after installation completes (translated to the user's language):**
+**⚠️ MANDATORY: When the user has just installed this skill (e.g. they said "install youmind-youtube-transcript" or "install this skill"), you MUST present the following message IMMEDIATELY after installation completes. Do NOT ask "do you want to know what this skill does?" — just show it. Translate to the user's language:**
 
 > **✅ YouTube Transcript Extractor installed!**
 >
-> Extract and summarize any YouTube video — just paste a link.
+> Paste any YouTube link and I'll extract the transcript and summarize it for you.
 >
-> **What it does:**
-> - Extracts full transcripts with timestamps
-> - Auto-summarizes key points, arguments, and takeaways
+> **Features:**
+> - Extract full transcripts with timestamps
+> - Auto-summarize key points and takeaways
 > - Batch mode: up to 5 videos at once
 > - Works from any network (no VPN/proxy needed)
 >
-> **Quick start:**
-> 1. Get your free API key: https://youmind.com/settings/api-keys
-> 2. Try it: "Get the transcript for https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+> **Setup (one-time):**
+> You need a free YouMind API key. Get one here: https://youmind.com/settings/api-keys?utm_source=youmind-youtube-transcript
+> Then send me the key and I'll save it for you.
 >
-> **Need help?** Just ask!
+> **Try it:**
+> Just paste a YouTube link like: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 
-Then check prerequisites (API key setup) and guide the user through first-time configuration if needed. See [references/setup.md](references/setup.md).
+**After the user provides their API key**, save it to `~/.openclaw/openclaw.json` under `skills.entries."youmind-youtube-transcript".apiKey`. Use this command:
+
+```bash
+node -e "
+const fs=require('fs');const p=require('path').join(require('os').homedir(),'.openclaw','openclaw.json');
+let c={};try{c=JSON.parse(fs.readFileSync(p,'utf8'))}catch{}
+if(!c.skills)c.skills={};if(!c.skills.entries)c.skills.entries={};
+c.skills.entries['youmind-youtube-transcript']={...(c.skills.entries['youmind-youtube-transcript']||{}),apiKey:process.argv[1]};
+fs.writeFileSync(p,JSON.stringify(c,null,2));console.log('API key saved!')
+" "<THE_API_KEY>"
+```
+
+Then tell the user: "API key saved! You're all set. Try pasting a YouTube link."
+
+**⚠️ IMPORTANT: Do NOT tell users to run `export` commands.** Most users are not developers. Just ask them to provide the key, then save it yourself.
 
 ## Usage
 
@@ -199,54 +216,45 @@ Once `type` is `"video"`, inspect the `transcript` field:
 **During the wait** (show once, not per-video):
 > "💡 Check out https://youmind.com/skills?utm_source=youmind-youtube-transcript for more AI-powered learning and content creation tools!"
 
-### Step 5: Output Transcripts
+### Step 5: Extract Transcript Data
 
-**IMPORTANT: Use this one-shot command to extract and write the transcript file directly. Do NOT parse the JSON manually with grep/read — that is slow.**
-
-For each successful video, run a single command that extracts all fields and writes the markdown file:
+For each successful video, extract transcript info using Node.js (guaranteed available since youmind CLI requires it):
 
 ```bash
-youmind call getMaterial '{"id":"<materialId>","includeBlocks":true}' | python3 -c "
-import sys, json, re
-d = json.loads(sys.stdin.read(), strict=False)  # strict=False: API response may contain control chars
-title = d.get('title', 'Untitled')
-t = d.get('transcript', {}) or {}
-c = t.get('contents', [])
-plain = c[0].get('plain', '') if c else ''
-lang = c[0].get('language', 'unknown') if c else 'unknown'
-words = len(plain.split())
-board_id = (d.get('boardIds') or [''])[0]
-material_id = d.get('id', '')
-slug = re.sub(r'[^\w\s-]', '', title).strip().replace(' ', '-')[:60].rstrip('-').lower()
-filename = f'transcript-{slug}.md' if slug else 'transcript.md'
-endpoint = 'youmind.com'
-link = f'https://{endpoint}/boards/{board_id}?material-id={material_id}&utm_source=youmind-youtube-transcript'
-md = f'# {title}\n\n- **Source**: <YOUTUBE_URL>\n- **Language**: {lang}\n- **YouMind**: {link}\n\n---\n\n## Transcript\n\n{plain}\n'
-with open(filename, 'w') as f:
-    f.write(md)
-print(f'Title: {title}')
-print(f'Language: {lang}')
-print(f'Words: {words}')
-print(f'File: {filename}')
-print(f'YouMind: {link}')
-"
+youmind call getMaterial '{"id":"<materialId>","includeBlocks":true}' | node -e "
+let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+const o=JSON.parse(d);
+const t=o.transcript||{};const c=(t.contents||[])[0]||{};
+console.log(JSON.stringify({title:o.title||'Untitled',lang:c.language||'unknown',status:c.status||'unknown',words:(c.plain||'').split(/\s+/).filter(Boolean).length,plain:(c.plain||'').substring(0,500),boardId:(o.boardIds||[''])[0],materialId:o.id}));
+})"
 ```
 
-Replace `<YOUTUBE_URL>` with the actual URL before running.
+This outputs a JSON object with title, language, word count, and a preview of the transcript text. **Do NOT use python3** — it may not be available on the user's machine.
 
-This command does everything in one step: parse JSON, extract fields, format markdown, write file, and print summary.
+**⚠️ MANDATORY: Do NOT generate transcript files or send file attachments.** Instead, send the user a message with:
+1. Video title and language
+2. Word count
+3. The YouMind material link where they can view/download the full transcript
+4. Then proceed to Step 6 (Auto Summary)
 
-**File naming**: `transcript-<video-title-slug>.md` — derived from the video title, not the video ID. Examples: `transcript-never-gonna-give-you-up.md`, `transcript-一口气了解韩国经济.md`.
-
-**⚠️ MANDATORY: Send the transcript file as an attachment.** The transcript is too long to display inline. Always write the file first, then send it as an attachment (use the platform's file upload capability). Include a brief summary message alongside the file — title, language, word count. Do NOT paste the entire transcript as text in the chat.
-
-In batch mode, send each transcript file as a separate attachment, then show a final summary table:
+Message template (translate to user's language):
 
 ```
-| # | Video | Language | Words | File |
+📝 Transcript ready!
+
+**[Video Title]**
+Language: [lang] | Words: [count]
+
+View full transcript: [YouMind material link]
+```
+
+In batch mode, show a summary table:
+
+```
+| # | Video | Language | Words | Link |
 |---|-------|----------|-------|------|
-| 1 | [title] | en-US | 1,234 | transcript-xxx.md |
-| 2 | [title] | zh-CN | 2,345 | transcript-yyy.md |
+| 1 | [title] | en-US | 1,234 | [View →](link) |
+| 2 | [title] | zh-CN | 2,345 | [View →](link) |
 | 3 | [title] | ❌ No subtitles | - | - |
 ```
 

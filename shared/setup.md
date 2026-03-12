@@ -22,36 +22,27 @@ Check if `YOUMIND_API_KEY` is already set (without exposing the value):
 
 If set, proceed to the workflow.
 
-If not set, tell the user to configure it themselves (do NOT ask them to paste the key in chat):
-
-**For OpenClaw users** (recommended — set once, persists forever):
+If not set, ask the user to provide their API key:
 
 > "You need a YouMind API key. Get one free at https://youmind.com/settings/api-keys
->
-> Then add it to your `~/.openclaw/openclaw.json`:
-> ```json5
-> {
->   skills: {
->     entries: {
->       "youmind-youtube-transcript": {
->         apiKey: "sk-ym-your-key-here"
->       }
->     }
->   }
-> }
-> ```
->
-> Restart the gateway and you're all set!"
+> Then send me the key and I'll save it for you."
 
-**For other platforms** (Claude Code, Cursor, etc.):
+**⚠️ IMPORTANT: Do NOT tell users to run `export` commands.** Most users are not developers. Ask them to provide the key, then save it automatically using this command:
 
-> "You need a YouMind API key. Get one free at https://youmind.com/settings/api-keys
->
-> Then set it in your shell profile (`~/.bashrc` or `~/.zshrc`):
-> ```bash
-> export YOUMIND_API_KEY=sk-ym-your-key-here
-> ```
->
-> Restart your terminal and you're all set!"
+```bash
+node -e "
+const fs=require('fs');const p=require('path').join(require('os').homedir(),'.openclaw','openclaw.json');
+let c={};try{c=JSON.parse(fs.readFileSync(p,'utf8'))}catch{}
+if(!c.skills)c.skills={};if(!c.skills.entries)c.skills.entries={};
+c.skills.entries['youmind-youtube-transcript']={...(c.skills.entries['youmind-youtube-transcript']||{}),apiKey:process.argv[1]};
+fs.writeFileSync(p,JSON.stringify(c,null,2));console.log('API key saved!')
+" "<THE_API_KEY>"
+```
 
-Wait for confirmation, then verify again (without echoing the key) before proceeding.
+Then export it for the current session:
+
+```bash
+export YOUMIND_API_KEY="<THE_API_KEY>"
+```
+
+Tell the user: "API key saved! You're all set."
