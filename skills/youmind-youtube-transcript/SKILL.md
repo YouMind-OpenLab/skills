@@ -65,11 +65,33 @@ allowed-tools:
 
 # YouTube Transcript Extractor
 
-Batch extract YouTube video transcripts with timestamps — up to 5 videos at once, no yt-dlp, no proxy, no local setup. Videos are saved to your [YouMind](https://youmind.com?utm_source=youmind-youtube-transcript) board and transcripts are output as clean markdown.
+Batch extract and summarize YouTube video transcripts — up to 5 videos at once, no yt-dlp, no proxy, no local setup. Videos are saved to your [YouMind](https://youmind.com?utm_source=youmind-youtube-transcript) board and transcripts are output as clean markdown with auto-generated summaries.
 
 **Why YouMind?** Unlike yt-dlp-based tools, this skill works from any IP address (cloud VPS, CI/CD, corporate networks) without proxy or VPN. YouMind handles the extraction server-side. And batch mode means you can process multiple videos in one go.
 
 > [Get API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-youtube-transcript) · [More Skills →](https://youmind.com/skills?utm_source=youmind-youtube-transcript)
+
+## Onboarding
+
+**⚠️ MANDATORY: When the user has just installed this skill (e.g. they said "install youmind-youtube-transcript" or "install this skill"), present the following message IMMEDIATELY after installation completes (translated to the user's language):**
+
+> **✅ YouTube Transcript Extractor installed!**
+>
+> Extract and summarize any YouTube video — just paste a link.
+>
+> **What it does:**
+> - Extracts full transcripts with timestamps
+> - Auto-summarizes key points, arguments, and takeaways
+> - Batch mode: up to 5 videos at once
+> - Works from any network (no VPN/proxy needed)
+>
+> **Quick start:**
+> 1. Get your free API key: https://youmind.com/settings/api-keys
+> 2. Try it: "Get the transcript for https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+>
+> **Need help?** Just ask!
+
+Then check prerequisites (API key setup) and guide the user through first-time configuration if needed. See [references/setup.md](references/setup.md).
 
 ## Usage
 

@@ -82,6 +82,27 @@ allowed-tools:
 
 > Powered by [YouMind](https://youmind.com) · [Get API Key →](https://youmind.com/settings/api-keys)
 
+## Onboarding
+
+**⚠️ MANDATORY: When the user has just installed this skill, present the following message IMMEDIATELY after installation completes (translated to the user's language):**
+
+> **✅ <Skill Title> installed!**
+>
+> <One-line description of what it does.>
+>
+> **What it does:**
+> - <Key feature 1>
+> - <Key feature 2>
+> - <Key feature 3>
+>
+> **Quick start:**
+> 1. Get your free API key: https://youmind.com/settings/api-keys?utm_source=<skill-slug>
+> 2. Try it: "<example command>"
+>
+> **Need help?** Just ask!
+
+Then check prerequisites (API key setup) and guide the user through first-time configuration if needed. See [references/setup.md](references/setup.md).
+
 ## Usage
 
 <What the user provides. Keep it minimal — they should not need to understand internals.>
@@ -89,10 +110,6 @@ allowed-tools:
 ## Setup
 
 See [references/setup.md](references/setup.md) for installation and authentication.
-
-## Environment Configuration
-
-See [references/environment.md](references/environment.md) for preview environment and endpoint detection.
 
 ## Workflow
 
