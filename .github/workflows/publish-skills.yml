@@ -1,4 +1,4 @@
-name: Publish Changed Skills to ClawHub
+name: Publish Skills to ClawHub
 
 on:
   push:
@@ -6,13 +6,35 @@ on:
     paths:
       - 'skills/**'
 
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Skill to publish'
+        required: true
+        type: choice
+        options:
+          - youmind
+          - youmind-blog-cover
+          - youmind-deep-research
+          - youmind-image-generator
+          - youmind-slides-generator
+          - youmind-web-clipper
+          - youmind-webpage-generator
+          - youmind-wechat-article
+          - youmind-youtube-transcript
+      force:
+        description: 'Force publish (skip version check)'
+        required: false
+        type: boolean
+        default: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Need parent commit to diff
+          fetch-depth: 2
 
       - uses: actions/setup-node@v4
         with:
@@ -24,7 +46,9 @@ jobs:
       - name: Authenticate
         run: clawhub login --token "${{ secrets.CLAWHUB_TOKEN }}" --no-browser
 
-      - name: Detect changed skills and publish
+      - name: Publish
         run: bash scripts/ci-publish.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_SKILL: ${{ github.event.inputs.skill || '' }}
+          PUBLISH_FORCE: ${{ github.event.inputs.force || 'false' }}
