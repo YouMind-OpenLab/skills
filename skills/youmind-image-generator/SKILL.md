@@ -1,5 +1,6 @@
 ---
 name: youmind-image-generator
+version: 1.0.0
 description: |
   Generate AI images from text prompts — one API key for GPT Image, Gemini, Seedream, and 10+ models. No juggling subscriptions. Images saved to your YouMind knowledge board. Use when user wants to "generate image", "create image", "AI image", "text to image",
   "生成图片", "AI 生图", "画像生成", "GPT image", "Gemini image", "Seedream", "DALL-E", "Midjourney".

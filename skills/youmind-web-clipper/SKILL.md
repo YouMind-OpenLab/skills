@@ -1,5 +1,6 @@
 ---
 name: youmind-web-clipper
+version: 1.0.0
 description: |
   Save any URL to your YouMind board with one command — instant web clipper for articles, videos, and documents. Works from terminal, CI/CD, and any agent platform. Use when user wants to "save link", "bookmark", "clip", "web clipper", "save URL",
   "save page", "保存链接", "收藏网页", "ブックマーク", "링크 저장".

@@ -1,5 +1,6 @@
 ---
 name: youmind-blog-cover
+version: 1.0.0
 description: |
   Generate blog cover images optimized for 16:9 headers — clean composition with text-friendly layouts, powered by multi-model AI. Use when user wants to "blog cover", "featured image", "article image", "cover image",
   "thumbnail", "文章配图", "封面图", "博客配图", "ブログカバー", "블로그 커버".

@@ -1,5 +1,6 @@
 ---
 name: youmind-webpage-generator
+version: 1.0.0
 description: |
   Generate webpages from a description — landing pages, portfolios, event pages. View, edit, and share with one click via YouMind. Use when user wants to "create webpage", "make website", "generate page", "landing page",
   "创建网页", "生成页面", "ウェブページ作成", "웹페이지 만들기".

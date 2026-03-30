@@ -1,5 +1,6 @@
 ---
 name: youmind-deep-research
+version: 1.0.0
 description: |
   Conduct deep research on any topic — get comprehensive reports with citations, key findings, and actionable insights in minutes. Use when user wants to "deep research", "research this", "investigate", "analysis report",
   "深度研究", "调研", "リサーチ", "심층 연구".
