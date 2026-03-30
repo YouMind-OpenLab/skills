@@ -16,7 +16,7 @@ When a task involves polling or is expected to take more than a few seconds, **a
 
 ### What to Tell the User
 
-After saving the content to YouMind and providing the link, tell the user (in their language):
+After saving the material to YouMind and providing the link, tell the user (in their language):
 
 > "This may take 10-20 seconds. Would you like me to run this in the background so you can keep chatting? I'll notify you when it's done."
 
@@ -30,7 +30,7 @@ Or, if the agent platform supports subagents (OpenClaw, Claude Code, etc.), the 
 Never make the user wait for the entire batch to finish. Deliver results as they become available:
 
 1. **Immediately after saving**: Show the YouMind material link (user can already view the video in YouMind)
-2. **As each result completes**: Output that transcript right away
+2. **As each transcript completes**: Output that transcript right away
 3. **After all done**: Show the summary table
 
 ### Implementation Note for Skill Authors
