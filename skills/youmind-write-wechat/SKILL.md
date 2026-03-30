@@ -1,20 +1,106 @@
 ---
 name: youmind-write-wechat
 description: |
-  Use when the user wants to plan, write, rewrite, format, preview, or publish a
-  WeChat Official Account article. Triggers include: 公众号 / 微信公众号 / 微信文章 / 推文 /
-  草稿箱 / 微信排版 / 选题 / 热搜 / 封面图 / 配图 / 主题预览 / 文章复盘, or requests like
-  "给 [brand] 写一篇公众号文章", "发布到微信草稿箱", "把这篇 Markdown 排版成公众号样式",
-  "根据我的修改学习风格", "创建新的客户配置", "复盘最近文章表现".
-  Also covers: client onboarding, theme preview, article stats review, edit learning,
-  re-publish, polish/condense/expand for WeChat.
+  Plan, write, format, and publish WeChat Official Account articles — from topic selection through draft-box publishing. Use when user wants to "写公众号文章", "微信推文", "发布到草稿箱", "微信排版",
+  "write WeChat article", "publish to WeChat drafts", "format for WeChat".
   Do NOT trigger for: generic blog posts, emails/newsletters, PPT, short video scripts,
   or non-WeChat SEO/content work.
+triggers:
+  - "公众号"
+  - "微信公众号"
+  - "微信文章"
+  - "推文"
+  - "草稿箱"
+  - "微信排版"
+  - "选题"
+  - "封面图"
+  - "配图"
+  - "文章复盘"
+  - "写公众号"
+  - "WeChat article"
+  - "write WeChat"
+  - "publish to WeChat"
+  - "WeChat drafts"
+  - "给公众号写文章"
+  - "发布到微信草稿箱"
+  - "公众号样式"
+platforms:
+  - openclaw
+  - claude-code
+  - cursor
+  - codex
+  - gemini-cli
+  - windsurf
+  - kilo
+  - opencode
+  - goose
+  - roo
+metadata:
+  openclaw:
+    emoji: "✍️"
+    primaryEnv: YOUMIND_API_KEY
+    requires:
+      anyBins: ["node", "npm", "python3"]
+      env: ["YOUMIND_API_KEY"]
+allowed-tools:
+  - Bash(node dist/cli.js *)
+  - Bash(python3 scripts/*)
+  - Bash(npm install)
+  - Bash(npm run build)
+  - Bash([ -n "$YOUMIND_API_KEY" ] *)
 ---
 
-# YouMind WeChat Skill
+# AI WeChat Article Writer
 
-You are a WeChat Official Account content agent. Given a client name or article request, run the full pipeline from topic selection through draft-box publishing — autonomously.
+Plan, write, format, and publish WeChat Official Account articles using [YouMind](https://youmind.com?utm_source=youmind-write-wechat) AI. Provide your topic or outline, and get a professionally formatted article published directly to your WeChat draft box. Requires Node.js for the toolkit and Python 3 for trending topic scripts.
+
+> [Get API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-write-wechat) · [More Skills →](https://youmind.com/skills?utm_source=youmind-write-wechat)
+
+## Onboarding
+
+**⚠️ MANDATORY: When the user has just installed this skill, present this message IMMEDIATELY. Do NOT ask "do you want to know what this does?" — just show it. Translate to the user's language:**
+
+> **✅ AI WeChat Article Writer installed!**
+>
+> Tell me your topic and I'll write and publish a WeChat article for you.
+>
+> **What it does:**
+> - Plan topics from trending hotspots and SEO keywords
+> - Write professional articles with de-AI voice
+> - Format with beautiful WeChat-optimized themes
+> - Publish directly to your WeChat draft box
+>
+> **Setup (one-time):**
+> 1. Get your free API key: https://youmind.com/settings/api-keys?utm_source=youmind-write-wechat
+> 2. Copy `config.example.yaml` to `config.yaml` and fill in your WeChat & YouMind credentials.
+> 3. Run `npm install && npm run build` in the `toolkit/` directory.
+>
+> **Try it:**
+> "帮我写一篇关于 AI 编程的公众号文章"
+>
+> **Need help?** Just ask!
+
+For first-run setup and client onboarding details, see [references/operations.md](references/operations.md).
+
+## Usage
+
+Provide a topic, brand/client name, or raw Markdown for publishing.
+
+**Write from a topic:**
+> 帮我写一篇关于 AI 编程趋势的公众号文章
+
+**Write for a specific client:**
+> 给 demo 客户写一篇推文，主题是远程办公最佳实践
+
+**Format and publish raw Markdown:**
+> 把这篇 Markdown 排版成公众号样式并发布到草稿箱
+
+**Interactive mode:**
+> 用交互模式帮我写一篇公众号文章，我想自己选题和框架
+
+## Setup
+
+Copy `config.example.yaml` to `config.yaml` and fill in credentials. Run `npm install && npm run build` in the `toolkit/` directory. For detailed setup and client onboarding, see [references/operations.md](references/operations.md).
 
 ## Skill Directory
 
@@ -136,3 +222,10 @@ If the request is about improving this skill itself, refactoring its structure, 
 **"The Blacklist Miss":** Forgetting to check `style.yaml` blacklist against the final article. Always do a final scan before publishing.
 
 **"The Broken Pipeline Halt":** Stopping the entire flow because one step failed. NEVER do this. Use the fallback. If the fallback fails, skip and note it. The user can always fix individual pieces manually.
+
+## References
+
+- YouMind API: see [references/openapi-document.md](references/openapi-document.md)
+- CLI commands: see [references/cli-reference.md](references/cli-reference.md)
+- YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-write-wechat
+- Publishing: [shared/PUBLISHING.md](../../shared/PUBLISHING.md)
