@@ -60,7 +60,7 @@ Every 5 accumulated lessons triggers a playbook refresh with `--summarize`.
 
 ## Custom Themes (Progressive Disclosure)
 
-When needs exceed the 4 built-in themes, escalate through three levels:
+When needs exceed the 10 built-in themes, escalate through three levels:
 
 **Level 1 — Simple tweaks** (e.g., "change the color", "make the font bigger"):
 Adjust CLI arguments on built-in themes. Run `cli.js themes` / `cli.js colors` to see options.

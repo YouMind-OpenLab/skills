@@ -55,6 +55,14 @@ Every theme starts with an emotion. Not "blue." Not "left-aligned." The question
 | Literary & Warm | Serif, first-line indent, warm gray palette, rounded quote cards, relaxed line-height | Not "just add border-radius" — it's the texture of paper |
 | Business & Professional | Sans-serif, left-aligned, bold-bordered headings, table emphasis, compact spacing | Not "boring" — it's trust and authority |
 | Playful & Energetic | Large title fonts, color-block backgrounds, rounded cards, tight paragraph spacing | Not "flashy" — it's rhythm and energy |
+| Misty & Contemplative | Low-contrast palette, thin hairline rules, ample whitespace, muted auxiliary colors, slow rhythm | Not "washed out" — it's visual quietude |
+| Magazine & Editorial | Mixed serif/sans pairing, pull-quote emphasis, strict vertical rhythm, drop-cap energy | Not "cluttered" — it's editorial structure |
+| Vintage & Nostalgic | Warm sepia tones, subtle texture-like backgrounds, slightly rounded serif, ornamental hr | Not "old-fashioned" — it's curated nostalgia |
+| Minimalist & Brutalist | One accent color max, zero decoration, raw type hierarchy, extreme whitespace, sharp contrast | Not "lazy" — it's radical intention |
+| Nature & Organic | Earthy greens and browns, soft rounded corners, gentle gradients, relaxed density | Not "hippie" — it's grounded calm |
+| Luxury & Premium | Deep navy/black/gold palette, generous letter-spacing, restrained decoration, thick-thin rule contrast | Not "gaudy" — it's quiet confidence |
+| Narrative & Cinematic | Wide line-height, centered layout, dramatic heading scale, fade-out hr, image-driven rhythm | Not "dramatic" for drama's sake — it's pacing |
+| Academic & Scholarly | Tight type scale, numbered headings, footnote-style blockquotes, indented paragraphs, neutral palette | Not "dry" — it's intellectual precision |
 
 **Write a one-sentence emotional positioning before continuing.**
 
@@ -74,19 +82,32 @@ Define the theme's "character" — if this layout were a person, what would they
 Answer three questions:
 
 **Volume** — Is this theme whispering or giving a keynote?
-- Whisper: font-weight 500–600, no background colors on headings, semi-transparent decorations
+- Whisper: font-weight 400–500, no background colors on headings, semi-transparent decorations, hairline borders
+- Murmur: font-weight 500–600, subtle tinted backgrounds, thin borders, gentle shadows
 - Normal: font-weight 600–700, moderate decoration, clear but not attention-grabbing
-- Keynote: font-weight 700–800, color-block heading backgrounds, high contrast
+- Keynote: font-weight 700–800, color-block heading backgrounds, high contrast, bold borders
+- Shout: font-weight 800–900, full-bleed color blocks, oversized headings, maximal contrast
 
 **Temperature** — Warm or cool palette?
-- Cool: slate gray, indigo, blue-gray → rational, distant, contemplative
+- Icy: pure white background, slate/steel blue accents → clinical, cutting-edge
+- Cool: blue-gray, indigo, teal → rational, distant, contemplative
 - Neutral: pure grays, minimal color → restrained, professional
 - Warm: ochre, amber, warm brown → intimate, narrative, humanistic
+- Hot: deep red, terracotta, burnt orange → passionate, urgent, visceral
 
 **Density** — How tightly packed are elements?
-- Spacious: paragraph spacing 24–28px, line-height 1.8–2.0, generous whitespace → settling, reading-focused
+- Airy: paragraph spacing 28–36px, line-height 2.0–2.2, extreme whitespace → meditative, poetic
+- Spacious: paragraph spacing 22–28px, line-height 1.8–2.0, generous whitespace → settling, reading-focused
 - Balanced: paragraph spacing 18–22px, line-height 1.7–1.8 → equilibrium
 - Compact: paragraph spacing 12–16px, line-height 1.6–1.7 → information-dense, efficient
+- Dense: paragraph spacing 8–12px, line-height 1.5–1.6 → data-heavy, reference-style
+
+**Texture** — What surface does this feel like?
+- Glass: transparent/translucent backgrounds, subtle shadows, light borders → modern digital
+- Paper: warm off-white implied by color choices, gentle tones, serif fonts → analog reading
+- Stone: high-contrast, heavy rules, strong borders, dark headers → monumental, lasting
+- Silk: gentle gradients, rounded edges, soft shadows, flowing rhythm → premium, refined
+- Raw: no gradients, no shadows, no border-radius, stark contrast → honest, unadorned
 
 #### Required Skills: `/typeset` + `/bolder` or `/quieter`
 
@@ -107,11 +128,15 @@ Headings are not just "big text." They are the article's skeleton — the naviga
 | Method | Effect | Example |
 |---|---|---|
 | Size difference | Most direct hierarchy signal | H1 24px → H2 20px → H3 18px |
-| Weight variation | Creates light/heavy contrast at same size | H1 700 → H3 600 → H5 500 |
-| Color depth | Higher levels = deeper color | H1 #3a3a3a → H3 #5a6374 |
-| Decoration decay | Decoration decreases with level | H1 double-rule → H2 short underline → H3 none |
+| Weight variation | Creates light/heavy contrast at same size | H1 800 → H3 600 → H5 400 |
+| Color depth | Higher levels = deeper color | H1 #1a1a1a → H3 #5a6374 → H5 #888 |
+| Decoration decay | Decoration decreases with level | H1 full-color-block → H2 left-border → H3 underline → H4 none |
 | Alignment shift | High levels centered, low levels left | H1–H2 centered → H3+ left-aligned |
-| Spacing rhythm | Higher levels = more top margin | H1 margin-top 48px → H3 32px |
+| Spacing rhythm | Higher levels = more top margin | H1 margin-top 56px → H3 36px → H5 20px |
+| Background intensity | Background saturation/opacity decreases with level | H1 solid bg → H2 rgba(…,0.12) → H3 rgba(…,0.05) |
+| Letter-spacing shift | Higher levels use wider tracking | H1 letter-spacing: 2px → H3 1px → H5 normal |
+| Border style variation | Border style changes with level | H1 double → H2 solid → H3 dashed → H4 dotted |
+| Opacity gradient | Lower headings fade toward body text | H1 opacity:1 → H4 opacity:0.85 → H6 opacity:0.7 |
 
 **Core principle: Never use just one method.** The best hierarchy layers multiple signals into a cohesive whole.
 
@@ -183,10 +208,28 @@ But color selection is not about picking "a nice color" — it's about choosing 
 | Deep red / dark red | Power, urgency, alertness | Near #c0392b |
 | Deep blue / ink blue | Technology, frontier, profundity | Near #1a1a2e |
 | Amber / warm gold | Warmth, autumn, memory | Near #d4a373 |
+| Teal / cyan | Freshness, clarity, modern energy | Near #0d9488 |
+| Muted rose / mauve | Elegance, softness, editorial warmth | Near #b5838d |
+| Slate / charcoal | Neutral authority, understated confidence | Near #475569 |
+| Burnt sienna / terracotta | Earthy warmth, artisan craft, organic | Near #a0522d |
+| Forest / olive | Wisdom, endurance, quiet strength | Near #556b2f |
+| Coral / salmon | Approachable energy, friendly warmth | Near #e07a5f |
+| Navy / midnight | Depth, formality, premium weight | Near #1e3a5f |
+| Dusty lavender | Gentle creativity, calm imagination | Near #9b8ec1 |
 
 Choose freely based on the article's actual content and emotion. A tech article can use ink blue for cold analysis or warm gray for gentle storytelling. Don't let the table box you in.
 
-**Three-Color Rule:** Primary color (headings, decorations) + Body text color (dark gray range, e.g., #2c2c2c – #3f3f3f) + Auxiliary color (quotes, captions — a mid-gray). More than three color families → loss of control. But exact values should be tuned freely per theme.
+**Color Strategy (flexible, not rigid):** Assign colors by role, not by counting them. The roles are:
+
+| Role | Purpose | Example |
+|---|---|---|
+| Primary | Headings, key decorations, links | Your chosen emotional color |
+| Body | Paragraph text — must be readable | #2c2c2c – #444444 range |
+| Auxiliary | Quotes, captions, secondary text | Mid-gray: #666 – #999 |
+| Accent (optional) | Highlight, inline-code bg, table header bg | A tint of primary at 8–15% opacity |
+| Surface (optional) | Blockquote bg, card bg, code block bg | Near-white tints or dark surfaces |
+
+Three roles (primary + body + auxiliary) is the safest floor. Four or five roles (adding accent + surface) is perfectly fine when they derive from the same primary. The rule is **coherence, not counting** — five colors from one family are more controlled than two random colors.
 
 #### Required Skill: `/colorize`
 
@@ -266,51 +309,147 @@ Font choice must match emotional positioning. Dignified → serif. Modern → de
 
 Use `/typeset` to validate the font stack choice against the design's voice. `/typeset` checks readability, hierarchy clarity, and whether the typography feels intentional rather than default.
 
-### 3. Font Size Constraints
+### 3. Font Size Guidelines
 
-| Element | Safe Range | Notes |
+| Element | Comfortable Range | Extended Range | Notes |
+|---|---|---|---|
+| Body text | 15–17px | 14–18px | 15–16px is the mobile sweet spot, but 14px works for dense content and 18px for airy layouts |
+| H1 | 22–28px | 20–36px | Up to 36px is safe for single-line impact headings; multi-line headings should stay ≤28px |
+| H2 | 19–24px | 17–28px | — |
+| H3 | 17–20px | 15–24px | — |
+| H4–H6 | 15–18px | 14–20px | Can equal body or go slightly smaller for de-emphasized sub-sections |
+| Code (inline) | 13–15px | 12–16px | Monospace: SF Mono / Menlo / Consolas / Monaco |
+| Code (block) | 13–15px | 12–16px | Same as inline; ensure line-height ≥ 1.5 for readability |
+| Blockquote | 14–16px | 13–17px | Slightly smaller than body signals "aside" |
+| Table | 14–16px | 13–16px | Compact tables can go to 13px |
+| Caption / footnote | 12–14px | 12–14px | For image captions and annotations |
+
+**The comfortable range** is where most themes should land. **The extended range** is available when the design intent demands it — a "shout" volume heading at 34px is valid if the theme's personality calls for it, just as a 14px body suits a dense academic layout.
+
+Actual sizes should come from the type scale chosen in Phase 2, validated by `/typeset`. Popular type scales:
+
+| Scale | Ratio | Character |
 |---|---|---|
-| Body text | 14–18px | WeChat optimal: 15–16px |
-| H1 | 22–30px | Restraint > spectacle |
-| H2 | 19–26px | — |
-| H3 | 17–22px | — |
-| H4–H6 | 14–18px | Can equal or be slightly smaller than body |
-| Code | 13–15px | Monospace: use SF Mono / Consolas / Monaco |
-| Blockquote / table | 14–16px | Can be slightly smaller than body |
-
-**These ranges are guardrails, not targets.** Actual sizes should come from the type scale chosen in Phase 2, validated by `/typeset`.
+| Minor Second | 1.067 | Subtle, barely perceptible steps — academic, dense |
+| Major Second | 1.125 | Gentle progression — professional, restrained |
+| Minor Third | 1.2 | Clear but modest hierarchy — balanced, readable |
+| Major Third | 1.25 | Strong hierarchy — the most popular for articles |
+| Perfect Fourth | 1.333 | Dramatic steps — editorial, magazine |
+| Augmented Fourth | 1.414 | Bold jumps — keynote, impactful |
+| Perfect Fifth | 1.5 | Extreme contrast — use for hero-style H1 only |
 
 ### 4. Design Technique Reference
 
-Common design techniques achievable within WeChat's safe CSS boundary:
+A rich library of design techniques achievable within WeChat's CSS boundary. Mix and match freely — the best themes combine techniques from multiple categories.
 
-**Heading Decoration:**
+---
+
+#### Heading Decoration
+
+**Structural approaches:**
 - Centered + double thin rules (ceremonial): `text-align: center; border-top: 1px solid; border-bottom: 1px solid; padding: 20px 16px;`
-- Centered + bottom short line (chapter feel): `text-align: center; padding-bottom: 14px; background-image: linear-gradient(...); background-size: 32px 1px; background-position: center bottom; background-repeat: no-repeat;`
+- Centered + bottom short line (chapter feel): `text-align: center; padding-bottom: 14px; background-image: linear-gradient(COLOR, COLOR); background-size: 40px 2px; background-position: center bottom; background-repeat: no-repeat;`
+- Centered + top short accent line: `text-align: center; padding-top: 16px; background-image: linear-gradient(COLOR, COLOR); background-size: 24px 3px; background-position: center top; background-repeat: no-repeat;`
 - Left thick border (strength): `border-left: 4px solid; padding-left: 14px;`
-- Left gradient background (tech): `background: linear-gradient(90deg, rgba(...,0.08) 0%, transparent 70%); border-left: 3px solid; padding-left: 14px;`
-- Full color-block card (impact): `background-color: <color>; color: #ffffff; padding: 16px 24px; border-radius: 16px;`
-- Pure text (minimal / solemn): Rely only on font-size, font-weight, and letter-spacing
+- Left double border (editorial): `border-left: 4px double; padding-left: 14px;`
+- Left gradient strip: `border-left: 3px solid; background: linear-gradient(90deg, rgba(...,0.08) 0%, transparent 60%); padding: 8px 14px;`
+- Bottom gradient underline (modern): `padding-bottom: 8px; background-image: linear-gradient(90deg, COLOR 0%, transparent 100%); background-size: 100% 2px; background-position: bottom left; background-repeat: no-repeat;`
 
-**Blockquote Design:**
-- Thin rules top/bottom + light background + centered (book excerpt): `border-top: 1px solid; border-bottom: 1px solid; background-color: rgba(...,0.03); text-align: center;`
-- Left thick border + italic (classic quote): `border-left: 3px solid; font-style: italic;`
-- Gradient background + rounded corners (card quote): `background: linear-gradient(135deg, rgba(...,0.05), rgba(...,0.02)); border-radius: 0 8px 8px 0;`
+**Surface approaches:**
+- Full color-block card (impact): `background-color: COLOR; color: #ffffff; padding: 16px 24px; border-radius: 16px;`
+- Tinted card (soft impact): `background-color: rgba(...,0.08); padding: 12px 20px; border-radius: 8px;`
+- Gradient card: `background: linear-gradient(135deg, rgba(...,0.12) 0%, rgba(...,0.04) 100%); padding: 14px 20px; border-radius: 10px;`
+- Top-border card: `border-top: 3px solid COLOR; background-color: rgba(...,0.03); padding: 14px 20px;`
+- Bottom-border + shadow (floating): `border-bottom: 2px solid COLOR; padding-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.06);`
+- Pill label (tag-like): `display: inline-block; background-color: COLOR; color: #fff; padding: 6px 20px; border-radius: 100px; font-size: 14px;`
 
-**Horizontal Rule Design:**
-- Centered light line (sigh): `width: 40%; margin: 3rem auto; height: 1px; background-color: rgba(...,0.2);`
-- Centered triple dots (ellipsis-style): Use multi-stop `linear-gradient` via `background-image`
-- Gradient fade-out (elegant vanish): `background: linear-gradient(to right, transparent, rgba(...,0.3), transparent);`
+**Minimal approaches:**
+- Pure text (minimal): Rely only on font-size, font-weight, and letter-spacing
+- Weight-only hierarchy: Same color as body, differentiated purely by font-weight (800 → 600 → 400)
+- Uppercase letter-spacing (western feel): `letter-spacing: 3px; font-size: 13px; font-weight: 600; text-transform: uppercase;`
+- Numbered prefix (academic): Pair with manual numbering in Markdown, no decoration CSS needed
 
-**Paragraph Design:**
+---
+
+#### Blockquote Design
+
+- Left thick border + italic (classic): `border-left: 3px solid; font-style: italic; padding: 12px 16px;`
+- Left thick border + tinted bg (standard): `border-left: 4px solid COLOR; background-color: rgba(...,0.04); padding: 16px 20px;`
+- Thin rules top/bottom + centered (book excerpt): `border-top: 1px solid rgba(...,0.3); border-bottom: 1px solid rgba(...,0.3); padding: 20px 16px; text-align: center;`
+- Gradient card + rounded (modern): `background: linear-gradient(135deg, rgba(...,0.06), rgba(...,0.02)); border-radius: 0 12px 12px 0; border-left: 3px solid COLOR; padding: 16px 20px;`
+- Full tinted card (callout): `background-color: rgba(...,0.06); border-radius: 8px; padding: 16px 20px; border: 1px solid rgba(...,0.1);`
+- Dark surface card (contrast): `background-color: #2d3748; color: #e2e8f0 !important; padding: 20px 24px; border-radius: 8px;`
+- Left color-block accent: `border-left: 6px solid COLOR; padding: 16px 20px; background-color: rgba(...,0.02);`
+- Indented + smaller (footnote style): `margin-left: 24px; font-size: 14px; color: #888 !important; border: none; padding: 0;`
+- Pull-quote (editorial): `text-align: center; font-size: 20px; font-weight: 600; color: COLOR !important; padding: 24px 32px; border: none; letter-spacing: 0.5px; line-height: 1.6;`
+
+---
+
+#### Horizontal Rule Design
+
+- Centered light line: `width: 40%; margin: 3rem auto; height: 1px; background-color: rgba(...,0.2);`
+- Centered short accent: `width: 60px; margin: 2.5rem auto; height: 3px; background-color: COLOR; border-radius: 2px;`
+- Gradient fade-out: `margin: 3rem 0; height: 1px; background: linear-gradient(to right, transparent, rgba(...,0.3), transparent);`
+- Double thin line: `margin: 2.5rem 0; height: 4px; border-top: 1px solid rgba(...,0.15); border-bottom: 1px solid rgba(...,0.15); background: transparent;`
+- Dotted line: `margin: 2rem 0; border: none; border-top: 2px dotted rgba(...,0.2);`
+- Dashed line: `margin: 2rem 0; border: none; border-top: 1px dashed rgba(...,0.25);`
+- Full-width solid (brutalist): `margin: 3rem 0; height: 2px; background-color: #1a1a1a;`
+- Gradient accent bar: `margin: 2.5rem auto; width: 80%; height: 2px; background: linear-gradient(90deg, COLOR, rgba(...,0.1));`
+- Three dots (ellipsis): `width: 60px; margin: 2rem auto; height: 6px; background-image: radial-gradient(circle, rgba(...,0.4) 1.5px, transparent 1.5px); background-size: 20px 6px; background-position: center; background-repeat: repeat-x; border: none;`
+
+---
+
+#### Paragraph Design
+
+- Standard (general): No indent, rely on inter-paragraph spacing
 - First-line indent (literary): `text-indent: 2em;`
-- Standard paragraph (general): No indent, rely on inter-paragraph spacing
+- Wide leading (contemplative): `line-height: 2.0; margin-bottom: 28px;`
+- Tight leading (dense): `line-height: 1.6; margin-bottom: 12px;`
+- Justified (formal): `text-align: justify;`
+- Left-align + generous spacing: `text-align: left; margin-bottom: 24px; line-height: 1.85;`
+- Slightly larger first paragraph: Use on the opening `<p>` only: `font-size: 17px; line-height: 1.8; color: #333 !important;`
 
-**Image Design:**
-- Slight transparency (vintage photo): `opacity: 0.92;`
-- Shadow border (polished): `border: 1px solid rgba(...,0.1); box-shadow: 0 2px 8px rgba(...,0.06);`
-- Rounded corners (soft): `border-radius: 6px;`
-- Clean (non-interventive): Just `max-width: 100%; display: block; margin: auto;`
+---
+
+#### Image Design
+
+- Clean (non-interventive): `max-width: 100%; display: block; margin: 32px auto;`
+- Rounded corners (soft): `border-radius: 8px; max-width: 100%; display: block; margin: 28px auto;`
+- Shadow frame (polished): `border-radius: 6px; border: 1px solid rgba(...,0.1); box-shadow: 0 4px 16px rgba(0,0,0,0.08); max-width: 100%; display: block; margin: 32px auto;`
+- Heavy shadow (dramatic): `box-shadow: 0 8px 32px rgba(0,0,0,0.15); border-radius: 8px; max-width: 100%; display: block; margin: 36px auto;`
+- Slight transparency (vintage): `opacity: 0.9; border-radius: 4px; max-width: 100%; display: block; margin: 28px auto;`
+- Border frame (gallery): `border: 4px solid #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 100%; display: block; margin: 32px auto;`
+- Full-bleed (no margin): `max-width: 100%; display: block; margin: 20px 0;`
+
+---
+
+#### Table Design
+
+- Clean minimal: Light borders only, no header background
+- Striped (implied via alternating td background-color in generated HTML): Alternate `rgba(...,0.03)` on even rows
+- Bordered + header accent: `th` with `background-color: COLOR; color: #fff;`, `td` with `border: 1px solid rgba(...,0.12);`
+- Borderless + bold header: No cell borders, `th` with `border-bottom: 2px solid COLOR; font-weight: 700;`
+- Card-style: `table` with `box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden;`
+
+---
+
+#### Inline Emphasis Design
+
+- **Bold color**: `strong` with `font-weight: 700; color: COLOR;` — the standard
+- **Bold + background highlight**: `strong` with `font-weight: 700; background-color: rgba(...,0.1); padding: 1px 4px; border-radius: 3px;`
+- **Underline emphasis**: `strong` with `font-weight: 700; text-decoration: underline; text-decoration-color: rgba(...,0.4); text-underline-offset: 3px;`
+- **Subtle bold (no color change)**: `strong` with `font-weight: 700; color: #2c2c2c;` — emphasis without distraction
+- **Inline code as emphasis**: `code` with tinted background and primary color text creates an alternative emphasis channel
+
+---
+
+#### Code Block Design
+
+- Light surface (minimal): `background-color: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.08); border-radius: 0;`
+- Dark surface (standard): `background-color: #1e1e1e; color: #d4d4d4; border-radius: 6px;`
+- Colored dark (themed): `background-color: #2d3748; border: 1px solid rgba(COLOR,0.2); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);`
+- Paper (warm): `background-color: #faf8f5; border: 1px solid #e8e0d4; border-radius: 4px; color: #3a3a3a;`
+- Inset (depressed): `background-color: #f5f5f5; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06); border-radius: 4px;`
 
 ### 5. Final Polish
 
@@ -401,41 +540,74 @@ Part 2: CSS Implementation
 
 ## Appendix: WeChat CSS Safety Boundary
 
-### Allowed Properties
+### Tier 1 — Fully Safe (use freely)
 
 ```
-color, background-color, background-image (linear-gradient only)
+color, background-color
+background-image: linear-gradient() — all directions, multi-stop, rgba values
 background-size, background-position, background-repeat
-font-size, font-weight, font-style, font-family (whitelist only)
-margin, padding (and directional variants)
-border (and directional variants), border-radius, border-collapse
-text-align, text-decoration, text-decoration-color, text-indent
-text-underline-offset, text-shadow, letter-spacing
-line-height, word-break, word-wrap, white-space
-display (block/inline/inline-block), overflow, overflow-x, overflow-y
-max-width, max-height, width, height
-opacity, box-shadow
-list-style-type, list-style, vertical-align, accent-color, cursor
+font-size, font-weight, font-style, font-family (system stacks only)
+margin, padding (and all directional variants: -top, -right, -bottom, -left)
+border (and all directional variants), border-radius, border-collapse, border-style, border-color
+text-align, text-decoration, text-decoration-color, text-decoration-style, text-indent
+text-underline-offset, text-shadow, letter-spacing, word-spacing
+line-height, word-break, word-wrap, overflow-wrap, white-space
+display: block / inline / inline-block / table / table-cell / table-row
+overflow, overflow-x, overflow-y
+max-width, min-width, width, max-height, min-height, height
+opacity, box-shadow (single and multi-layer)
+list-style-type, list-style, list-style-position
+vertical-align, accent-color, cursor
+float: left / right (works, useful for text-wrapping layouts)
+clear: both / left / right
 ```
 
-### Forbidden
+### Tier 2 — Works on Modern Clients (use with awareness)
+
+These properties work on iOS WeChat and Android WeChat 8.0+. The overwhelming majority of active users are on these versions.
 
 ```
-position: fixed/sticky, transform, animation, transition
-filter, backdrop-filter, CSS Variables, Grid, Flexbox
-@font-face, media queries, ::before/::after, float
-radial-gradient, conic-gradient
+background-image: radial-gradient() — works for decorative backgrounds and dot patterns
+background-clip: padding-box / border-box
+border-image (limited — simple gradients work)
+text-overflow: ellipsis
+outline, outline-offset
+writing-mode: vertical-rl (for vertical Chinese text effects — niche but dramatic)
+box-shadow with multiple layers (up to 3 layers render reliably)
+background-image with multiple layers (comma-separated, up to 3)
+mix-blend-mode (partial — works on some clients, gracefully ignored on others)
 ```
 
-### Critical Gotchas
+### Forbidden (will break or be stripped)
 
-1. **Every `<p>` must have explicit `color`** — WeChat does not inherit parent color
-2. **Body text must never be pure black `#000`** — use `#2c2c2c` or `#3a3a3a`
-3. **All styles must be inline** — no class-based styling
-4. **`!important`** — recommended on margin, line-height, color to prevent WeChat overrides
-5. **font-family must include full fallback chain** — use the complete whitelist strings
-6. **Tables must not exceed 4 columns** — mobile screen constraint
-7. **box-shadow with caution** — older Android WeChat clients may not render
-8. **img max-height 600px** — prevent oversized images from breaking layout
-9. **Code monospace font** — always use `"SF Mono", Consolas, Monaco, monospace`
-10. **Three-color rule** — primary + body + auxiliary, no more
+```
+position: fixed / sticky / absolute (relative is OK in limited cases)
+transform, animation, transition, @keyframes
+filter, backdrop-filter
+CSS Variables (var(--x)), CSS Custom Properties
+CSS Grid, Flexbox (display: flex / grid)
+@font-face, @import, @media
+::before, ::after (pseudo-elements)
+conic-gradient
+pointer-events
+z-index (no stacking context without position)
+clip-path
+```
+
+### Gotchas & Best Practices
+
+1. **Every `<p>` must have explicit `color`** — WeChat does not inherit parent color reliably
+2. **Body text: avoid pure black `#000`** — use `#2c2c2c` – `#444444` for comfortable reading
+3. **All styles must be inline** — `style=""` attribute on each element, no `<style>` blocks or classes
+4. **`!important` on critical properties** — recommended for `margin`, `line-height`, `color`, `padding` to prevent WeChat's own stylesheet from overriding
+5. **font-family must include full fallback chain** — always use the complete stack strings from Section 2
+6. **Tables: ≤ 4 columns** — mobile screen constraint; use 2–3 columns when possible
+7. **box-shadow** — single-layer shadows are near-universal; multi-layer shadows may simplify on very old Android clients
+8. **img max-height** — recommend 600px to prevent oversized images; can go up to 800px for full-width photo essays
+9. **Code monospace font** — use `"SF Mono", Menlo, Consolas, Monaco, "Courier New", monospace`
+10. **`border-radius` large values** — up to `100px` or `50%` works for pill shapes and circles
+11. **`background-image` multi-stop gradients** — complex gradients with 3–5 color stops are safe; great for decorative lines, dots, and patterns
+12. **`text-shadow` for depth** — subtle `0 1px 2px rgba(0,0,0,0.06)` adds dimension to headings; avoid heavy blur-radius
+13. **Nesting inline styles** — deeply nested elements (li > span > strong) all need their own inline styles
+14. **`letter-spacing` range** — -0.05em to 4px is safe; wider tracking for headings, tight tracking for dense body
+15. **`display: inline-block`** — useful for pill-shaped headings, inline badges, and tag-like elements

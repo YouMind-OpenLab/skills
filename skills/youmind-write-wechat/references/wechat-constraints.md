@@ -63,37 +63,40 @@ The toolkit's HTML converter already implements these solutions:
 
 ## Formatting Parameters (Research-Backed Optimal Values)
 
-These are the proven optimal values for WeChat mobile reading. The toolkit's theme engine uses these as defaults.
+These are the proven optimal values for WeChat mobile reading. The toolkit's theme engine uses these as defaults. Extended ranges are available for themes with specific design intent (see `theme-dsl.md` for full guidance).
 
-| Parameter | Optimal Value | Range |
-|-----------|--------------|-------|
-| Body text size | 15-16px | 14-16px acceptable |
-| Annotation/small text | 13px | — |
-| H2 subheading size | 17-18px | 3pt larger than body |
-| H1 title size | 18-24px | — |
-| Line height | 1.75x font size | 1.5x-1.75x (mobile prefers 1.75x) |
-| Letter spacing | 1-1.5px | Never exceed 2px |
-| Paragraph spacing | 1.2x the line height | — |
-| Page margins | 15-20px (1.0-1.3em) | — |
-| Characters per line | 35-45 | — |
-| Text alignment | Justified (两端对齐) | — |
+| Parameter | Optimal Value | Comfortable Range | Extended Range |
+|-----------|--------------|-------------------|----------------|
+| Body text size | 15-16px | 14-17px | 14-18px |
+| Annotation/small text | 13px | 12-14px | — |
+| H2 subheading size | 17-18px | 17-24px | 17-28px |
+| H1 title size | 22-24px | 20-28px | 20-36px |
+| Line height | 1.75x font size | 1.6x-2.0x | 1.5x-2.2x |
+| Letter spacing | 0.5-1.5px | 0-2px | -0.05em to 4px |
+| Paragraph spacing | 1.2x line height | 12-28px | 8-36px |
+| Page margins | 15-20px | 8-20px | — |
+| Characters per line | 35-45 | — | — |
+| Text alignment | Left or Justified | — | — |
 
-### Color System — The Three-Color Maximum Rule
+### Color System
 
-Excluding images, total article colors should be 3 or fewer:
+Assign colors by **role**, not by counting. The fundamental roles are:
 
-| Role | Recommendation | Proportion |
-|------|---------------|------------|
-| Theme/accent color | Brand color for titles, emphasis, headers/footers | ~75% |
-| Body text color | **NEVER pure black #000000.** Use #595959 or #3f3f3f | — |
-| Annotation/quote color | #888888 or #a5a5a5 | ~20% |
-| Highlight color | Coordinated with theme, LOW saturation | ~5% |
+| Role | Recommendation | Purpose |
+|------|---------------|---------|
+| Primary color | Brand/theme color for titles, emphasis, decorations | Core identity |
+| Body text color | **NEVER pure black #000000.** Use #2c2c2c – #444444 | Comfortable reading |
+| Auxiliary color | #666666 – #999999 for quotes, captions, secondary text | Visual hierarchy |
+| Accent (optional) | Primary color at 5-15% opacity for backgrounds, highlights | Surface and emphasis |
+| Surface (optional) | Near-white tints or dark surfaces for code blocks, cards | Context-switch signal |
+
+Three roles (primary + body + auxiliary) is the safest floor. Four or five roles (accent + surface) are perfectly fine when they derive coherently from the same primary color family.
 
 **Rules:**
-- Avoid high-saturation colors (causes visual fatigue on extended reading)
-- Text colors should harmonize with image colors
-- Skip underlines and italics — designed for Latin typography, poor in Chinese
-- Bold + accent color is the preferred emphasis method
+- Avoid high-saturation colors for body text (causes visual fatigue)
+- Text colors should harmonize with image tones
+- Bold + accent color is the preferred emphasis method for Chinese text
+- Underlines work well for links; use sparingly elsewhere
 
 ### Whitespace
 - 2 blank lines above subheadings, 1 blank line below

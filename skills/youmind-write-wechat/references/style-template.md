@@ -29,14 +29,21 @@ blacklist:
 reference_accounts: [Account1, Account2, Account3]
 
 # Theme engine settings (overridden by CLI --theme / --color)
-theme: "simple"           # simple | center | decoration | prominent
-theme_color: "#3498db"    # Any HEX color. 8 presets available, or use custom.
+theme: "simple"           # Built-in: simple | center | decoration | prominent
+                          #           ink-literary | tech-deep | warm-narrative
+                          #           jade-fresh | rose-editorial | mist-minimal
+                          # Or: any custom theme ID from clients/{client}/themes/
+theme_color: "#3498db"    # Any HEX color. Overrides the theme's primary color.
 
-# Typography overrides (optional — defaults from wechat-constraints.md)
-font: ""                  # Leave empty for system default
-font_size: ""             # e.g., "16px"
+# Typography overrides (optional — leave empty for theme defaults)
+font: ""                  # default | optima | serif
+font_size: ""             # e.g., "16px" — body text size
+heading_font: ""          # e.g., "serif" — use a different font stack for headings
 heading_size: ""          # e.g., "18px"
 paragraph_spacing: ""     # e.g., "1.5em"
+line_height: ""           # e.g., "1.85"
+letter_spacing: ""        # e.g., "0.5px"
+text_indent: ""           # e.g., "2em" — first-line indent for literary styles
 
 # YouMind 知识库关联 (可选 — 需要在 config.yaml 配置 youmind.api_key)
 youmind:
