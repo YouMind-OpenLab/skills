@@ -1,0 +1,4 @@
+interface:
+  display_name: "YouMind WeChat"
+  short_description: "Write and publish WeChat articles end-to-end"
+  default_prompt: "Use $youmind-wechat-skill to turn a brief, topic, or draft into a WeChat Official Account article, then format it and publish or preview it with the toolkit."

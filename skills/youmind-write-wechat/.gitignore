@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.html
+config.yaml
+output/
+__pycache__/
+*.pyc
+.env
+clients/
