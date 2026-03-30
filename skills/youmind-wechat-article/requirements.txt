@@ -1,0 +1,2 @@
+# Only needed for crawler scripts (fetch_hotspots.py, seo_keywords.py)
+requests>=2.31

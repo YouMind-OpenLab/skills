@@ -1,0 +1,44 @@
+{
+  "name": "youmind-wechat-toolkit",
+  "version": "1.0.0",
+  "description": "YouMind WeChat: Markdown to WeChat HTML with dynamic themes",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "youmind-wechat": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "preview": "tsx src/cli.ts preview",
+    "publish": "tsx src/cli.ts publish",
+    "themes": "tsx src/cli.ts themes",
+    "colors": "tsx src/cli.ts colors",
+    "theme-preview": "tsx src/cli.ts theme-preview",
+    "image-gen": "tsx src/image-gen.ts",
+    "youmind-api": "tsx src/youmind-api.ts",
+    "fetch-stats": "tsx src/fetch-stats.ts",
+    "learn-edits": "tsx src/learn-edits.ts",
+    "build-playbook": "tsx src/build-playbook.ts",
+    "validate-skill": "python3 ../scripts/validate_skill.py"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "commander": "^12.0.0",
+    "form-data": "^4.0.0",
+    "highlight.js": "^11.9.0",
+    "https-proxy-agent": "^8.0.0",
+    "markdown-it": "^14.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "mathjax-full": "^3.2.0",
+    "node-fetch": "^3.3.0",
+    "open": "^10.0.0",
+    "yaml": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

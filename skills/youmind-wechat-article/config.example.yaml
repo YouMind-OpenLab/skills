@@ -1,0 +1,42 @@
+# YouMind WeChat Skill Configuration
+
+# YouMind OpenAPI (知识库搜索、网页搜索、文章归档)
+# 用户的 YouMind API Key，用于：
+#   1. 语义搜索用户知识库中的素材/文档/笔记
+#   2. 联网搜索获取实时信息
+#   3. 将发布的文章归档到 YouMind
+#   4. 生图 (通过 Relay 调用 Nano Banana Pro)
+youmind:
+  api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
+  base_url: "https://youmind.com/openapi/v1"
+
+# WeChat API credentials
+wechat:
+  appid: "wx_your_appid"
+  secret: "your_secret"
+  author: "YouMind"
+
+# Default theme settings
+theme: "simple"             # simple | center | decoration | prominent
+theme_color: "#3498db"      # Any HEX color or preset name
+
+# Image generation (for cover & article images)
+# 支持多个 provider，配置了 api_key 的才会启用
+# 优先级: default_provider > 第一个有 key 的 > Nano Banana Pro 库搜索 > CDN 预制封面
+image:
+  default_provider: "youmind"  # youmind | gemini | openai | doubao (留空自动选择有 key 的)
+  providers:
+    youmind:                 # YouMind Nano Banana Pro (使用上方 youmind.api_key)
+      api_key: ""            # 留空则自动使用上方 youmind.api_key
+      model: "nano-banana-pro"
+      base_url: "https://youmind.com/v1"
+    gemini:                  # Google Gemini Imagen
+      api_key: ""            # Google AI Studio API key
+      model: "imagen-3.0-generate-002"
+    openai:                  # GPT Image
+      api_key: ""            # OpenAI API key
+      model: "gpt-image-1"
+    doubao:                  # 豆包 Seedream 5.0
+      api_key: ""            # 火山引擎 API key
+      model: "doubao-seedream-5-0-260128"
+      base_url: "https://ark.cn-beijing.volces.com/api/v3"
