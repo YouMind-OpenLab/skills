@@ -1,5 +1,23 @@
+# Dev-only files (not shipped to ClawHub)
 references/environment.md
-toolkit/package-lock.json
-toolkit/node_modules/
+
+# Binary assets (ClawHub only accepts text files, but exclude for clarity)
 image/
 cover/
+
+# Build artifacts and dependencies
+toolkit/node_modules/
+toolkit/dist/
+toolkit/package-lock.json
+
+# Runtime files
+output/
+__pycache__/
+*.pyc
+clients/
+config.yaml
+.env
+
+# Toolkit source (users get pre-built dist via npm install + npm run build)
+toolkit/src/
+toolkit/tsconfig.json
