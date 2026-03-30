@@ -68,6 +68,29 @@ for skill in "${CHANGED_SKILLS[@]}"; do
     DISPLAY_NAME="$skill"
   fi
 
+  # Check if this version is already published on ClawHub (skip if so)
+  REMOTE_VERSION=$(clawhub inspect "$skill" --json 2>/dev/null | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print(d.get('latestVersion', {}).get('version', ''))
+except:
+    print('')
+" 2>/dev/null || echo "")
+
+  if [ -n "$REMOTE_VERSION" ] && [ "$REMOTE_VERSION" = "$VERSION" ]; then
+    echo "  ⏭️  v$VERSION already on ClawHub, skipping (bump version to publish)"
+    ((SKIPPED++))
+    echo ""
+    continue
+  fi
+
+  if [ -n "$REMOTE_VERSION" ]; then
+    echo "  📡 ClawHub: v$REMOTE_VERSION → v$VERSION"
+  else
+    echo "  🆕 New skill, first publish"
+  fi
+
   # Extract changelog from the merge commit message (fallback to generic)
   CHANGELOG=$(git log -1 --pretty=%B | head -1)
 
