@@ -1,5 +1,6 @@
 ---
 name: youmind-wechat-article
+version: 1.0.0
 description: |
   Write and publish WeChat Official Account articles end-to-end with AI — trending topic mining,
   de-AI voice writing, beautiful theme formatting, cover image generation, and one-click draft box publishing.

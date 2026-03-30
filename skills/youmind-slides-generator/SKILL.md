@@ -1,5 +1,6 @@
 ---
 name: youmind-slides-generator
+version: 1.0.0
 description: |
   Generate professional presentation slides from a topic or outline — complete decks you can view, edit, and download. Use when user wants to "create slides", "make presentation", "generate PPT", "PowerPoint",
   "slide deck", "做PPT", "生成幻灯片", "プレゼン作成", "슬라이드 만들기".

@@ -1,5 +1,6 @@
 ---
 name: youmind-youtube-transcript
+version: 1.3.4
 description: |
   Extract and summarize YouTube video transcripts via YouMind API — no yt-dlp, no proxy needed.
   Batch extract up to 5 videos at once with parallel processing.

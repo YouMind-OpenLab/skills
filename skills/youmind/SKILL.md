@@ -1,5 +1,6 @@
 ---
 name: youmind
+version: 2.0.1
 description: This skill should be used when interacting with the YouMind API to manage content such as boards, crafts, notes, picks, and materials. It provides installation and usage instructions for the youmind CLI, which enables searching, inspecting, and calling YouMind's OpenAPI endpoints.
 allowed-tools:
   - Bash(youmind *)
