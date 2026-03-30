@@ -13,6 +13,7 @@ Copy this template when creating a new YouMind skill. Replace all `<placeholders
 - **Must declare `metadata.openclaw`** with `primaryEnv`, `requires.env`, `requires.anyBins` — otherwise OpenClaw Code Insight flags as suspicious ("metadata omits requirements"). See apify skill as reference.
 - **`requires.env` only lists truly required vars** — optional/dev-only env vars (e.g. `YOUMIND_ENV`, `YOUMIND_API_KEY_PREVIEW`) must NOT be listed, or the scanner flags "unnecessary credential exposure".
 - **Every skill must have `.clawhubignore`** — at minimum exclude `references/environment.md` (dev-only, contains preview env vars that trigger scanner flags).
+- **Every SKILL.md must declare `version:` in frontmatter** — this is the single source of truth for ClawHub publishing. CI auto-publishes on merge to main. Skills without a version field are skipped. Use [semver](https://semver.org/).
 
 ## UTM Tracking Rules
 
@@ -51,6 +52,7 @@ After creating a new skill directory, run `./scripts/sync-shared.sh` to initiali
 ```markdown
 ---
 name: youmind-<name>
+version: 1.0.0
 description: |
   <Core feature in one sentence>. <Key differentiator>.
   <Batch/parallel capability if applicable>.
