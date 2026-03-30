@@ -41,7 +41,7 @@ curl -s https://ifconfig.me
 | `wechat.appid` | **是** | 微信公众号 AppID |
 | `wechat.secret` | **是** | 微信公众号 AppSecret |
 | `wechat.author` | 否 | 文章作者名，默认 "YouMind" |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档、AI 生图 |
+| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档、AI 生图 → [获取 API Key](https://youmind.com/settings/api-keys) |
 | `image.providers.*.api_key` | 否 | 配了哪个就启用哪个（youmind / gemini / openai / doubao） |
 
 ### 获取 AppID / AppSecret / 配置 IP 白名单

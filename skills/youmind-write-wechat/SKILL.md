@@ -71,9 +71,13 @@ Plan, write, format, and publish WeChat Official Account articles using [YouMind
 > - Publish directly to your WeChat draft box
 >
 > **Setup (one-time):**
-> 1. Get your free API key: https://youmind.com/settings/api-keys?utm_source=youmind-write-wechat
-> 2. Copy `config.example.yaml` to `config.yaml` and fill in your WeChat & YouMind credentials.
-> 3. Run `npm install && npm run build` in the `toolkit/` directory.
+> 1. Install dependencies: `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt`
+> 2. Create config: `cp config.example.yaml config.yaml`
+> 3. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-write-wechat) → fill `youmind.api_key`
+> 4. Get WeChat AppID & AppSecret from [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev) → fill `wechat.appid` and `wechat.secret`
+> 5. Get your public IP (`curl -s https://ifconfig.me`) → add to WeChat API IP whitelist
+>
+> See the **Setup** section below for detailed step-by-step instructions with screenshots.
 >
 > **Try it:**
 > "帮我写一篇关于 AI 编程的公众号文章"
@@ -100,7 +104,92 @@ Provide a topic, brand/client name, or raw Markdown for publishing.
 
 ## Setup
 
-Copy `config.example.yaml` to `config.yaml` and fill in credentials. Run `npm install && npm run build` in the `toolkit/` directory. For detailed setup and client onboarding, see [references/operations.md](references/operations.md).
+> Prerequisites: Node.js ≥ 18, Python ≥ 3.9, a verified WeChat Official Account with API access.
+
+### Step 1 — Install Dependencies
+
+```bash
+cd toolkit && npm install && npm run build && cd ..
+pip install -r requirements.txt
+```
+
+### Step 2 — Create Config File
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+### Step 3 — Get YouMind API Key (Recommended)
+
+YouMind API Key 用于知识库语义搜索、联网搜索、文章归档、AI 生图（Nano Banana Pro）。不配也能跑，但会丧失这些增强能力。
+
+1. 打开 [YouMind API Keys 页面](https://youmind.com/settings/api-keys?utm_source=youmind-write-wechat)
+2. 登录后点击 **「Create API Key」** 创建新密钥
+3. 复制生成的 `sk-ym-xxxx` 格式密钥
+4. 填入 `config.yaml` 的 `youmind.api_key` 字段
+
+```yaml
+youmind:
+  api_key: "sk-ym-xxxxxxxxxxxxxxxxxxxx"
+```
+
+### Step 4 — Get WeChat AppID & AppSecret
+
+1. 打开 [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev)，点击 **「前往使用」** 登录
+2. 在「我的业务」面板点击 **「公众号」** 进入管理页
+3. 在 **基础信息** 页顶部复制 **AppID**
+4. 在「开发密钥」区域点击 **重置** 获取 **AppSecret**（仅展示一次，立即保存）
+5. 填入 `config.yaml`：
+
+```yaml
+wechat:
+  appid: "wx_your_appid"
+  secret: "your_secret"
+  author: "你的作者名"
+```
+
+> 详细图文步骤见 [README.md](README.md#获取-appid--appsecret--配置-ip-白名单)
+
+### Step 5 — Configure IP Whitelist
+
+微信公众号 API **拒绝所有不在白名单中的 IP 请求**，必须配置后才能发布。
+
+获取公网 IP：
+
+```bash
+# macOS / Linux
+curl -s https://ifconfig.me
+
+# Windows PowerShell
+(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
+```
+
+拿到 IP 后，在上一步的微信开发者平台公众号页面 →「开发密钥」→ **API IP 白名单** → 点击 **编辑** → 粘贴 IP 保存。
+
+> 家庭宽带 IP 会变。发布报 IP 错误时重新获取 IP 并更新白名单即可。云服务器 / CI 环境通常是静态 IP，配一次就行。
+
+### Step 6 — Image Provider Keys (Optional)
+
+配图使用降级链：AI 生图 → 图库搜索 → 预制封面 → 仅输出 prompt。不配任何 key 也不影响发布。
+
+| Provider | 获取方式 | `config.yaml` 字段 |
+|----------|----------|---------------------|
+| **YouMind (Nano Banana Pro)** | 使用 Step 3 的 YouMind API Key，无需额外配置 | `image.providers.youmind.api_key`（留空则自动使用 `youmind.api_key`） |
+| **Google Gemini (Imagen)** | [Google AI Studio](https://aistudio.google.com/apikey) 创建 API key | `image.providers.gemini.api_key` |
+| **OpenAI (GPT Image)** | [OpenAI Platform](https://platform.openai.com/api-keys) 创建 API key | `image.providers.openai.api_key` |
+| **豆包 (Seedream)** | [火山引擎控制台](https://console.volcengine.com/ark) 创建 API key | `image.providers.doubao.api_key` |
+
+在 `config.yaml` 中设置 `image.default_provider` 指定首选 provider，或留空让 Skill 自动选第一个有 key 的。
+
+### Verify Setup
+
+配置完成后，对 Agent 说一句试试：
+
+> "帮我写一篇关于 AI 编程的公众号文章"
+
+如果配置有问题，Skill 会在对应步骤报错并给出修复提示——不会整体卡死。
+
+For client onboarding and post-setup operations, see [references/operations.md](references/operations.md).
 
 ## Skill Directory
 

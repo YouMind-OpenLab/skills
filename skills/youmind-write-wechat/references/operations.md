@@ -95,12 +95,20 @@ If user declines → proceed without it. The `theme-dsl.md` design phases still 
 If `config.yaml` does not exist when the skill triggers:
 
 1. Copy `config.example.yaml` to `config.yaml`
-2. Ask the user for WeChat `appid` and `secret` (required for publishing)
-3. Ask about optional integrations: YouMind API key, image generation provider keys
-4. Run `cd toolkit && npm install` if `node_modules/` is missing
-5. **Configure WeChat IP whitelist** (required for API access — see below)
+2. Run `cd toolkit && npm install && npm run build` if `node_modules/` is missing
+3. Ask the user for **WeChat credentials** (required for publishing):
+   - `appid` — from [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev) → 公众号 → 基础信息
+   - `secret` — 同一页面「开发密钥」区域，点击重置获取
+4. Ask about **YouMind API Key** (recommended):
+   - 获取地址：[YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-write-wechat)
+   - 登录后创建密钥，复制 `sk-ym-xxxx` 格式填入 `youmind.api_key`
+   - 用于知识库搜索、联网搜索、文章归档、AI 生图
+5. Ask about optional **image provider keys** (Gemini / OpenAI / 豆包)
+6. **Configure WeChat IP whitelist** (required for API access — see below)
 
 Store the configuration once; never ask again.
+
+> 完整图文配置指南见 [README.md](../README.md#获取-appid--appsecret--配置-ip-白名单) 和 [SKILL.md Setup](../SKILL.md#setup)
 
 ### WeChat IP Whitelist Configuration
 
@@ -109,7 +117,11 @@ The WeChat Official Account API **rejects all requests from IPs not on the white
 **Step 1 — Get the user's public IP:**
 
 ```bash
-curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
+# macOS / Linux
+curl -s https://ifconfig.me
+
+# Windows PowerShell
+(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
 ```
 
 Run this command and show the IP to the user.
@@ -118,9 +130,9 @@ Run this command and show the IP to the user.
 
 Guide the user to:
 
-1. Open [WeChat Official Account Console](https://mp.weixin.qq.com) → Settings & Development → Basic Configuration
-2. Find the **IP Whitelist** section
-3. Click Edit, add the IP from Step 1
+1. Open [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev) → 公众号 → 基础信息
+2. Find the **「开发密钥」→ API IP 白名单** section
+3. Click **编辑**, add the IP from Step 1
 4. Save
 
 > **Note:** If the user's IP is dynamic (common for home networks), it may change periodically. When publishing suddenly fails with an IP-related error, re-run the curl command and update the whitelist.
