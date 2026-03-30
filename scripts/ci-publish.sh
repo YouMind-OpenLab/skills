@@ -2,7 +2,15 @@
 set -euo pipefail
 
 # CI script: detect changed skills and publish to ClawHub.
-# Called by .github/workflows/publish-skills.yml after merge to main.
+# Called by .github/workflows/publish-skills.yml
+#
+# Modes:
+#   1. Auto (push to main): diffs HEAD~1..HEAD to find changed skills
+#   2. Manual (workflow_dispatch): publishes the skill specified in PUBLISH_SKILL
+#
+# Env vars:
+#   PUBLISH_SKILL  — skill slug to publish (manual mode). Empty = auto mode.
+#   PUBLISH_FORCE  — "true" to skip version check (manual mode only).
 #
 # Version source: SKILL.md frontmatter `version:` field.
 # If version is missing, the skill is skipped with a warning.
@@ -10,28 +18,40 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Get list of changed files between HEAD~1 and HEAD
-CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+PUBLISH_SKILL="${PUBLISH_SKILL:-}"
+PUBLISH_FORCE="${PUBLISH_FORCE:-false}"
 
-# Extract unique skill directories that changed
+# ── Determine which skills to publish ──
+
 CHANGED_SKILLS=()
-while IFS= read -r file; do
-  if [[ "$file" =~ ^skills/([^/]+)/ ]]; then
-    skill="${BASH_REMATCH[1]}"
-    # Deduplicate
-    if [[ ! " ${CHANGED_SKILLS[*]:-} " =~ " ${skill} " ]]; then
-      CHANGED_SKILLS+=("$skill")
+
+if [ -n "$PUBLISH_SKILL" ]; then
+  # Manual mode: publish the specified skill
+  echo "📌 Manual publish: $PUBLISH_SKILL (force=$PUBLISH_FORCE)"
+  CHANGED_SKILLS+=("$PUBLISH_SKILL")
+else
+  # Auto mode: diff to find changed skills
+  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+
+  while IFS= read -r file; do
+    if [[ "$file" =~ ^skills/([^/]+)/ ]]; then
+      skill="${BASH_REMATCH[1]}"
+      if [[ ! " ${CHANGED_SKILLS[*]:-} " =~ " ${skill} " ]]; then
+        CHANGED_SKILLS+=("$skill")
+      fi
     fi
-  fi
-done <<< "$CHANGED_FILES"
+  done <<< "$CHANGED_FILES"
+fi
 
 if [ ${#CHANGED_SKILLS[@]} -eq 0 ]; then
   echo "No skill directories changed. Nothing to publish."
   exit 0
 fi
 
-echo "Changed skills: ${CHANGED_SKILLS[*]}"
+echo "Skills to process: ${CHANGED_SKILLS[*]}"
 echo ""
+
+# ── Publish loop ──
 
 PUBLISHED=0
 FAILED=0
@@ -62,12 +82,6 @@ for skill in "${CHANGED_SKILLS[@]}"; do
     continue
   fi
 
-  # Extract display name from SKILL.md frontmatter
-  DISPLAY_NAME=$(awk '/^---$/{n++; next} n==1 && /^name:/{gsub(/^name:[ \t]*/,""); print; exit}' "$SKILL_MD")
-  if [ -z "$DISPLAY_NAME" ]; then
-    DISPLAY_NAME="$skill"
-  fi
-
   # Check if this version is already published on ClawHub (skip if so)
   REMOTE_VERSION=$(clawhub inspect "$skill" --json 2>/dev/null | python3 -c "
 import sys, json
@@ -79,10 +93,14 @@ except:
 " 2>/dev/null || echo "")
 
   if [ -n "$REMOTE_VERSION" ] && [ "$REMOTE_VERSION" = "$VERSION" ]; then
-    echo "  ⏭️  v$VERSION already on ClawHub, skipping (bump version to publish)"
-    ((SKIPPED++))
-    echo ""
-    continue
+    if [ "$PUBLISH_FORCE" = "true" ]; then
+      echo "  ⚡ Force mode: re-publishing v$VERSION (already on ClawHub)"
+    else
+      echo "  ⏭️  v$VERSION already on ClawHub, skipping (bump version to publish)"
+      ((SKIPPED++))
+      echo ""
+      continue
+    fi
   fi
 
   if [ -n "$REMOTE_VERSION" ]; then
@@ -91,16 +109,21 @@ except:
     echo "  🆕 New skill, first publish"
   fi
 
+  # Extract display name from SKILL.md frontmatter
+  DISPLAY_NAME=$(awk '/^---$/{n++; next} n==1 && /^name:/{gsub(/^name:[ \t]*/,""); print; exit}' "$SKILL_MD")
+  if [ -z "$DISPLAY_NAME" ]; then
+    DISPLAY_NAME="$skill"
+  fi
+
   # Extract changelog from the merge commit message (fallback to generic)
   CHANGELOG=$(git log -1 --pretty=%B | head -1)
 
   # Build a clean publish directory (exclude dev/large files)
   TMP_DIR=$(mktemp -d)
-  trap "rm -rf $TMP_DIR" EXIT
 
   # Copy files, respecting .clawhubignore
   IGNORE_FILE="$SKILL_DIR/.clawhubignore"
-  
+
   # Build rsync exclude args from .clawhubignore
   RSYNC_EXCLUDES="--exclude=node_modules --exclude=.git --exclude=__pycache__"
   if [ -f "$IGNORE_FILE" ]; then
@@ -115,13 +138,14 @@ except:
 
   # Calculate publish size
   PUBLISH_SIZE=$(du -sh "$TMP_DIR" | cut -f1)
-  echo "  📦 Publish package: $PUBLISH_SIZE"
+  echo "  📦 Package: $PUBLISH_SIZE"
 
   # Check size limit (ClawHub max 20 MB)
   SIZE_BYTES=$(du -sb "$TMP_DIR" | cut -f1)
   if [ "$SIZE_BYTES" -gt 20971520 ]; then
     echo "  ❌ Package exceeds 20 MB ClawHub limit ($PUBLISH_SIZE). Fix .clawhubignore."
     ((FAILED++))
+    rm -rf "$TMP_DIR"
     echo ""
     continue
   fi
@@ -140,7 +164,6 @@ except:
   fi
 
   rm -rf "$TMP_DIR"
-  trap - EXIT
   echo ""
 done
 
