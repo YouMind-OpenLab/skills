@@ -115,14 +115,14 @@ This skill is a folder. Read files on demand — do NOT load everything upfront.
 | `references/topic-selection.md` | 4-dimension topic evaluation model | Step 3 (topic generation) |
 | `references/seo-rules.md` | Title optimization, keyword density, digest, tags | Step 5 (SEO pass) |
 | `references/visual-prompts.md` | Cover and inline image design, prompt engineering | Step 6 (visual AI) |
-| `references/theme-dsl.md` | Custom theme design language | When creating custom themes |
+| `references/theme-dsl.md` | Custom theme design language (integrates [Impeccable](https://impeccable.style/) if installed) | When creating custom themes — auto-detects & offers to install Impeccable |
 | `references/youmind-integration.md` | Knowledge base API, search, archiving | When using YouMind features |
 | `references/cli-reference.md` | All CLI command syntax | When running toolkit commands |
 | `references/wechat-constraints.md` | WeChat platform technical limits, safe CSS, size caps | When debugging rendering or format issues |
 | `references/style-template.md` | Client config template with field guide | When onboarding a new client |
 | `references/openapi-document.md` | YouMind OpenAPI full endpoint schemas | When calling YouMind API directly |
 | `references/skill-maintenance.md` | Skill self-maintenance, validation, architecture guardrails | When improving or refactoring this skill itself |
-| `references/builtin-themes.json` | CSS examples for 4 built-in themes | When customizing themes |
+| `references/builtin-themes.json` | CSS examples for 10 built-in themes | When customizing themes |
 | `clients/{client}/style.yaml` | Client brand voice, topics, blacklist, theme | Step 1 (load config) |
 | `clients/{client}/playbook.md` | Client-specific writing rules (if exists) | Step 4 (writing) |
 | `clients/{client}/history.yaml` | Published article history | Step 2.5 (dedup) |

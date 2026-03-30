@@ -68,11 +68,25 @@ Adjust CLI arguments on built-in themes. Run `cli.js themes` / `cli.js colors` t
 **Level 2 — Style-driven customization** (e.g., "tech-futuristic", "literary and clean", "formal business"):
 Read `theme-dsl.md` and generate a custom theme JSON. Reference `builtin-themes.json` for CSS examples. Save to `clients/{client}/themes/` and use `--custom-theme`.
 
-**Level 3 — Deep design** (e.g., "design something truly special for this theme"):
-Check if Impeccable is installed (`.claude/skills/frontend-design`). If not, suggest:
-> For higher design quality, consider installing Impeccable: `npx skills add pbakaus/impeccable --yes`
+Before generating, **auto-detect Impeccable** (see below). If available, the design thinking phases in `theme-dsl.md` will use Impeccable skills for higher quality output.
 
-When installed, use `/colorize`, `/typeset`, `/quieter`, `/bolder` as needed.
+**Level 3 — Deep design** (e.g., "design something truly special for this theme"):
+Same as Level 2, but spend more time on each design thinking phase. Impeccable skills are strongly recommended at this level.
+
+### Impeccable Auto-Detection (Level 2 & 3)
+
+Before creating any custom theme, check if [Impeccable](https://impeccable.style/) is installed:
+
+1. Look for `.impeccable.md` in project root, OR skill files containing "impeccable" / "frontend-design" in `.cursor/skills/`, `.claude/skills/`, or `.agents/skills/`.
+2. If found → use Impeccable skills at each design phase checkpoint.
+3. If NOT found → proactively ask the user:
+
+> Impeccable 设计技能未安装。安装后自定义主题设计质量会显著提升。是否安装？
+
+If user agrees, run: `npx skills add pbakaus/impeccable --yes`
+Then run `/teach-impeccable` once to initialize project design context.
+
+If user declines → proceed without it. The `theme-dsl.md` design phases still run, the agent applies the same design principles internally.
 
 ---
 

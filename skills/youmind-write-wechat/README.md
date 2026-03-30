@@ -32,8 +32,8 @@ pip install -r requirements.txt
 # 2. 生成配置文件（如果 config.yaml 不存在）
 cp config.example.yaml config.yaml
 
-# 3. 获取公网 IP（填入微信 IP 白名单，否则无法发布）
-curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
+# 3. 获取公网 IP（填入微信 IP 白名单，否则无法发布，详见下方「获取本机公网 IP」）
+curl -s https://ifconfig.me
 ```
 
 `config.yaml` 需要填写以下凭证：
@@ -46,7 +46,61 @@ curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sy
 | `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档、AI 生图 |
 | `image.providers.*.api_key` | 否 | 配了哪个就启用哪个（youmind / gemini / openai / doubao） |
 
-IP 白名单配置路径：[mp.weixin.qq.com](https://mp.weixin.qq.com) → 设置与开发 → 基本配置 → IP 白名单。家庭宽带 IP 会变，发布报 IP 错误时重新获取并更新即可。
+### 获取 AppID / AppSecret / 配置 IP 白名单
+
+> 微信开发者平台控制台：<https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev>
+
+**第 1 步 — 进入微信开发者平台**
+
+打开 [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev)，点击首页的 **「前往使用」** 按钮登录。
+
+![步骤1：点击前往使用](image/1.png)
+
+**第 2 步 — 选择公众号**
+
+在「我的业务」面板中，找到并点击 **「公众号」** 进入公众号管理页。
+
+![步骤2：点击公众号](image/2.png)
+
+**第 3 步 — 复制 AppID、AppSecret 并配置 IP 白名单**
+
+在公众号 → **基础信息** 页面：
+
+1. **AppID** — 顶部「基础信息」区域直接复制，填入 `config.yaml` 的 `wechat.appid`
+2. **AppSecret** — 「开发密钥」区域，点击 **重置** 获取（只展示一次，请立即保存），填入 `wechat.secret`
+3. **API IP 白名单** — 同一区域，点击 **编辑**，将你的公网 IP 粘贴进去
+
+![步骤3：AppID、AppSecret 和 IP 白名单位置](image/3.png)
+
+### 获取本机公网 IP
+
+家庭宽带 IP 会变，发布报 IP 错误时重新获取并更新白名单即可。
+
+**macOS**
+
+```bash
+curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
+# 或者
+curl -s https://ifconfig.me
+```
+
+**Windows（PowerShell）**
+
+```powershell
+(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
+# 或者
+(Invoke-RestMethod -Uri "https://httpbin.org/ip").origin
+```
+
+**Linux**
+
+```bash
+curl -s https://ifconfig.me
+# 或者
+curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
+```
+
+> **提示**：拿到 IP 后，回到上面第 3 步的「API IP 白名单」→ 编辑，粘贴保存即可。
 
 ---
 
@@ -110,7 +164,7 @@ clients/demo/
 
 ## 常见问题
 
-**发布报 IP 错误** — 公网 IP 变了。重跑 `curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"` 拿新 IP，更新微信白名单。
+**发布报 IP 错误** — 公网 IP 变了。重跑 `curl -s https://ifconfig.me` 拿新 IP，更新微信白名单（详见上方「获取本机公网 IP」章节）。
 
 **图片生成失败** — 不影响发布。Skill 会自动走降级链。想用特定 provider 就在 `config.yaml` 里填对应 key。
 

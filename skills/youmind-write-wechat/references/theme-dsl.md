@@ -1,42 +1,58 @@
 # WeChat Custom Theme Design Language
 
-> This is not a CSS property checklist. This is a design thinking protocol powered by [Impeccable](https://impeccable.style/) design skills.
+> This is not a CSS property checklist. This is a design thinking protocol.
 >
 > When generating a theme, the AI **must** complete design thinking (Part 1) before translating decisions into CSS (Part 2).
 > Skipping design thinking and jumping straight to CSS = garbage theme.
 >
-> **Every design phase below mandates specific Impeccable skills.** These skills embed professional design vocabulary and methodology — use them, don't bypass them.
+> Each design phase below references [Impeccable](https://impeccable.style/) skills. When Impeccable is installed, these skills fire automatically to elevate quality. **When Impeccable is not installed, the agent applies the same design principles internally** — the phases still run, just without the external skill validation layer.
 
 ---
 
-## Prerequisite: Install Impeccable
+## Impeccable Integration (Optional but Recommended)
 
-This DSL is built on top of [Impeccable](https://impeccable.style/) — a professional design skill suite that gives AI agents real design vocabulary and methodology. Without it, theme creation degrades to guesswork.
+[Impeccable](https://impeccable.style/) is a professional design skill suite that gives AI agents real design vocabulary and methodology. It is **not required** but significantly improves theme quality — especially for custom, brand-specific themes.
 
-**Install via Claude Code:**
+### Auto-Detection & Install
 
-```bash
-claude install-skill https://impeccable.style
+**Before creating a custom theme, the agent MUST check if Impeccable is installed:**
+
+1. Look for `.impeccable.md` in the project root, OR skill files in `.cursor/skills/`, `.claude/skills/`, or `.agents/skills/` containing "impeccable" or "frontend-design".
+2. If found → Impeccable is available. Use its skills at each phase checkpoint.
+3. If NOT found → **proactively offer to install before proceeding:**
+
+```
+Impeccable 设计技能未安装。安装后可以显著提升自定义主题的设计质量。
+是否现在安装？（约 10 秒）
 ```
 
-After installation, run `/teach-impeccable` once in the project root. This generates an `.impeccable.md` file that captures your project's design context (brand, audience, aesthetic direction). All subsequent Impeccable skills (`/typeset`, `/colorize`, `/critique`, `/audit`, `/arrange`, `/polish`, `/distill`, `/bolder`, `/quieter`) will read from this file automatically — ensuring every theme you create is grounded in consistent, project-aware design decisions rather than generic defaults.
+If the user agrees, run the install command matching the current platform:
 
-**Why this matters:** Most AI-generated themes fail not because of bad CSS, but because of absent design intent. Impeccable's 20+ skills embed the vocabulary and judgment of a professional designer — typography scales, color strategy, visual rhythm, hierarchy theory, cognitive load assessment, accessibility auditing. This DSL is the orchestration layer that tells those skills *when* and *how* to fire during theme creation. One without the other is incomplete.
-
-**Skills used in this DSL:**
-
-| Skill | Role in Theme Creation |
+| Platform | Install Command |
 | --- | --- |
-| `/teach-impeccable` | One-time setup — captures project design context |
-| `/critique` | Persona testing, emotional validation, heuristic scoring |
-| `/typeset` | Font selection, type scale derivation, hierarchy validation |
-| `/bolder` | Amplify timid designs that feel generic or safe |
-| `/quieter` | Dial back aggressive designs that feel overwhelming |
-| `/arrange` | Vertical rhythm, spacing systems, layout validation |
-| `/distill` | Strip unnecessary decoration, justify every element |
-| `/colorize` | Strategic color selection, contrast validation |
-| `/audit` | P0–P3 technical quality scoring across accessibility, consistency, clarity |
-| `/polish` | Final micro-detail pass before output |
+| Cursor / VS Code Copilot / Kiro / Agents | `npx skills add pbakaus/impeccable --yes` |
+| Claude Code | `npx skills add pbakaus/impeccable --yes` |
+| Gemini CLI | `npx skills add pbakaus/impeccable --yes` |
+| Codex CLI | `npx skills add pbakaus/impeccable --yes` |
+
+After installation, run `/teach-impeccable` once to generate `.impeccable.md` (project design context). All subsequent skills read from this file automatically.
+
+4. If the user declines → **proceed without Impeccable**. The agent applies the same design thinking principles from each phase internally. Quality is lower but the workflow still functions.
+
+### Skills used in this DSL (when available)
+
+| Skill | Role in Theme Creation | Without Impeccable |
+| --- | --- | --- |
+| `/teach-impeccable` | One-time setup — captures project design context | Agent infers context from client config |
+| `/critique` | Persona testing, emotional validation, heuristic scoring | Agent self-evaluates against personas |
+| `/typeset` | Font selection, type scale derivation, hierarchy validation | Agent follows type scale table in Phase 2 |
+| `/bolder` | Amplify timid designs that feel generic or safe | Agent self-assesses visual intensity |
+| `/quieter` | Dial back aggressive designs that feel overwhelming | Agent self-assesses visual intensity |
+| `/arrange` | Vertical rhythm, spacing systems, layout validation | Agent follows spacing guidelines in Phase 4 |
+| `/distill` | Strip unnecessary decoration, justify every element | Agent applies "why are you here?" test |
+| `/colorize` | Strategic color selection, contrast validation | Agent follows color strategy table in Phase 6 |
+| `/audit` | P0–P3 technical quality scoring | Agent runs manual checklist in Phase 7 |
+| `/polish` | Final micro-detail pass before output | Agent does final consistency review |
 
 ---
 
@@ -66,9 +82,9 @@ Every theme starts with an emotion. Not "blue." Not "left-aligned." The question
 
 **Write a one-sentence emotional positioning before continuing.**
 
-#### Required Skill: `/critique`
+#### Skill Checkpoint: `/critique`
 
-Run `/critique` mentally against the emotional positioning. Ask:
+If Impeccable is installed, run `/critique`. Otherwise, evaluate mentally:
 - Does this emotion match the article's content and audience?
 - Test against **persona archetypes**: would a first-time reader, a domain expert, and a casual scanner all receive the intended emotional signal?
 - Assess **cognitive load**: does the emotional direction risk overwhelming or underwhelming the reader?
@@ -109,13 +125,15 @@ Answer three questions:
 - Silk: gentle gradients, rounded edges, soft shadows, flowing rhythm → premium, refined
 - Raw: no gradients, no shadows, no border-radius, stark contrast → honest, unadorned
 
-#### Required Skills: `/typeset` + `/bolder` or `/quieter`
+#### Skill Checkpoint: `/typeset` + `/bolder` or `/quieter`
 
-- **`/typeset`**: Use to validate font choices against the volume and temperature decisions. Typeset enforces **fixed type scales** — don't invent arbitrary font sizes. Let the skill recommend a coherent scale (e.g., Major Third 1.25, Perfect Fourth 1.333) that produces the right hierarchy for the chosen volume level.
-- **`/bolder`**: If the initial personality feels too safe, bland, or generic — use `/bolder` to amplify visual impact while maintaining usability. Push past the "default AI aesthetic."
-- **`/quieter`**: If the personality feels too aggressive, garish, or overstimulating — use `/quieter` to dial back intensity while preserving design quality. Reduce without making it lifeless.
+If Impeccable is installed, use these skills. Otherwise, apply the principles manually:
 
-**Calibration loop**: After defining visual personality, run `/bolder` or `/quieter` as needed until the personality feels intentional, not accidental. A theme should feel _designed_, not _defaulted_.
+- **`/typeset`** (or manually): Validate font choices against the volume and temperature decisions. Use **fixed type scales** — don't invent arbitrary font sizes. Pick a coherent scale (e.g., Major Third 1.25, Perfect Fourth 1.333) that produces the right hierarchy for the chosen volume level.
+- **`/bolder`** (or manually): If the initial personality feels too safe, bland, or generic — amplify visual impact while maintaining usability. Push past the "default AI aesthetic."
+- **`/quieter`** (or manually): If the personality feels too aggressive, garish, or overstimulating — dial back intensity while preserving design quality. Reduce without making it lifeless.
+
+**Calibration loop**: After defining visual personality, run `/bolder` or `/quieter` (or self-assess) as needed until the personality feels intentional, not accidental. A theme should feel _designed_, not _defaulted_.
 
 ---
 
@@ -140,10 +158,12 @@ Headings are not just "big text." They are the article's skeleton — the naviga
 
 **Core principle: Never use just one method.** The best hierarchy layers multiple signals into a cohesive whole.
 
-#### Required Skills: `/typeset` + `/arrange`
+#### Skill Checkpoint: `/typeset` + `/arrange`
 
-- **`/typeset`**: Derive heading sizes from a **type scale**, not arbitrary numbers. The type scale must produce clear visual separation between levels while maintaining harmonic relationships. Validate that font weight, size, and color work together — don't just crank up font-size and call it hierarchy.
-- **`/arrange`**: Validate **vertical rhythm** and spacing between hierarchy levels. The spacing between headings and body text is not arbitrary — it signals structural relationships. `/arrange` catches monotonous grids, inconsistent spacing, and weak visual hierarchy.
+If Impeccable is installed, use these skills. Otherwise, apply the principles manually:
+
+- **`/typeset`** (or manually): Derive heading sizes from a **type scale**, not arbitrary numbers. The type scale must produce clear visual separation between levels while maintaining harmonic relationships. Validate that font weight, size, and color work together — don't just crank up font-size and call it hierarchy.
+- **`/arrange`** (or manually): Validate **vertical rhythm** and spacing between hierarchy levels. The spacing between headings and body text is not arbitrary — it signals structural relationships. Check for monotonous grids, inconsistent spacing, and weak visual hierarchy.
 
 ---
 
@@ -157,9 +177,9 @@ The article's "breathing" — when the reader's eyes tense and relax.
 - **Horizontal rule as "deep breath"** — a longer pause than paragraph spacing, marks major context shifts
 - **List items as "beats"** — structured, rhythmic presentation, tighter than paragraphs but more organized
 
-#### Required Skill: `/arrange`
+#### Skill Checkpoint: `/arrange`
 
-Use `/arrange` to validate the **visual rhythm** of the full article layout. Key checks:
+If Impeccable is installed, use `/arrange`. Otherwise, validate the **visual rhythm** manually. Key checks:
 - Is the spacing system consistent? (not random px values, but a deliberate scale)
 - Does whitespace increase proportionally with hierarchy level?
 - Do "pause zones" (blockquotes, rules) create genuine breathing room, or are they squeezed into the same rhythm as body text?
@@ -182,14 +202,14 @@ Every decorative element must answer: **"Why are you here?"**
 
 **Core principle: Decoration is the expression of design intent, not filler.**
 
-#### Required Skill: `/distill`
+#### Skill Checkpoint: `/distill`
 
-Run `/distill` on every decorative decision. `/distill` strips designs to their essence by removing unnecessary complexity. For each decorative element, ask:
+If Impeccable is installed, run `/distill` on every decorative decision. Otherwise, strip designs to their essence manually. For each decorative element, ask:
 - If I remove this, does the design lose meaning or just lose ornament?
 - Does this decoration reinforce the emotional positioning from Phase 1, or contradict it?
 - Is this decoration doing work that spacing and typography already accomplish?
 
-**The goal is maximum impact with minimum elements.** Great design is simple, powerful, and clean. If `/distill` says remove it, remove it.
+**The goal is maximum impact with minimum elements.** Great design is simple, powerful, and clean. If the answer is "just ornament," remove it.
 
 ---
 
@@ -231,9 +251,9 @@ Choose freely based on the article's actual content and emotion. A tech article 
 
 Three roles (primary + body + auxiliary) is the safest floor. Four or five roles (adding accent + surface) is perfectly fine when they derive from the same primary. The rule is **coherence, not counting** — five colors from one family are more controlled than two random colors.
 
-#### Required Skill: `/colorize`
+#### Skill Checkpoint: `/colorize`
 
-Use `/colorize` to move beyond monochromatic or timid color choices. `/colorize` adds **strategic color** — not arbitrary color, but color that serves the emotional positioning. Key checks:
+If Impeccable is installed, use `/colorize`. Otherwise, evaluate color strategy manually. The goal is **strategic color** — not arbitrary color, but color that serves the emotional positioning. Key checks:
 - Does the primary color reinforce the emotion from Phase 1?
 - Is there enough contrast between the three color roles (primary, body, auxiliary)?
 - Does the color choice create visual interest without chaos?
@@ -245,15 +265,17 @@ Use `/colorize` to move beyond monochromatic or timid color choices. `/colorize`
 
 **Before writing any CSS, the design must pass a quality audit.**
 
-#### Required Skills: `/audit` + `/critique`
+#### Skill Checkpoint: `/audit` + `/critique`
 
-**`/audit`** — Run a technical quality check across:
+If Impeccable is installed, run both skills. Otherwise, perform the quality checks manually:
+
+**`/audit`** (or manual checklist) — Run a technical quality check across:
 - **Accessibility**: Is contrast ratio sufficient? Are font sizes readable on mobile?
 - **Consistency**: Do all design decisions flow from the same emotional positioning?
 - **Hierarchy clarity**: Can a reader scan headings and understand the article's structure in 3 seconds?
 - **Scoring**: Rate each dimension P0 (critical) → P3 (minor). **No P0 or P1 issues may remain before proceeding to CSS.**
 
-**`/critique`** — Run a final design evaluation:
+**`/critique`** (or manual evaluation) — Run a final design evaluation:
 - Score the design against **Nielsen's 10 usability heuristics** (adapted for reading experience)
 - Test with **persona archetypes**: casual scanner, focused reader, domain expert
 - Assess **cognitive load**: is the design reducing or adding friction?
@@ -453,12 +475,12 @@ A rich library of design techniques achievable within WeChat's CSS boundary. Mix
 
 ### 5. Final Polish
 
-#### Required Skill: `/polish`
+#### Skill Checkpoint: `/polish`
 
-Before finalizing the CSS output, run `/polish` as a final quality pass:
+If Impeccable is installed, run `/polish`. Otherwise, perform a final quality pass manually:
 - Check alignment and spacing consistency across all 32 keys
 - Verify that the CSS faithfully translates the design decisions from Part 1
-- Catch micro-detail issues: mismatched border-radius values, inconsistent padding, color values that drift from the three-color rule
+- Catch micro-detail issues: mismatched border-radius values, inconsistent padding, color values that drift from the color strategy
 - Ensure the theme reads as a **cohesive system**, not a collection of unrelated CSS snippets
 
 ---
@@ -501,40 +523,44 @@ Storage path: `{skill_dir}/clients/{client}/themes/<id>.json`, and update `clien
 
 ---
 
-## Part 4: Impeccable Skill Workflow Summary
+## Part 4: Theme Creation Workflow Summary
 
-The complete theme creation workflow with mandatory skill checkpoints:
+The complete theme creation workflow. At each checkpoint, use Impeccable skills if installed; otherwise apply the same design principles manually.
 
 ```
+[Pre-check] Is Impeccable installed?
+  ├─ Yes → Skills fire automatically at each checkpoint
+  └─ No  → Offer install. If declined, agent applies principles internally.
+       │
 Phase 1: Emotional Positioning
-  └─ /critique (persona testing, emotional validation)
+  └─ checkpoint: /critique (persona testing, emotional validation)
        │
 Phase 2: Visual Personality
-  ├─ /typeset (font choice, type scale)
-  └─ /bolder or /quieter (calibrate intensity)
+  ├─ checkpoint: /typeset (font choice, type scale)
+  └─ checkpoint: /bolder or /quieter (calibrate intensity)
        │
 Phase 3: Hierarchy Strategy
-  ├─ /typeset (heading scale derivation)
-  └─ /arrange (vertical rhythm, spacing)
+  ├─ checkpoint: /typeset (heading scale derivation)
+  └─ checkpoint: /arrange (vertical rhythm, spacing)
        │
 Phase 4: Rhythm Design
-  └─ /arrange (full-layout rhythm validation)
+  └─ checkpoint: /arrange (full-layout rhythm validation)
        │
 Phase 5: Decoration Philosophy
-  └─ /distill (strip to essence, justify every element)
+  └─ checkpoint: /distill (strip to essence, justify every element)
        │
 Phase 6: Color Emotion
-  └─ /colorize (strategic color, contrast validation)
+  └─ checkpoint: /colorize (strategic color, contrast validation)
        │
 Phase 7: Quality Gate ← HARD GATE: do not proceed to CSS without passing
-  ├─ /audit (P0–P3 technical scoring)
-  └─ /critique (heuristic evaluation, persona testing)
+  ├─ checkpoint: /audit (P0–P3 technical scoring)
+  └─ checkpoint: /critique (heuristic evaluation, persona testing)
        │
 Part 2: CSS Implementation
-  └─ /polish (final quality pass on all 32 keys)
+  └─ checkpoint: /polish (final quality pass on all 32 keys)
 ```
 
-**Any theme that skips this workflow is a failed theme.** The skills are not optional enhancements — they are the methodology.
+**Any theme that skips this design thinking workflow is a failed theme.** The phases are the methodology — Impeccable skills enhance execution but are not the only way to follow them.
 
 ---
 
