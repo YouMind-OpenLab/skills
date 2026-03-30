@@ -4,7 +4,39 @@ This document describes how to publish YouMind skills to [ClawHub](https://clawh
 
 ## Overview
 
-Each skill in the `skills/` directory is published independently to ClawHub. The publish script handles packaging and uploading.
+Each skill in the `skills/` directory is published independently to ClawHub. **Publishing is automated via CI** — when a PR is merged to `main`, any changed skills are automatically published.
+
+### How Auto-Publish Works
+
+1. GitHub Actions detects which `skills/*/` directories changed in the merge commit
+2. For each changed skill, reads `version:` from SKILL.md frontmatter
+3. Packages the skill (respecting `.clawhubignore`) and publishes to ClawHub
+4. Skills without a `version:` field are skipped with a warning
+
+**Version source of truth:** the `version:` field in SKILL.md frontmatter. Bump it in your PR when you want a new release.
+
+```yaml
+---
+name: youmind-my-skill
+version: 1.2.0  # ← bump this
+description: |
+  ...
+---
+```
+
+### When to Bump Version
+
+| Change type | Bump | Example |
+|-------------|------|---------|
+| New skill | `1.0.0` | First publish |
+| Bug fix, doc improvement | Patch | `1.0.0` → `1.0.1` |
+| New feature | Minor | `1.0.1` → `1.1.0` |
+| Breaking change (new required setup) | Major | `1.1.0` → `2.0.0` |
+| Data-only update (references/) | Patch | `1.0.0` → `1.0.1` |
+
+### Manual Publish (Fallback)
+
+If CI fails or you need to publish without merging, use the manual flow below.
 
 ## Prerequisites
 
