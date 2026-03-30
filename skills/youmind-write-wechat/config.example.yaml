@@ -22,7 +22,7 @@ theme_color: "#3498db"      # Any HEX color or preset name
 
 # Image generation (for cover & article images)
 # 支持多个 provider，配置了 api_key 的才会启用
-# 优先级: default_provider > 第一个有 key 的 > Nano Banana Pro 库搜索 > 预制封面
+# 优先级: default_provider > 第一个有 key 的 > Nano Banana Pro 库搜索 > CDN 预制封面
 image:
   default_provider: "youmind"  # youmind | gemini | openai | doubao (留空自动选择有 key 的)
   providers:

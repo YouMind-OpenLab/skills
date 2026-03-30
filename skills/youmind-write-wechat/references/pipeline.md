@@ -134,7 +134,7 @@ If the user says nothing about image scope but still wants visuals, default to `
 
 Use `image-gen.js` for cover and inline images.
 
-**Three-level fallback:** API generation succeeds → match predefined covers from `cover/` directory by color → output full prompts for manual generation and continue pipeline in text-only mode.
+**Three-level fallback:** API generation succeeds → download predefined covers from remote CDN by color → output full prompts for manual generation and continue pipeline in text-only mode.
 
 Insert generated image paths into the Markdown file.
 

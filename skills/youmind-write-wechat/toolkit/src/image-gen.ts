@@ -1,8 +1,8 @@
 /**
- * AI image generation — multi-provider + Nano Banana Pro library search + fallback covers.
+ * AI image generation — multi-provider + Nano Banana Pro library search + CDN fallback covers.
  *
  * Providers: youmind | gemini | openai | doubao
- * Fallback chain: API → Nano Banana Pro library match → predefined covers → prompt-only output
+ * Fallback chain: API → Nano Banana Pro library match → CDN predefined covers → prompt-only output
  *
  * Usage:
  *   npx tsx src/image-gen.ts --prompt "..." --output cover.jpg --size cover
@@ -11,16 +11,16 @@
  *   npx tsx src/image-gen.ts --fallback-cover --color "#3498db" --output cover.jpg
  */
 
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';
 import { parse as parseYaml } from 'yaml';
+import { COVER_PALETTE, COLOR_HUE_MAP, type CoverMeta } from './cover-assets.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
-const COVER_DIR = resolve(PROJECT_DIR, 'cover');
 const NANO_BANANA_REFS = resolve(
   PROJECT_DIR, 'toolkit', '.claude', 'skills',
   'nano-banana-pro-prompts-recommend-skill', 'references',
@@ -39,34 +39,7 @@ const SIZE_MAP: Record<string, Record<string, string>> = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Predefined cover palette
-// ---------------------------------------------------------------------------
-
-interface CoverMeta { hue: string; tone: string; mood: string }
-
-const COVER_PALETTE: Record<string, CoverMeta> = {
-  'blue-clouds-oil.jpg': { hue: 'blue', tone: 'warm', mood: 'artistic' },
-  'blue-light-wave.jpg': { hue: 'blue', tone: 'cool', mood: 'tech' },
-  'city-skyline-painting.jpg': { hue: 'warm', tone: 'warm', mood: 'atmospheric' },
-  'cyan-gradient.jpg': { hue: 'cyan', tone: 'cool', mood: 'clean' },
-  'green-gradient.jpg': { hue: 'green', tone: 'cool', mood: 'fresh' },
-  'lavender-silk.jpg': { hue: 'purple', tone: 'cool', mood: 'elegant' },
-  'orange-warm.jpg': { hue: 'orange', tone: 'warm', mood: 'energetic' },
-  'pink-blue-diagonal.jpg': { hue: 'pink', tone: 'cool', mood: 'modern' },
-  'purple-teal-diagonal.jpg': { hue: 'purple', tone: 'cool', mood: 'tech' },
-  'sunset-watercolor.jpg': { hue: 'orange', tone: 'warm', mood: 'artistic' },
-  'warm-colorful-blur.jpg': { hue: 'warm', tone: 'warm', mood: 'energetic' },
-};
-
-const COLOR_HUE_MAP: Record<string, string> = {
-  '#3498db': 'blue', '#2980b9': 'blue', '#1abc9c': 'cyan',
-  '#e74c3c': 'warm', '#c0392b': 'warm', '#e91e63': 'pink',
-  '#2ecc71': 'green', '#27ae60': 'green',
-  '#9b59b6': 'purple', '#8e44ad': 'purple',
-  '#f39c12': 'orange', '#f1c40f': 'orange',
-  '#34495e': 'blue', '#2c3e50': 'blue',
-};
+// COVER_PALETTE and COLOR_HUE_MAP imported from cover-assets.ts
 
 // ---------------------------------------------------------------------------
 // Config
@@ -334,23 +307,33 @@ async function downloadNanaBananaImage(url: string, output: string): Promise<boo
 // ---------------------------------------------------------------------------
 
 function selectFallbackCover(color = '#3498db', mood = ''): string | null {
-  if (!existsSync(COVER_DIR)) return null;
   const targetHue = COLOR_HUE_MAP[color.toLowerCase()] ?? 'blue';
 
   const candidates: [number, string][] = [];
-  for (const [filename, meta] of Object.entries(COVER_PALETTE)) {
-    const fp = resolve(COVER_DIR, filename);
-    if (!existsSync(fp)) continue;
+  for (const [, meta] of Object.entries(COVER_PALETTE)) {
     let score = 0;
     if (meta.hue === targetHue) score += 3;
     if (mood && meta.mood === mood) score += 2;
     if (meta.tone === (['orange', 'warm'].includes(targetHue) ? 'warm' : 'cool')) score += 1;
-    candidates.push([score, fp]);
+    candidates.push([score, meta.url]);
   }
 
   if (!candidates.length) return null;
   candidates.sort((a, b) => b[0] - a[0]);
   return candidates[0][1];
+}
+
+async function downloadFallbackCover(url: string, output: string): Promise<boolean> {
+  try {
+    const resp = await httpRetry(url, {}, 2, 30_000);
+    const buf = Buffer.from(await resp.arrayBuffer());
+    writeFileSync(output, buf);
+    console.error(`[INFO] 下载预制封面: ${basename(output)} (${(buf.length / 1024).toFixed(1)} KB)`);
+    return true;
+  } catch (e) {
+    console.error(`[WARN] 下载预制封面失败: ${e}`);
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -402,8 +385,7 @@ async function main() {
   // --- Mode 1: Fallback cover ---
   if (args.fallbackCover) {
     const cover = selectFallbackCover(args.color, args.mood);
-    if (cover) {
-      copyFileSync(cover, args.output);
+    if (cover && await downloadFallbackCover(cover, args.output)) {
       output({ status: 'ok', source: 'fallback', file: args.output });
     } else {
       output({ status: 'error', message: '无匹配的预制封面' });
@@ -428,8 +410,7 @@ async function main() {
     // Fallback to predefined cover
     if (args.size === 'cover') {
       const cover = selectFallbackCover(args.color, args.mood);
-      if (cover) {
-        copyFileSync(cover, args.output);
+      if (cover && await downloadFallbackCover(cover, args.output)) {
         output({ status: 'ok', source: 'fallback', file: args.output });
         return;
       }
@@ -464,8 +445,7 @@ async function main() {
     // Fallback 2: predefined cover
     if (args.size === 'cover') {
       const cover = selectFallbackCover(args.color, args.mood);
-      if (cover) {
-        copyFileSync(cover, args.output);
+      if (cover && await downloadFallbackCover(cover, args.output)) {
         output({ status: 'ok', source: 'fallback', file: args.output, prompt: args.prompt });
         return;
       }
@@ -507,8 +487,7 @@ async function main() {
     }
     if (args.size === 'cover') {
       const cover = selectFallbackCover(args.color, args.mood);
-      if (cover) {
-        copyFileSync(cover, args.output);
+      if (cover && await downloadFallbackCover(cover, args.output)) {
         output({ status: 'ok', source: 'fallback', file: args.output, api_error: String(e) });
         return;
       }
@@ -521,9 +500,10 @@ async function main() {
 // Export for module usage
 export {
   generateGemini, generateOpenAI, generateDoubao,
-  searchNanoBanana, selectFallbackCover, resolveProvider,
+  searchNanoBanana, selectFallbackCover, downloadFallbackCover, resolveProvider,
   GENERATORS, SIZE_MAP,
 };
+export { COVER_PALETTE, COLOR_HUE_MAP } from './cover-assets.js';
 
 const isMain = process.argv[1]?.includes('image-gen');
 if (isMain) main().catch(e => { console.error(e); process.exit(1); });

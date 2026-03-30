@@ -170,7 +170,7 @@ curl -s https://ifconfig.me
 
 ### Step 6 — Image Provider Keys (Optional)
 
-配图使用降级链：AI 生图 → 图库搜索 → 预制封面 → 仅输出 prompt。不配任何 key 也不影响发布。
+配图使用降级链：AI 生图 → 图库搜索 → CDN 预制封面下载 → 仅输出 prompt。不配任何 key 也不影响发布。
 
 | Provider | 获取方式 | `config.yaml` 字段 |
 |----------|----------|---------------------|

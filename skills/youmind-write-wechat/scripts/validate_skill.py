@@ -279,7 +279,6 @@ def normalize_path(raw: str) -> str | None:
     allowed_roots = (
         "agents/",
         "clients/",
-        "cover/",
         "output/",
         "references/",
         "scripts/",

@@ -62,7 +62,7 @@ node dist/image-gen.js --search "{keywords}" --output {output_path}
 node dist/image-gen.js --fallback-cover --color "{hex}" --output {output_path}
 ```
 
-Three-level fallback chain: API generation → Nano Banana library match → predefined covers in `cover/` → prompt-only output.
+Three-level fallback chain: API generation → Nano Banana library match → predefined covers from remote CDN → prompt-only output.
 
 ---
 

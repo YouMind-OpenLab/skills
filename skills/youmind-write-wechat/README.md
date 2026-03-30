@@ -129,7 +129,7 @@ curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sy
 Skill 按以下顺序尝试生成配图，任何一环成功就继续，全挂也不中断流程：
 
 ```
-AI 生图（你配的 provider）→ Nano Banana Pro 图库搜索 → 预制封面匹配 → 只输出 prompt
+AI 生图（你配的 provider）→ Nano Banana Pro 图库搜索 → CDN 预制封面下载 → 只输出 prompt
 ```
 
 ### 多客户管理
