@@ -43,12 +43,11 @@ jobs:
       - name: Install ClawHub CLI
         run: npm install -g clawhub
 
-      - name: Authenticate
-        run: clawhub login --token "${{ secrets.CLAWHUB_TOKEN }}" --no-browser
-
       - name: Publish
         run: bash scripts/ci-publish.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+          YOUMIND_CLAWHUB_TOKEN: ${{ secrets.YOUMIND_CLAWHUB_TOKEN }}
           PUBLISH_SKILL: ${{ github.event.inputs.skill || '' }}
           PUBLISH_FORCE: ${{ github.event.inputs.force || 'false' }}
