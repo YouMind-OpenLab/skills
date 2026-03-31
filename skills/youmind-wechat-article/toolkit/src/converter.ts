@@ -254,6 +254,18 @@ export class WeChatConverter {
         const existing = $(elem).attr('style') || '';
         $(elem).attr('style', existing ? `${existing}; ${s.li}` : s.li);
       }
+
+      // markdown-it wraps li content in <p> tags, whose paragraph margin causes
+      // excessive spacing between list items. Strip existing margin then set to 0.
+      $(elem).children('p').each((_, p) => {
+        const pStyle = ($(p).attr('style') || '')
+          .replace(/margin[^;]*(!important)?;?/g, '')
+          .replace(/;;\s*/g, '; ')
+          .replace(/(^;\s*|;\s*$)/g, '')
+          .trim();
+        const compact = 'margin: 0 !important';
+        $(p).attr('style', pStyle ? `${compact}; ${pStyle}` : compact);
+      });
     });
 
     // 代码块样式已由 code-block-processor 处理（macOS 风格 + hljs 高亮）
