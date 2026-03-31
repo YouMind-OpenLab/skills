@@ -1,0 +1,2 @@
+requests>=2.31
+praw>=7.7

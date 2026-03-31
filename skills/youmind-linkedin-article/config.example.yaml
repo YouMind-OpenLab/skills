@@ -1,0 +1,40 @@
+# YouMind LinkedIn Skill Configuration
+
+# YouMind OpenAPI (knowledge base search, web search, article archiving)
+youmind:
+  api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
+  base_url: "https://youmind.com/openapi/v1"
+
+# LinkedIn API credentials (OAuth 2.0)
+# Create app at: https://www.linkedin.com/developers/apps
+linkedin:
+  client_id: ""            # Application client ID
+  client_secret: ""        # Application client secret
+  access_token: ""         # OAuth access token (w_member_social scope)
+  person_urn: ""           # Your LinkedIn person URN (urn:li:person:XXXXX)
+  # organization_urn: ""   # Optional: company page URN for posting as organization
+
+# Default post settings
+defaults:
+  content_type: "auto"     # auto | post | article (auto decides based on content length)
+  language: "en"           # en | zh | auto
+  visibility: "PUBLIC"     # PUBLIC | CONNECTIONS
+
+# Image generation (for cover & article images)
+image:
+  default_provider: "youmind"
+  providers:
+    youmind:
+      api_key: ""
+      model: "nano-banana-pro"
+      base_url: "https://youmind.com/v1"
+    gemini:
+      api_key: ""
+      model: "imagen-3.0-generate-002"
+    openai:
+      api_key: ""
+      model: "gpt-image-1"
+    doubao:
+      api_key: ""
+      model: "doubao-seedream-5-0-260128"
+      base_url: "https://ark.cn-beijing.volces.com/api/v3"
