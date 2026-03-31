@@ -13,10 +13,11 @@ The version field uses [semver](https://semver.org/) (`x.y.z`):
 
 ### Rules
 
-1. **Before committing**, check the current `version:` in the skill's `SKILL.md` frontmatter.
+1. **Before your first commit on a branch**, check the current `version:` in the skill's `SKILL.md` frontmatter.
 2. Determine if the change is a feature/major change → bump `y` (reset `z` to 0), or a fix/minor change → bump `z`.
 3. Update the `version:` line in the SKILL.md frontmatter accordingly.
-4. CI auto-publishes to ClawHub on merge to `main` based on this version field. **If the version is not bumped, the publish is skipped.**
+4. **One bump per branch/PR.** Do NOT bump again on subsequent commits in the same branch.
+5. CI auto-publishes to ClawHub on merge to `main` based on this version field. **If the version is not bumped, the publish is skipped.**
 
 ### Examples
 
