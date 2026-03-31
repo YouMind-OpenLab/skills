@@ -11,7 +11,7 @@ export {
   type RedditConfig, type SubmitResult, type Flair, type HotPost,
 } from './reddit-api.js';
 
-// Re-export shared utilities from content-core
+// Vendored core (copied per skill repo for standalone publishing)
 export {
   search, webSearch, listBoards, getBoard,
   listMaterials, getMaterial, listCrafts, getCraft,
@@ -19,4 +19,4 @@ export {
   type SearchOptions, type SearchResponse,
   type Board, type Material, type Craft,
   type MinedContent, type MineTopicsOptions,
-} from 'youmind-content-core';
+} from './core/youmind-api.js';

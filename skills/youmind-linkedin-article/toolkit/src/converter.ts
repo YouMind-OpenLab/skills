@@ -11,7 +11,9 @@ import MarkdownIt from 'markdown-it';
 import taskLists from 'markdown-it-task-lists';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { processMathInHtml, enhanceCodeBlocks, processMermaidBlocks } from 'youmind-content-core';
+import { processMathInHtml } from './core/math-processor.js';
+import { enhanceCodeBlocks } from './core/code-block-processor.js';
+import { processMermaidBlocks } from './core/mermaid-processor.js';
 
 // ---------------------------------------------------------------------------
 // Types

@@ -1,5 +1,5 @@
 /**
- * YouMind Content Core — shared toolkit for multi-platform article skills.
+ * Vendored YouMind content helpers (inline copy for standalone skill repo).
  */
 
 // Shared types
