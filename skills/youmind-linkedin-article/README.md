@@ -45,46 +45,44 @@ Go to the **Auth** tab and copy your **Client ID** and **Client Secret**.
 
 In the **"OAuth 2.0 settings"** section of the Auth tab, add a Redirect URL (e.g., `http://localhost:3000/callback`).
 
-**Step 6 — Get Authorization Code**
+**Step 6 — One-Click: Get Access Token & Person URN**
 
-Open the following URL in your browser (replace `{YOUR_CLIENT_ID}` and `{REDIRECT_URI}`):
-
-```
-https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id={YOUR_CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope=openid%20profile%20w_member_social
-```
-
-After authorizing, the browser will redirect to your Redirect URL with a `code` parameter. Copy this code.
-
-**Step 7 — Exchange Code for Access Token**
-
-Use the following POST request to exchange the code for an Access Token:
+Run the built-in OAuth helper script to automate the entire authorization flow:
 
 ```bash
-curl -X POST https://www.linkedin.com/oauth/v2/accessToken \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=authorization_code" \
-  -d "code={YOUR_AUTH_CODE}" \
-  -d "client_id={YOUR_CLIENT_ID}" \
-  -d "client_secret={YOUR_CLIENT_SECRET}" \
-  -d "redirect_uri={REDIRECT_URI}"
+cd toolkit && node dist/oauth-helper.js --client-id {YOUR_CLIENT_ID} --client-secret {YOUR_CLIENT_SECRET}
 ```
 
-Copy the returned `access_token` and paste it into the `linkedin.access_token` field in `config.yaml`.
+The script will automatically:
+1. Start a local server on `http://localhost:3000`
+2. Open your browser to the LinkedIn authorization page
+3. Capture the Authorization Code after you log in and approve
+4. Exchange the code for an Access Token
+5. Fetch your Person URN via the LinkedIn API
+6. Write all credentials to `config.yaml`
 
-**Step 8 — Get Your Person URN**
-
-Run the `validate` command to get your Person URN:
-
-```bash
-cd toolkit && npx tsx src/cli.ts validate
-```
-
-The output will show your `person_urn` (format: `urn:li:person:{id}`). Fill it into `config.yaml`.
+When the browser shows "Authorization Complete", you can close the page.
 
 > **Note:**
-> - Access Token is valid for **60 days** — repeat steps 6-7 to get a new token when it expires
+> - Access Token is valid for **60 days** — re-run this script to refresh when it expires
 > - You need a LinkedIn Company Page before creating an app
 > - `w_member_social` scope requires "Share on LinkedIn" product approval
+
+**Optional: Enable Read Posts Permission**
+
+The default "Share on LinkedIn" product only supports publishing posts, not reading them (e.g., querying Post ID and URL after publishing). To enable reading posts, you need to request the **Community Management API** product for the `r_member_social` permission.
+
+> **Important limitation:** LinkedIn requires Community Management API to be the **only product** on the application — it cannot coexist with "Share on LinkedIn" or other products. You will need to:
+>
+> 1. Create a **new application** on [LinkedIn Developer Portal](https://developer.linkedin.com/)
+> 2. Request **only** the Community Management API product
+> 3. After approval, run the OAuth script with the new app's credentials (scope must include `r_member_social`):
+>
+> ```bash
+> cd toolkit && node dist/oauth-helper.js --client-id {NEW_CLIENT_ID} --client-secret {NEW_CLIENT_SECRET}
+> ```
+>
+> Note: `r_member_social` is a restricted permission and may not be available to all developers.
 
 ---
 

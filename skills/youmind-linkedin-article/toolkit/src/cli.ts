@@ -62,6 +62,9 @@ program
     if (result.success) {
       console.log('\nPost published successfully!');
       console.log(`Post ID: ${result.postId}`);
+      if (result.postUrl) {
+        console.log(`Post URL: ${result.postUrl}`);
+      }
     } else {
       console.error(`\nPublish failed: ${result.error}`);
     }

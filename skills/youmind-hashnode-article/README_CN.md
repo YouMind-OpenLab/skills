@@ -65,13 +65,41 @@ query {
 
 ### 第 4 步 -- 填入配置
 
-将 Token 和 Publication ID 填入 `config.yaml`：
+有两种方式配置凭证：
+
+#### 方式 A -- 集中管理（推荐）
+
+所有 YouMind Article Skill 共享一个统一凭证文件 `~/.youmind-skill/credentials.yaml`。配置一次，所有 skill 自动读取。
+
+```bash
+# 首次使用：从模板创建集中凭证文件
+mkdir -p ~/.youmind-skill
+cp credentials.example.yaml ~/.youmind-skill/credentials.yaml
+
+# 编辑凭证
+vim ~/.youmind-skill/credentials.yaml
+```
+
+在 `credentials.yaml` 中填入 Hashnode 凭证：
 
 ```yaml
 hashnode:
   token: "your-personal-access-token-here"
   publication_id: "your-publication-id-here"
 ```
+
+> `credentials.example.yaml` 位于仓库根目录，包含所有 skill 的凭证模板（WeChat、LinkedIn、Facebook、Ghost、Hashnode 等）。
+
+#### 方式 B -- 本地配置
+
+仅为当前 skill 配置，不影响其他 skill：
+
+```bash
+cp config.example.yaml config.yaml
+vim config.yaml
+```
+
+> **优先级**：skill 会优先读取 `~/.youmind-skill/credentials.yaml`，如果某个字段为空则回退到本地 `config.yaml`。两种方式可以混用。
 
 ---
 
@@ -83,17 +111,19 @@ hashnode:
 # 1. 安装依赖
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. 生成配置文件
-cp config.example.yaml config.yaml
+# 2. 配置凭证（二选一）
+# 方式 A：集中管理（推荐，配一次所有 skill 共享）
+mkdir -p ~/.youmind-skill && cp ../../credentials.example.yaml ~/.youmind-skill/credentials.yaml
 
-# 3. 填写凭证
+# 方式 B：仅本地配置
+cp config.example.yaml config.yaml
 ```
 
-`config.yaml` 需要填写以下凭证：
+凭证字段说明：
 
 | 字段 | 必填 | 说明 |
-|------|------|------|
-| `hashnode.token` | **是** | Hashnode Personal Access Token，详见下方获取步骤 |
+| ---- | ---- | ---- |
+| `hashnode.token` | **是** | Hashnode Personal Access Token，详见上方获取步骤 |
 | `hashnode.publication_id` | **是** | 你的 Hashnode Publication ID |
 | `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 -> [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-hashnode-article) |
 

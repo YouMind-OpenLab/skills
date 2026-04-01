@@ -50,6 +50,7 @@ export interface PublishOptions {
 export interface PublishResult {
   success: boolean;
   postId?: string;
+  postUrl?: string;
   postText: string;
   extractedLinks: string[];
   warnings: string[];
@@ -132,9 +133,14 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
       ),
     );
 
+    const postUrl = post.id
+      ? `https://www.linkedin.com/feed/update/${post.id}`
+      : undefined;
+
     return {
       success: true,
       postId: post.id,
+      postUrl,
       postText: adapted.text,
       extractedLinks: adapted.extractedLinks,
       warnings: adapted.warnings,

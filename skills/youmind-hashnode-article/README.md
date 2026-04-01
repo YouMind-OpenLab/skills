@@ -65,13 +65,41 @@ query {
 
 ### Step 4 -- Fill in Config
 
-Paste the token and publication ID into `config.yaml`:
+There are two ways to configure credentials:
+
+#### Option A -- Centralized Management (Recommended)
+
+All YouMind Article Skills share a single credentials file at `~/.youmind-skill/credentials.yaml`. Configure once, all skills read automatically.
+
+```bash
+# First time: create centralized credentials from the template
+mkdir -p ~/.youmind-skill
+cp credentials.example.yaml ~/.youmind-skill/credentials.yaml
+
+# Edit credentials
+vim ~/.youmind-skill/credentials.yaml
+```
+
+Fill in the Hashnode section:
 
 ```yaml
 hashnode:
   token: "your-personal-access-token-here"
   publication_id: "your-publication-id-here"
 ```
+
+> `credentials.example.yaml` is at the repository root and contains templates for all skills (WeChat, LinkedIn, Facebook, Ghost, Hashnode, etc.).
+
+#### Option B -- Local Config
+
+Configure for this skill only, without affecting others:
+
+```bash
+cp config.example.yaml config.yaml
+vim config.yaml
+```
+
+> **Priority**: The skill reads `~/.youmind-skill/credentials.yaml` first. If a field is empty there, it falls back to the local `config.yaml`. Both methods can be used together.
 
 ---
 
@@ -83,17 +111,19 @@ hashnode:
 # 1. Install dependencies
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. Create config (if config.yaml doesn't exist)
-cp config.example.yaml config.yaml
+# 2. Configure credentials (choose one)
+# Option A: Centralized (recommended — configure once, shared by all skills)
+mkdir -p ~/.youmind-skill && cp ../../credentials.example.yaml ~/.youmind-skill/credentials.yaml
 
-# 3. Fill in API keys in config.yaml
+# Option B: Local config only
+cp config.example.yaml config.yaml
 ```
 
-Required fields in `config.yaml`:
+Credential fields:
 
 | Field | Required | Description |
-|-------|----------|-------------|
-| `hashnode.token` | **Yes** | Hashnode Personal Access Token, see steps below |
+| ----- | -------- | ----------- |
+| `hashnode.token` | **Yes** | Hashnode Personal Access Token, see steps above |
 | `hashnode.publication_id` | **Yes** | Your Hashnode Publication ID |
 | `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-hashnode-article) |
 

@@ -110,10 +110,18 @@ cp config.example.yaml config.yaml
 
 1. Go to [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
 2. Create a new app or use an existing one
-3. Request the `w_member_social` and `r_liteprofile` OAuth scopes
-4. Generate an OAuth 2.0 access token
-5. Get your person URN: call GET /v2/userinfo with the token
-6. Fill `linkedin.access_token` and `linkedin.person_urn` in `config.yaml`
+3. In the **Products** tab, request "Share on LinkedIn" and "Sign In with LinkedIn using OpenID Connect"
+4. In the **Auth** tab, copy **Client ID** and **Client Secret**
+5. Add `http://localhost:3000/callback` as a Redirect URL in **OAuth 2.0 settings**
+6. Run the one-click OAuth helper to get Access Token and Person URN automatically:
+
+```bash
+cd toolkit && node dist/oauth-helper.js --client-id {CLIENT_ID} --client-secret {CLIENT_SECRET}
+```
+
+The script starts a local server, opens the browser for authorization, captures the callback, exchanges the code for an access token, fetches the person URN, and writes everything to `config.yaml`.
+
+Access Token expires in 60 days. Re-run the same command to refresh.
 
 ### Verify Setup
 
@@ -129,7 +137,8 @@ After configuration, say:
 | `references/content-adaptation.md` | LinkedIn content formatting rules | When adapting content for LinkedIn |
 | `references/api-reference.md` | LinkedIn API endpoint details | When debugging API calls |
 | `config.yaml` | API credentials | Step 1 (first-run check) |
-| `toolkit/dist/*.js` | Executable scripts | Various steps |
+| `toolkit/dist/cli.js` | CLI: publish, preview, profile | Various steps |
+| `toolkit/dist/oauth-helper.js` | One-click OAuth: get token & person URN | Setup step 4 |
 
 ## Pipeline Overview
 

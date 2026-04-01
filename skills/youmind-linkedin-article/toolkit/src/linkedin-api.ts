@@ -115,7 +115,7 @@ async function linkedInFetch<T = unknown>(
   const headers: Record<string, string> = {
     Authorization: `Bearer ${config.accessToken}`,
     'X-Restli-Protocol-Version': '2.0.0',
-    'LinkedIn-Version': '202401',
+    'LinkedIn-Version': '202601',
     ...(options.headers as Record<string, string> || {}),
   };
 
@@ -132,11 +132,17 @@ async function linkedInFetch<T = unknown>(
     );
   }
 
+  // LinkedIn returns post ID in x-restli-id header for POST /posts
+  const restliId = resp.headers.get('x-restli-id') || '';
+
   const contentType = resp.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    return resp.json() as Promise<T>;
+    const json = await resp.json() as Record<string, unknown>;
+    if (restliId) json.id = restliId;
+    return json as T;
   }
 
+  if (restliId) return { id: restliId } as T;
   return {} as T;
 }
 
@@ -287,7 +293,7 @@ export async function uploadImage(
       Authorization: `Bearer ${config.accessToken}`,
       'Content-Type': 'application/octet-stream',
     },
-    body: imageBuffer,
+    body: new Uint8Array(imageBuffer),
     signal: AbortSignal.timeout(60_000),
   });
 
