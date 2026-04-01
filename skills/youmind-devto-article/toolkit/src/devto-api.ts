@@ -54,7 +54,17 @@ export function loadConfig(): FullConfig {
     }
   }
   const devto = { ...(central.devto as Record<string, unknown> ?? {}), ...(local.devto as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(devto)) {
+    if (v === '' && (central.devto as Record<string, unknown>)?.[k]) {
+      devto[k] = (central.devto as Record<string, unknown>)[k];
+    }
+  }
   const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(youmind)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      youmind[k] = (central.youmind as Record<string, unknown>)[k];
+    }
+  }
   return {
     devto: {
       apiKey: (devto.api_key as string) || '',

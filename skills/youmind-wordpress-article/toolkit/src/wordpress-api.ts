@@ -111,6 +111,11 @@ export function loadWordPressConfig(): WordPressConfig {
     }
   }
   const wp = { ...(central.wordpress as Record<string, unknown> ?? {}), ...(local.wordpress as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(wp)) {
+    if (v === '' && (central.wordpress as Record<string, unknown>)?.[k]) {
+      wp[k] = (central.wordpress as Record<string, unknown>)[k];
+    }
+  }
   return {
     siteUrl: ((wp.site_url as string) || '').replace(/\/+$/, ''),
     username: (wp.username as string) || '',

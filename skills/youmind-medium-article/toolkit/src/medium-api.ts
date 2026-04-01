@@ -54,7 +54,17 @@ export function loadConfig(): FullConfig {
     }
   }
   const medium = { ...(central.medium as Record<string, unknown> ?? {}), ...(local.medium as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(medium)) {
+    if (v === '' && (central.medium as Record<string, unknown>)?.[k]) {
+      medium[k] = (central.medium as Record<string, unknown>)[k];
+    }
+  }
   const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(youmind)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      youmind[k] = (central.youmind as Record<string, unknown>)[k];
+    }
+  }
   return {
     medium: {
       token: (medium.token as string) || process.env.MEDIUM_TOKEN || '',

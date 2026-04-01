@@ -49,6 +49,11 @@ export function loadLinkedInConfig(): LinkedInConfig {
     }
   }
   const li = { ...(central.linkedin as Record<string, unknown> ?? {}), ...(local.linkedin as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(li)) {
+    if (v === '' && (central.linkedin as Record<string, unknown>)?.[k]) {
+      li[k] = (central.linkedin as Record<string, unknown>)[k];
+    }
+  }
   return {
     accessToken: (li.access_token as string) || '',
     personUrn: (li.person_urn as string) || '',

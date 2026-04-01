@@ -96,6 +96,11 @@ export function loadInstagramConfig(): InstagramConfig {
     }
   }
   const ig = { ...(central.instagram as Record<string, unknown> ?? {}), ...(local.instagram as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(ig)) {
+    if (v === '' && (central.instagram as Record<string, unknown>)?.[k]) {
+      ig[k] = (central.instagram as Record<string, unknown>)[k];
+    }
+  }
   return {
     businessAccountId: (ig.business_account_id as string) || '',
     accessToken: (ig.access_token as string) || '',

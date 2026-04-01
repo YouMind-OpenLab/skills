@@ -52,7 +52,17 @@ export function loadConfig(): FullConfig {
     }
   }
   const hn = { ...(central.hashnode as Record<string, unknown> ?? {}), ...(local.hashnode as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(hn)) {
+    if (v === '' && (central.hashnode as Record<string, unknown>)?.[k]) {
+      hn[k] = (central.hashnode as Record<string, unknown>)[k];
+    }
+  }
   const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(youmind)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      youmind[k] = (central.youmind as Record<string, unknown>)[k];
+    }
+  }
   return {
     hashnode: {
       token: (hn.token as string) || '',

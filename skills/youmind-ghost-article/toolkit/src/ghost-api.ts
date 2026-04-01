@@ -97,6 +97,11 @@ export function loadGhostConfig(): GhostConfig {
     }
   }
   const ghost = { ...(central.ghost as Record<string, unknown> ?? {}), ...(local.ghost as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(ghost)) {
+    if (v === '' && (central.ghost as Record<string, unknown>)?.[k]) {
+      ghost[k] = (central.ghost as Record<string, unknown>)[k];
+    }
+  }
   return {
     siteUrl: ((ghost.site_url as string) || '').replace(/\/+$/, ''),
     adminApiKey: (ghost.admin_api_key as string) || '',

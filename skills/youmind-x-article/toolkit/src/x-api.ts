@@ -59,6 +59,11 @@ export function loadXConfig(): XConfig {
     }
   }
   const x = { ...(central.x as Record<string, unknown> ?? {}), ...(local.x as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(x)) {
+    if (v === '' && (central.x as Record<string, unknown>)?.[k]) {
+      x[k] = (central.x as Record<string, unknown>)[k];
+    }
+  }
 
   const oauth1 =
     x.api_key && x.api_secret && x.access_token_legacy && x.access_token_secret

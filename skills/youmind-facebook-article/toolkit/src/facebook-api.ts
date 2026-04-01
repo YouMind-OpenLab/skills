@@ -66,19 +66,35 @@ const PROJECT_DIR = resolve(__dirname, '../..');
 
 const GRAPH_API_BASE = 'https://graph.facebook.com/v19.0';
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadFacebookConfig(): FacebookConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const fb = raw.facebook ?? {};
-      return {
-        pageId: fb.page_id || '',
-        pageAccessToken: fb.page_access_token || '',
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { pageId: '', pageAccessToken: '' };
+  const fb = { ...(central.facebook as Record<string, unknown> ?? {}), ...(local.facebook as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(fb)) {
+    if (v === '' && (central.facebook as Record<string, unknown>)?.[k]) {
+      fb[k] = (central.facebook as Record<string, unknown>)[k];
+    }
+  }
+  return {
+    pageId: (fb.page_id as string) || '',
+    pageAccessToken: (fb.page_access_token as string) || '',
+  };
 }
 
 function validateConfig(config: FacebookConfig): void {

@@ -52,6 +52,11 @@ export function loadRedditConfig(): RedditConfig {
     }
   }
   const r = { ...(central.reddit as Record<string, unknown> ?? {}), ...(local.reddit as Record<string, unknown> ?? {}) };
+  for (const [k, v] of Object.entries(r)) {
+    if (v === '' && (central.reddit as Record<string, unknown>)?.[k]) {
+      r[k] = (central.reddit as Record<string, unknown>)[k];
+    }
+  }
   return {
     clientId: (r.client_id as string) || '',
     clientSecret: (r.client_secret as string) || '',
