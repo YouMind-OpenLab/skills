@@ -15,28 +15,6 @@ Ghost AI Skill. Tell the Agent what to write, and it automatically runs through 
 
 ---
 
-## Installation
-
-> Requirements: Node.js >= 18
-
-```bash
-# 1. Install dependencies
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. Create config file
-cp config.example.yaml config.yaml
-```
-
-Fill in the following credentials in `config.yaml`:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `ghost.site_url` | **Yes** | Your Ghost site URL (e.g. `https://myblog.ghost.io`) |
-| `ghost.admin_api_key` | **Yes** | Admin API Key in `{id}:{secret}` format |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) |
-
----
-
 ## Getting Credentials
 
 ### Getting a Ghost Admin API Key
@@ -77,6 +55,28 @@ Enter your Ghost site URL in `ghost.site_url` (e.g., `https://myblog.ghost.io`).
 ```bash
 cd toolkit && npx tsx src/cli.ts validate
 ```
+
+---
+
+## Installation
+
+> Requirements: Node.js >= 18
+
+```bash
+# 1. Install dependencies
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. Create config file
+cp config.example.yaml config.yaml
+```
+
+Fill in the following credentials in `config.yaml`:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `ghost.site_url` | **Yes** | Your Ghost site URL (e.g. `https://myblog.ghost.io`) |
+| `ghost.admin_api_key` | **Yes** | Admin API Key in `{id}:{secret}` format |
+| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) |
 
 ---
 

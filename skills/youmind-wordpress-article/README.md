@@ -15,29 +15,6 @@ WordPress AI Skill. Tell the Agent what to write, and it automatically runs thro
 
 ---
 
-## Installation
-
-> Requirements: Node.js >= 18, WordPress 5.6+ (REST API must be enabled)
-
-```bash
-# 1. Install dependencies
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. Create config file
-cp config.example.yaml config.yaml
-```
-
-Fill in the following credentials in `config.yaml`:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `wordpress.site_url` | **Yes** | Your WordPress site URL (e.g. `https://myblog.com`) |
-| `wordpress.username` | **Yes** | WordPress username |
-| `wordpress.app_password` | **Yes** | Application Password (see below) |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) |
-
----
-
 ## Getting Credentials
 
 ### Getting a WordPress Application Password
@@ -79,6 +56,29 @@ The system will generate a password and show it only once. **Copy it immediately
 ```bash
 cd toolkit && npx tsx src/cli.ts validate
 ```
+
+---
+
+## Installation
+
+> Requirements: Node.js >= 18, WordPress 5.6+ (REST API must be enabled)
+
+```bash
+# 1. Install dependencies
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. Create config file
+cp config.example.yaml config.yaml
+```
+
+Fill in the following credentials in `config.yaml`:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `wordpress.site_url` | **Yes** | Your WordPress site URL (e.g. `https://myblog.com`) |
+| `wordpress.username` | **Yes** | WordPress username |
+| `wordpress.app_password` | **Yes** | Application Password (see below) |
+| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) |
 
 ---
 

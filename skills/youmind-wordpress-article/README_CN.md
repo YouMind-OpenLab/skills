@@ -15,29 +15,6 @@ WordPress AI 写作发布 Skill。对 Agent 说一句话，自动完成选题、
 
 ---
 
-## 安装
-
-> 环境要求：Node.js >= 18、WordPress 5.6+（需启用 REST API）
-
-```bash
-# 1. 安装依赖
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. 生成配置文件
-cp config.example.yaml config.yaml
-```
-
-`config.yaml` 需要填写以下凭证：
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `wordpress.site_url` | **是** | 你的 WordPress 站点地址（如 `https://myblog.com`） |
-| `wordpress.username` | **是** | WordPress 用户名 |
-| `wordpress.app_password` | **是** | 应用程序密码（详见下方获取步骤） |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 -> [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) |
-
----
-
 ## 获取凭证
 
 ### 获取 WordPress 应用程序密码
@@ -79,6 +56,29 @@ cp config.example.yaml config.yaml
 ```bash
 cd toolkit && npx tsx src/cli.ts validate
 ```
+
+---
+
+## 安装
+
+> 环境要求：Node.js >= 18、WordPress 5.6+（需启用 REST API）
+
+```bash
+# 1. 安装依赖
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. 生成配置文件
+cp config.example.yaml config.yaml
+```
+
+`config.yaml` 需要填写以下凭证：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `wordpress.site_url` | **是** | 你的 WordPress 站点地址（如 `https://myblog.com`） |
+| `wordpress.username` | **是** | WordPress 用户名 |
+| `wordpress.app_password` | **是** | 应用程序密码（详见下方获取步骤） |
+| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 -> [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) |
 
 ---
 

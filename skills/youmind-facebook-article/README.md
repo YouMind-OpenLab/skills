@@ -14,28 +14,6 @@ AI-powered Facebook Page post publisher. Researches topics via YouMind knowledge
 
 ---
 
-## Installation
-
-> Prerequisites: Node.js >= 18
-
-```bash
-# 1. Install dependencies
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. Create config file
-cp config.example.yaml config.yaml
-```
-
-Fill in your credentials in `config.yaml`:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `facebook.page_id` | **Yes** | Your Facebook Page ID |
-| `facebook.page_access_token` | **Yes** | Extended Page Access Token |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving → [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-facebook-article) |
-
----
-
 ## Getting Credentials
 
 ### Step 1 — Visit Facebook Developer Portal
@@ -88,6 +66,28 @@ facebook:
 
 - Token expires after **60 days** at most; you need to regenerate it after expiration.
 - Find your Page ID in Facebook Page → "About" → "Page ID".
+
+---
+
+## Installation
+
+> Prerequisites: Node.js >= 18
+
+```bash
+# 1. Install dependencies
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. Create config file
+cp config.example.yaml config.yaml
+```
+
+Fill in your credentials in `config.yaml`:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `facebook.page_id` | **Yes** | Your Facebook Page ID |
+| `facebook.page_access_token` | **Yes** | Extended Page Access Token |
+| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving → [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-facebook-article) |
 
 ---
 

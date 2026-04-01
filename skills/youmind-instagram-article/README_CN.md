@@ -16,28 +16,6 @@ Instagram AI 发布 Skill。对 Agent 说一句话，自动完成调研、写作
 
 ---
 
-## 安装
-
-> 环境要求：Node.js >= 18
-
-```bash
-# 1. 安装依赖
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. 生成配置文件
-cp config.example.yaml config.yaml
-```
-
-`config.yaml` 需要填写以下凭证：
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `instagram.business_account_id` | **是** | Instagram Business Account ID |
-| `instagram.access_token` | **是** | 带 `instagram_basic` + `instagram_content_publish` 权限的 Access Token |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 → [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-instagram-article) |
-
----
-
 ## 获取凭证
 
 ### 前提条件
@@ -95,6 +73,28 @@ instagram:
 - **仅支持 Business/Creator 账号** — 个人账号无法使用 Instagram Graph API。
 - **每个帖子必须包含图片** — Instagram 不支持纯文本发布。
 - **Token 有效期 60 天** — 需定期刷新。回到第 4 步重新生成即可。
+
+---
+
+## 安装
+
+> 环境要求：Node.js >= 18
+
+```bash
+# 1. 安装依赖
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. 生成配置文件
+cp config.example.yaml config.yaml
+```
+
+`config.yaml` 需要填写以下凭证：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `instagram.business_account_id` | **是** | Instagram Business Account ID |
+| `instagram.access_token` | **是** | 带 `instagram_basic` + `instagram_content_publish` 权限的 Access Token |
+| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 → [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-instagram-article) |
 
 ---
 

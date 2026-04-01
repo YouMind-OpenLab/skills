@@ -15,28 +15,6 @@ Facebook 主页 AI 发布 Skill。对 Agent 说一句话，自动完成调研、
 
 ---
 
-## 安装
-
-> 环境要求：Node.js >= 18
-
-```bash
-# 1. 安装依赖
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. 生成配置文件
-cp config.example.yaml config.yaml
-```
-
-`config.yaml` 需要填写以下凭证：
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `facebook.page_id` | **是** | 你的 Facebook Page ID |
-| `facebook.page_access_token` | **是** | 延长后的 Page Access Token |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 → [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-facebook-article) |
-
----
-
 ## 获取凭证
 
 ### 第 1 步 — 访问 Facebook Developer Portal
@@ -89,6 +67,28 @@ facebook:
 
 - Token 有效期最长 **60 天**，过期后需重新获取。
 - Page ID 可以在你的 Facebook Page → "About" / "关于" → "Page ID" 中找到。
+
+---
+
+## 安装
+
+> 环境要求：Node.js >= 18
+
+```bash
+# 1. 安装依赖
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. 生成配置文件
+cp config.example.yaml config.yaml
+```
+
+`config.yaml` 需要填写以下凭证：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `facebook.page_id` | **是** | 你的 Facebook Page ID |
+| `facebook.page_access_token` | **是** | 延长后的 Page Access Token |
+| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 → [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-facebook-article) |
 
 ---
 

@@ -16,28 +16,6 @@ AI-powered Instagram post and carousel publisher. Transforms articles and topics
 
 ---
 
-## Installation
-
-> Prerequisites: Node.js >= 18
-
-```bash
-# 1. Install dependencies
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. Create config file
-cp config.example.yaml config.yaml
-```
-
-Fill in your credentials in `config.yaml`:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `instagram.business_account_id` | **Yes** | Instagram Business Account ID |
-| `instagram.access_token` | **Yes** | Access Token with `instagram_basic` + `instagram_content_publish` permissions |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving → [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-instagram-article) |
-
----
-
 ## Getting Credentials
 
 ### Prerequisites
@@ -95,6 +73,28 @@ instagram:
 - **Only Business/Creator accounts are supported** -- personal accounts cannot use the Instagram Graph API.
 - **Every post must include an image** -- Instagram does not support text-only publishing.
 - **Token expires after 60 days** -- refresh periodically by repeating Step 4.
+
+---
+
+## Installation
+
+> Prerequisites: Node.js >= 18
+
+```bash
+# 1. Install dependencies
+cd toolkit && npm install && npm run build && cd ..
+
+# 2. Create config file
+cp config.example.yaml config.yaml
+```
+
+Fill in your credentials in `config.yaml`:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `instagram.business_account_id` | **Yes** | Instagram Business Account ID |
+| `instagram.access_token` | **Yes** | Access Token with `instagram_basic` + `instagram_content_publish` permissions |
+| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving → [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-instagram-article) |
 
 ---
 
