@@ -42,13 +42,34 @@ const CONFIG_PATHS = [
   join(dirname(import.meta.url.replace('file://', '')), '..', 'config.yaml'),
 ];
 
-function loadConfig(): Record<string, unknown> {
-  for (const p of CONFIG_PATHS) {
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) || {};
-    }
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = join(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) || {};
   }
   return {};
+}
+
+function loadConfig(): Record<string, unknown> {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
+  for (const p of CONFIG_PATHS) {
+    if (existsSync(p)) {
+      local = parseYaml(readFileSync(p, 'utf-8')) || {};
+      break;
+    }
+  }
+  // 合并各 section：本地覆盖中心
+  const merged: Record<string, unknown> = { ...central };
+  for (const [key, val] of Object.entries(local)) {
+    if (typeof val === 'object' && val !== null && typeof merged[key] === 'object' && merged[key] !== null) {
+      merged[key] = { ...(merged[key] as Record<string, unknown>), ...(val as Record<string, unknown>) };
+    } else {
+      merged[key] = val;
+    }
+  }
+  return merged;
 }
 
 function loadCustomTheme(jsonPath: string): Theme {
