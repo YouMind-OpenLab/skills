@@ -1,0 +1,7 @@
+youmind:
+  api_key: ""
+  base_url: "https://youmind.com/openapi/v1"
+
+instagram:
+  business_account_id: ""  # Instagram Business Account ID
+  access_token: ""         # Facebook Page Access Token with instagram_basic + instagram_content_publish

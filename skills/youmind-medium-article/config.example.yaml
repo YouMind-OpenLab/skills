@@ -1,0 +1,6 @@
+youmind:
+  api_key: ""
+  base_url: "https://youmind.com/openapi/v1"
+medium:
+  token: ""              # Integration token from https://medium.com/me/settings/security
+  publication_id: ""     # Optional: publish to a specific publication

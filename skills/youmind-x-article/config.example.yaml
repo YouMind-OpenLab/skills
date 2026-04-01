@@ -1,0 +1,17 @@
+# YouMind X (Twitter) Skill Configuration
+
+# YouMind OpenAPI (knowledge base search, web search, article archiving)
+youmind:
+  api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
+  base_url: "https://youmind.com/openapi/v1"
+
+# X (Twitter) API credentials
+x:
+  bearer_token: ""         # App-only bearer token (read only)
+  access_token: ""         # User access token (for posting, OAuth 2.0)
+
+  # OAuth 1.0a alternative (for apps using legacy auth)
+  api_key: ""              # Consumer API key
+  api_secret: ""           # Consumer API secret
+  access_token_legacy: ""  # OAuth 1.0a access token
+  access_token_secret: ""  # OAuth 1.0a access token secret

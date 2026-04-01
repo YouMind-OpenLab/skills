@@ -1,0 +1,163 @@
+---
+name: youmind-linkedin-article
+version: 1.0.0
+description: |
+  Write and publish LinkedIn posts and articles with AI — topic research via YouMind knowledge base,
+  professional-audience adapted writing, Unicode formatting, image uploads, and one-click publishing.
+  Use when user wants to "publish to LinkedIn", "write LinkedIn post", "LinkedIn article".
+triggers:
+  - "linkedin article"
+  - "linkedin post"
+  - "publish to linkedin"
+  - "post on linkedin"
+  - "write for linkedin"
+  - "LinkedIn 文章"
+  - "发布到 LinkedIn"
+  - "LinkedIn 帖子"
+  - "写 LinkedIn"
+platforms:
+  - openclaw
+  - claude-code
+  - cursor
+  - codex
+  - gemini-cli
+  - windsurf
+  - kilo
+  - opencode
+  - goose
+  - roo
+metadata:
+  openclaw:
+    emoji: "💼"
+    primaryEnv: LINKEDIN_ACCESS_TOKEN
+    requires:
+      anyBins: ["node", "npm"]
+      env: ["LINKEDIN_ACCESS_TOKEN"]
+allowed-tools:
+  - Bash(node dist/cli.js *)
+  - Bash(npm install)
+  - Bash(npm run build)
+---
+
+# AI LinkedIn Post Writer
+
+Write professional LinkedIn posts with AI that drive engagement. Topic research via [YouMind](https://youmind.com?utm_source=youmind-linkedin-article) knowledge base, professional-audience adapted writing, Unicode formatting (no Markdown), image uploads, and one-click publishing to LinkedIn.
+
+> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article) | [LinkedIn Developer Portal](https://www.linkedin.com/developers/) | [More Skills](https://youmind.com/skills?utm_source=youmind-linkedin-article)
+
+## Onboarding
+
+**MANDATORY: When the user has just installed this skill, present this message IMMEDIATELY. Translate to the user's language:**
+
+> **AI LinkedIn Post Writer installed!**
+>
+> Tell me your topic and I'll write and publish a LinkedIn post for you.
+>
+> **Try it now:** "Write a LinkedIn post about the future of AI in enterprise"
+>
+> **What it does:**
+> - Research topics from your YouMind knowledge base and web trends
+> - Write professional posts optimized for LinkedIn's algorithm
+> - Format with Unicode styling (bold, italic, bullets) -- no Markdown
+> - Upload images for visual engagement
+> - Publish directly to your LinkedIn profile or company page
+>
+> **Setup (one-time):**
+> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article) and fill `youmind.api_key` in `config.yaml`
+> 3. Get LinkedIn OAuth 2.0 access token from [LinkedIn Developer Portal](https://www.linkedin.com/developers/) and fill `linkedin.access_token` in `config.yaml`
+> 4. Get your person URN (urn:li:person:{id}) and fill `linkedin.person_urn`
+>
+> **Need help?** Just ask!
+
+## Usage
+
+Provide a topic, talking points, or raw text for publishing.
+
+**Write from a topic:**
+> Write a LinkedIn post about remote team leadership best practices
+
+**Write for a company page:**
+> Publish a LinkedIn post from our company page about our new product launch
+
+**Format and publish raw text:**
+> Publish this text to LinkedIn: [your text]
+
+## Setup
+
+> Prerequisites: Node.js >= 18, a LinkedIn account with API access.
+
+### Step 1 -- Install Dependencies
+
+```bash
+cd toolkit && npm install && npm run build && cd ..
+```
+
+### Step 2 -- Create Config File
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+### Step 3 -- Get YouMind API Key (Recommended)
+
+1. Open [YouMind API Keys page](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article)
+2. Create a new API key
+3. Copy the `sk-ym-xxxx` key
+4. Fill `youmind.api_key` in `config.yaml`
+
+### Step 4 -- Get LinkedIn API Credentials
+
+1. Go to [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
+2. Create a new app or use an existing one
+3. Request the `w_member_social` and `r_liteprofile` OAuth scopes
+4. Generate an OAuth 2.0 access token
+5. Get your person URN: call GET /v2/userinfo with the token
+6. Fill `linkedin.access_token` and `linkedin.person_urn` in `config.yaml`
+
+### Verify Setup
+
+After configuration, say:
+
+> "Write a LinkedIn post about AI trends in 2025"
+
+## Skill Directory
+
+| Path | Purpose | When to read |
+|------|---------|-------------|
+| `references/pipeline.md` | Full step-by-step execution | When running the publishing pipeline |
+| `references/content-adaptation.md` | LinkedIn content formatting rules | When adapting content for LinkedIn |
+| `references/api-reference.md` | LinkedIn API endpoint details | When debugging API calls |
+| `config.yaml` | API credentials | Step 1 (first-run check) |
+| `toolkit/dist/*.js` | Executable scripts | Various steps |
+
+## Pipeline Overview
+
+| Step | Action |
+|------|--------|
+| 1 | Load config and validate credentials |
+| 2 | Research topic via YouMind knowledge base |
+| 3 | Write post with professional tone and LinkedIn best practices |
+| 4 | Adapt content: 3,000 char limit, Unicode formatting, hooks, hashtags |
+| 5 | Upload images if provided |
+| 6 | Publish to LinkedIn |
+| 7 | Archive to YouMind (optional) |
+| 8 | Report results: post URL, engagement tips |
+
+## Content Rules
+
+1. **3,000 character limit** -- LinkedIn truncates after this
+2. **Hook in first 2 lines** -- content before "see more" fold is critical
+3. **Short paragraphs** -- 1-3 sentences max for readability
+4. **Unicode formatting** -- use Unicode bold/italic, NOT Markdown
+5. **3-5 hashtags at end** -- for discoverability
+6. **No external links in body** -- LinkedIn suppresses posts with links; put in first comment
+7. **End with a question** -- drives comments and engagement
+8. **Professional tone** -- authoritative but approachable
+
+## References
+
+- YouMind API: see `references/api-reference.md`
+- Content rules: see `references/content-adaptation.md`
+- Pipeline: see `references/pipeline.md`
+- YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-linkedin-article

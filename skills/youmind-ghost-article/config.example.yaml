@@ -1,0 +1,6 @@
+youmind:
+  api_key: ""
+  base_url: "https://youmind.com/openapi/v1"
+ghost:
+  site_url: ""          # e.g. https://myblog.ghost.io
+  admin_api_key: ""     # Format: {id}:{secret} from Ghost Admin > Integrations

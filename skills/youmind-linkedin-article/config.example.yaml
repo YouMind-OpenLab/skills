@@ -1,0 +1,12 @@
+# YouMind LinkedIn Skill Configuration
+
+# YouMind OpenAPI (knowledge base search, web search, article archiving)
+youmind:
+  api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
+  base_url: "https://youmind.com/openapi/v1"
+
+# LinkedIn API credentials
+linkedin:
+  access_token: ""         # OAuth 2.0 access token
+  person_urn: ""           # urn:li:person:{id}
+  organization_urn: ""     # Optional: urn:li:organization:{id} for company pages
