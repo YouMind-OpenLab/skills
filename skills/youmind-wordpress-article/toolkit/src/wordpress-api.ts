@@ -163,7 +163,7 @@ async function wpFetch<T = unknown>(
   const resp = await fetch(url, {
     ...options,
     headers,
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(120_000),
   });
 
   if (!resp.ok) {
