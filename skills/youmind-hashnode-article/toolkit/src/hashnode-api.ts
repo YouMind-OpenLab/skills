@@ -346,9 +346,8 @@ export async function publishPost(
 
   if (options.subtitle) input.subtitle = options.subtitle;
   if (options.tagSlugs?.length) {
-    // Use tag IDs if available, otherwise use slugs
-    // Hashnode API accepts tags array with slug for matching
-    input.tags = options.tagSlugs.map(slug => ({ slug, name: slug, id: '' }));
+    // Use slug-based matching — omit id field to avoid ObjectId validation
+    input.tags = options.tagSlugs.map(slug => ({ slug, name: slug }));
   }
   if (options.tags?.length) input.tags = options.tags;
   if (options.coverImageOptions) input.coverImageOptions = options.coverImageOptions;

@@ -17,32 +17,33 @@ AI-powered Hashnode article writing and publishing. Tell your agent a topic, it 
 
 ## Getting Credentials
 
-### Getting a Hashnode Personal Access Token
+### Step 1 -- Sign Up and Create a Publication (Blog)
 
-> Hashnode developer settings page: <https://hashnode.com/settings/developer>
+> If you already have a Hashnode blog, skip to Step 2.
 
-**Step 1 -- Log in to Hashnode**
+1. Go to [Hashnode](https://hashnode.com) and sign up or log in
+2. After logging in, visit the [Onboarding page](https://hashnode.com/onboard) and follow the prompts to create your blog (Publication)
+3. Choose a blog name and domain (Hashnode provides a free `*.hashnode.dev` subdomain)
+4. Once complete, you'll land on your blog Dashboard
 
-Log in to [Hashnode](https://hashnode.com) with your account.
+> **Note**: Hashnode requires a Publication before you can publish articles. Without one, the API cannot publish content.
 
-**Step 2 -- Go to Account Settings > Developer**
+### Step 2 -- Get a Personal Access Token
 
-Click your avatar (top-right) -> **Account Settings** -> select **Developer** from the left menu.
+> Hashnode developer settings: <https://hashnode.com/settings/developer>
 
-Direct link: <https://hashnode.com/settings/developer>
+1. Click your avatar (top-right) -> **Account Settings** -> select **Developer** from the left menu
+2. Direct link: <https://hashnode.com/settings/developer>
+3. Click the **"Generate New Token"** button
+4. Enter a token name (e.g., `youmind`)
+5. Copy the generated Personal Access Token (shown only once -- save it immediately)
 
-**Step 3 -- Generate a Personal Access Token**
-
-1. Click the **"Generate New Token"** button
-2. Enter a token name (e.g., `youmind`)
-3. Copy the generated Personal Access Token (shown only once -- save it immediately)
-
-**Step 4 -- Get Your Publication ID**
+### Step 3 -- Get Your Publication ID
 
 Your Publication ID can be obtained via:
 
-- **Method 1 -- Blog settings URL**: Open your Hashnode blog -> Dashboard -> check the URL for the publication ID
-- **Method 2 -- GraphQL API query**: Use the following query to get your publications list:
+- **Method 1 -- Blog Dashboard URL**: Open your Hashnode blog Dashboard. The URL format is `https://hashnode.com/dashboards/{publication_id}/general` -- the `{publication_id}` part is what you need
+- **Method 2 -- GraphQL API query**: Execute the following query in the [API Playground](https://gql.hashnode.com) (you need to enter your Token in the Playground first):
 
 ```graphql
 query {
@@ -60,9 +61,9 @@ query {
 }
 ```
 
-Execute this query in Hashnode's [API Playground](https://gql.hashnode.com).
+> **If the query returns empty results**: You haven't created a Publication yet -- go back to Step 1.
 
-**Step 5 -- Fill in Config**
+### Step 4 -- Fill in Config
 
 Paste the token and publication ID into `config.yaml`:
 

@@ -4,3 +4,8 @@ config.yaml
 output/
 .env
 toolkit/package-lock.json
+
+# Generated articles
+article.md
+article.hashnode.md
+*.hashnode.md

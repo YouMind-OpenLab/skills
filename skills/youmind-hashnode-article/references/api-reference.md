@@ -77,7 +77,7 @@ mutation PublishPost($input: PublishPostInput!) {
     "contentMarkdown": "# Content\n\nMarkdown body here...",
     "subtitle": "A compelling subtitle",
     "tags": [
-      { "slug": "typescript", "name": "TypeScript", "id": "" }
+      { "slug": "typescript", "name": "TypeScript" }
     ],
     "coverImageOptions": {
       "coverImageURL": "https://example.com/cover.jpg"
@@ -95,7 +95,7 @@ mutation PublishPost($input: PublishPostInput!) {
 
 **Notes:**
 - `publicationId` is required
-- `tags` can use slug-based matching (set `id` to empty string)
+- `tags` can use slug-based matching (omit `id` field, provide `slug` and `name`)
 - `coverImageOptions.coverImageURL` must be an absolute URL
 - `metaTags` are optional but recommended for SEO
 - Posts are published immediately (no draft state in this mutation)
