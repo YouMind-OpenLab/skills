@@ -441,6 +441,18 @@ export async function uploadMedia(
 }
 
 // ---------------------------------------------------------------------------
+// Auth mode detection
+// ---------------------------------------------------------------------------
+
+export type AuthMode = 'oauth2' | 'oauth1' | 'browser';
+
+export function getAuthMode(config: XConfig): AuthMode {
+  if (config.accessToken) return 'oauth2';
+  if (config.oauth1) return 'oauth1';
+  return 'browser';
+}
+
+// ---------------------------------------------------------------------------
 // CLI (when run directly)
 // ---------------------------------------------------------------------------
 

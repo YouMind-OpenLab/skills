@@ -17,6 +17,7 @@
   "dependencies": {
     "commander": "^12.0.0",
     "node-fetch": "^3.3.0",
+    "playwright": "^1.52.0",
     "yaml": "^2.3.0"
   },
   "devDependencies": {

@@ -3,4 +3,7 @@ dist/
 config.yaml
 output/
 .env
+.x-browser-state.json
+.x-browser-profile/
+.x-browser-cookies.json
 toolkit/package-lock.json

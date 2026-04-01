@@ -15,7 +15,8 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getMe, deleteTweet, loadXConfig } from './x-api.js';
+import { getMe, deleteTweet, loadXConfig, getAuthMode } from './x-api.js';
+import { browserLogin, browserGetMe, browserDeleteTweet, closeBrowser } from './x-browser.js';
 import {
   publishTweet,
   publishThread,
@@ -53,31 +54,35 @@ program
       ? opts.hashtags.split(',').map((h: string) => h.trim())
       : undefined;
 
-    const result = await publishTweet({
-      content,
-      media: opts.image,
-      replyTo: opts.replyTo,
-      quoteTweetId: opts.quote,
-      hashtags,
-    });
+    try {
+      const result = await publishTweet({
+        content,
+        media: opts.image,
+        replyTo: opts.replyTo,
+        quoteTweetId: opts.quote,
+        hashtags,
+      });
 
-    if (result.success) {
-      console.log('\nTweet published!');
-      console.log(`Tweet ID: ${result.tweetIds[0]}`);
-      console.log(`URL: https://x.com/i/status/${result.tweetIds[0]}`);
-    } else {
-      console.error(`\nPublish failed: ${result.error}`);
+      if (result.success) {
+        console.log('\nTweet published!');
+        console.log(`Tweet ID: ${result.tweetIds[0]}`);
+        console.log(`URL: https://x.com/i/status/${result.tweetIds[0]}`);
+      } else {
+        console.error(`\nPublish failed: ${result.error}`);
+      }
+
+      if (result.warnings.length > 0) {
+        console.log('\nWarnings:');
+        for (const w of result.warnings) console.log(`  - ${w}`);
+      }
+
+      console.log(`\nText (${(result.content as string).length} chars):`);
+      console.log('---');
+      console.log(result.content);
+      console.log('---');
+    } finally {
+      await closeBrowser();
     }
-
-    if (result.warnings.length > 0) {
-      console.log('\nWarnings:');
-      for (const w of result.warnings) console.log(`  - ${w}`);
-    }
-
-    console.log(`\nText (${(result.content as string).length} chars):`);
-    console.log('---');
-    console.log(result.content);
-    console.log('---');
   });
 
 program
@@ -102,32 +107,36 @@ program
       ? opts.hashtags.split(',').map((h: string) => h.trim())
       : undefined;
 
-    const result = await publishThread({
-      content,
-      media: opts.image,
-      hashtags,
-      addNumbering: opts.numbering !== false,
-    });
+    try {
+      const result = await publishThread({
+        content,
+        media: opts.image,
+        hashtags,
+        addNumbering: opts.numbering !== false,
+      });
 
-    if (result.success) {
-      console.log(`\nThread published! (${result.tweetIds.length} tweets)`);
-      for (let i = 0; i < result.tweetIds.length; i++) {
-        console.log(`  ${i + 1}. https://x.com/i/status/${result.tweetIds[i]}`);
+      if (result.success) {
+        console.log(`\nThread published! (${result.tweetIds.length} tweets)`);
+        for (let i = 0; i < result.tweetIds.length; i++) {
+          console.log(`  ${i + 1}. https://x.com/i/status/${result.tweetIds[i]}`);
+        }
+      } else {
+        console.error(`\nPublish failed: ${result.error}`);
       }
-    } else {
-      console.error(`\nPublish failed: ${result.error}`);
-    }
 
-    if (result.warnings.length > 0) {
-      console.log('\nWarnings:');
-      for (const w of result.warnings) console.log(`  - ${w}`);
-    }
+      if (result.warnings.length > 0) {
+        console.log('\nWarnings:');
+        for (const w of result.warnings) console.log(`  - ${w}`);
+      }
 
-    const tweets = result.content as string[];
-    console.log(`\nThread preview (${tweets.length} tweets):`);
-    for (let i = 0; i < tweets.length; i++) {
-      console.log(`\n--- Tweet ${i + 1} ---`);
-      console.log(tweets[i]);
+      const tweets = result.content as string[];
+      console.log(`\nThread preview (${tweets.length} tweets):`);
+      for (let i = 0; i < tweets.length; i++) {
+        console.log(`\n--- Tweet ${i + 1} ---`);
+        console.log(tweets[i]);
+      }
+    } finally {
+      await closeBrowser();
     }
   });
 
@@ -182,11 +191,27 @@ program
   });
 
 program
+  .command('login')
+  .description('Log in to X via cookie import (no API needed)')
+  .option('--cookies <cookies>', 'Cookie string: "auth_token=xxx; ct0=yyy"')
+  .action(async (opts) => {
+    await browserLogin(opts.cookies);
+    await closeBrowser();
+  });
+
+program
   .command('me')
   .description('Show authenticated X user profile')
   .action(async () => {
     const config = loadXConfig();
-    const user = await getMe(config);
+    const authMode = getAuthMode(config);
+    let user;
+    if (authMode === 'browser') {
+      user = await browserGetMe();
+      await closeBrowser();
+    } else {
+      user = await getMe(config);
+    }
     console.log('X Profile:');
     console.log(JSON.stringify(user, null, 2));
   });
@@ -197,7 +222,14 @@ program
   .requiredOption('--id <tweetId>', 'Tweet ID to delete')
   .action(async (opts) => {
     const config = loadXConfig();
-    const result = await deleteTweet(config, opts.id);
+    const authMode = getAuthMode(config);
+    let result;
+    if (authMode === 'browser') {
+      result = await browserDeleteTweet(opts.id);
+      await closeBrowser();
+    } else {
+      result = await deleteTweet(config, opts.id);
+    }
     console.log(result.deleted ? 'Tweet deleted.' : 'Tweet not deleted (may not exist).');
   });
 

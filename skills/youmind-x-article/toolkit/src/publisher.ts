@@ -14,8 +14,13 @@ import {
   uploadMedia,
   getMe,
   loadXConfig,
+  getAuthMode,
   type XConfig,
 } from './x-api.js';
+import {
+  browserPostTweet,
+  browserPostThread,
+} from './x-browser.js';
 import {
   adaptSingleTweet,
   splitIntoThread,
@@ -101,11 +106,14 @@ export async function publishTweet(
 
   // Create tweet
   try {
-    const result = await createTweet(config, adapted.text, {
-      reply_to: options.replyTo,
-      quote_tweet_id: options.quoteTweetId,
-      media_ids: mediaIds.length > 0 ? mediaIds : undefined,
-    });
+    const authMode = getAuthMode(config);
+    const result = authMode === 'browser'
+      ? await browserPostTweet(adapted.text, { replyTo: options.replyTo })
+      : await createTweet(config, adapted.text, {
+          reply_to: options.replyTo,
+          quote_tweet_id: options.quoteTweetId,
+          media_ids: mediaIds.length > 0 ? mediaIds : undefined,
+        });
 
     // Save output
     saveOutput('tweet', {
@@ -169,7 +177,10 @@ export async function publishThread(
   }
 
   try {
-    const results = await createThread(config, thread.tweets);
+    const authMode = getAuthMode(config);
+    const results = authMode === 'browser'
+      ? await browserPostThread(thread.tweets)
+      : await createThread(config, thread.tweets);
     const tweetIds = results.map((r) => r.data.id);
 
     saveOutput('thread', {
