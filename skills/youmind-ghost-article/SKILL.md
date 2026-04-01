@@ -116,7 +116,7 @@ cp config.example.yaml config.yaml
 
 ### Step 4 — Get Ghost Admin API Key
 
-1. Log into your Ghost Admin panel
+1. Log into your Ghost Admin panel (the site URL is in the browser address bar after login, e.g. `https://{your-name}.ghost.io`)
 2. Go to **Settings > Integrations**
 3. Click **Add custom integration**
 4. Name it (e.g., "YouMind Skill")
@@ -125,7 +125,7 @@ cp config.example.yaml config.yaml
 
 ```yaml
 ghost:
-  site_url: "https://myblog.ghost.io"
+  site_url: "https://{your-name}.ghost.io"  # from the browser address bar after login
   admin_api_key: "your-id:your-secret"
 ```
 

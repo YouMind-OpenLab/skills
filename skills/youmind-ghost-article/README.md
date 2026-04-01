@@ -25,6 +25,8 @@ Ghost AI Skill. Tell the Agent what to write, and it automatically runs through 
 
 Open your browser, go to `https://yourdomain.com/ghost` (or `https://yourdomain.ghost.io/ghost`), and log in with your admin account.
 
+> **Tip:** Your Ghost site URL is the domain shown in the browser address bar after login, e.g. `https://{your-name}.ghost.io`. Remove the `/ghost/...` part — that's your `site_url`.
+
 **Step 2 -- Go to Integrations**
 
 Click the gear icon at the bottom-left to go to **Settings**, then find **Integrations**.
@@ -48,7 +50,7 @@ In the integration detail page, find the **"Admin API Key"** field. Copy this ke
 
 **Step 6 -- Fill in Site URL**
 
-Enter your Ghost site URL in `ghost.site_url` (e.g., `https://myblog.ghost.io`).
+Enter your Ghost site URL in `ghost.site_url` (e.g., `https://{your-name}.ghost.io`). This is the domain from your browser address bar after login, without the `/ghost/...` path.
 
 ### Verify Setup
 
