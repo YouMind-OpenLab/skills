@@ -17,34 +17,43 @@ Reddit AI 发布 Skill。对 Agent 说一句话，自动完成调研、写作、
 
 ## 获取凭证
 
-### 第 1 步 — 访问 Reddit Apps 页面
+本 Skill 支持两种认证方式，自动检测：
 
-打开 [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps)，登录你的 Reddit 账号。
+| 模式 | 需要什么 | 是否需要 API 审批 | 推荐场景 |
+| ---- | -------- | ----------------- | -------- |
+| **Cookie 模式** | 用户名 + 密码 | 不需要 | 快速上手，无需等待 |
+| **OAuth 模式** | 用户名 + 密码 + client_id + client_secret | 需要（约 7 天） | 已有 API 凭证 |
 
-### 第 2 步 — 创建应用
+### Cookie 模式（推荐，无需审批）
 
-滚动到页面底部，点击 **"create another app..."** 按钮。
+只需要你的 Reddit 用户名和密码，**不需要申请 API 访问**。
 
-### 第 3 步 — 填写应用信息
+将以下内容填入 `config.yaml`：
 
-填写以下信息：
+```yaml
+reddit:
+  client_id: ""
+  client_secret: ""
+  username: "你的 Reddit 用户名"
+  password: "你的 Reddit 密码"
+  user_agent: "youmind-reddit/1.0 by /u/yourname"
+```
 
-- **name**: `youmind-publisher`（或任意名称）
-- **type**: 选择 **script**
-- **description**: 可选
-- **about url**: 可留空
-- **redirect uri**: `http://localhost:8080`
+`client_id` 和 `client_secret` 留空即可，Skill 会自动使用 Cookie 模式登录。
 
-### 第 4 步 — 创建并复制凭证
+### OAuth 模式（已有 API 凭证）
 
-点击 **"create app"** 按钮，然后复制以下凭证：
+如果你已经有 Reddit API 凭证（2025 年 11 月前创建的，或已通过审批），可以使用 OAuth 模式获得更稳定的体验。
 
-- **Client ID**: 应用名称正下方的短字符串
-- **Client Secret**: 标记为 "secret" 的字段
+<details>
+<summary>展开 OAuth 设置步骤</summary>
 
-### 第 5 步 — 填入配置文件
+> **注意（2025 年 11 月起）：** Reddit 已取消自助创建 API 应用，需先提交申请并通过人工审核。详见 [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy)。
 
-将凭证填入 `config.yaml`：
+1. 访问 [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps)，按提示提交开发者申请
+2. 审核通过后，创建 **script** 类型应用（redirect uri 填 `http://localhost:8080`）
+3. 复制 **Client ID**（应用名下方短字符串）和 **Client Secret**
+4. 填入 `config.yaml`：
 
 ```yaml
 reddit:
@@ -55,10 +64,13 @@ reddit:
   user_agent: "youmind-reddit/1.0 by /u/yourname"
 ```
 
+</details>
+
 ### 注意事项
 
-- **script** 类型的应用只能以你自己的身份发帖。
+- 两种模式都只能以你自己的身份发帖。
 - `user_agent` 建议包含你的用户名，避免被 Reddit 限速。
+- Cookie 模式依赖 Reddit 旧版登录接口，如果 Reddit 关闭该接口，需切换到 OAuth 模式。
 
 ---
 
@@ -78,8 +90,8 @@ cp config.example.yaml config.yaml
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `reddit.client_id` | **是** | Reddit 应用 client ID |
-| `reddit.client_secret` | **是** | Reddit 应用 client secret |
+| `reddit.client_id` | 可选 | Reddit 应用 client ID（留空则使用 Cookie 模式） |
+| `reddit.client_secret` | 可选 | Reddit 应用 client secret（留空则使用 Cookie 模式） |
 | `reddit.username` | **是** | 你的 Reddit 用户名 |
 | `reddit.password` | **是** | 你的 Reddit 密码 |
 | `reddit.user_agent` | **是** | User agent 字符串，如 `youmind-reddit/1.0 by /u/yourname` |
@@ -140,7 +152,9 @@ npx tsx src/cli.ts me
 
 ## 常见问题
 
-**发布报 403 错误** — 检查 `client_id` 和 `client_secret` 是否正确，以及账号密码是否匹配。
+**无法在 reddit.com/prefs/apps 创建应用** — 推荐使用 Cookie 模式（不需要 API 凭证）。把 `client_id` 和 `client_secret` 留空，只填用户名和密码即可。如果确实需要 OAuth，需先提交开发者申请并等待审核（约 7 天），详见 [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy)。
+
+**发布报 403 错误** — Cookie 模式下，检查用户名和密码是否正确。OAuth 模式下，同时检查 `client_id` 和 `client_secret`。
 
 **被限速** — Reddit 对新账号和低 karma 账号有发帖限制。确保 `user_agent` 包含你的用户名。
 

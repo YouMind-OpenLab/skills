@@ -1,8 +1,11 @@
 /**
  * Reddit API wrapper.
  *
- * Handles OAuth 2.0 script app flow (password grant), self-post and link
- * submission, subreddit rules/flairs, and user info.
+ * Supports two auth modes:
+ * - **OAuth mode**: Uses client_id + client_secret (script app password grant).
+ * - **Cookie mode**: Uses only username + password via old Reddit login API.
+ *   Automatically selected when client_id/client_secret are not configured.
+ *   No API approval required.
  *
  * Usage:
  *   import { submitSelfPost, submitLink, getSubredditRules, getFlairs, getMe } from './reddit-api.js';
@@ -12,6 +15,12 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import {
+  browserSubmitSelfPost,
+  browserSubmitLink,
+  browserGetMe,
+  closeBrowser,
+} from './reddit-browser.js';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -23,6 +32,10 @@ const PROJECT_DIR = resolve(__dirname, '../..');
 
 const REDDIT_AUTH_URL = 'https://www.reddit.com/api/v1/access_token';
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
+const REDDIT_COOKIE_LOGIN_URL = 'https://www.reddit.com/api/login';
+const REDDIT_WEB_API_BASE = 'https://www.reddit.com';
+
+type AuthMode = 'oauth' | 'cookie';
 
 export interface RedditConfig {
   clientId: string;
@@ -64,6 +77,19 @@ export function loadRedditConfig(): RedditConfig {
     password: (r.password as string) || '',
     userAgent: (r.user_agent as string) || 'youmind-reddit/1.0',
   };
+}
+
+// ---------------------------------------------------------------------------
+// Auth mode detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Determine auth mode from config.
+ * If client_id and client_secret are set → OAuth mode.
+ * Otherwise → Cookie mode (no API approval needed).
+ */
+export function getAuthMode(config: RedditConfig): AuthMode {
+  return config.clientId && config.clientSecret ? 'oauth' : 'cookie';
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +183,100 @@ export function clearTokenCache(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Cookie Session Management (old Reddit login API)
+// ---------------------------------------------------------------------------
+
+interface CookieSession {
+  cookie: string;
+  modhash: string;
+  expiresAt: number; // Unix timestamp in ms
+}
+
+let cachedCookieSession: CookieSession | null = null;
+
+/**
+ * Log in via old Reddit API and get a session cookie + modhash.
+ * No client_id/client_secret needed — only username + password.
+ */
+export async function getCookieSession(config: RedditConfig): Promise<CookieSession> {
+  // Return cached session if still valid (with 60s buffer)
+  if (cachedCookieSession && Date.now() < cachedCookieSession.expiresAt - 60_000) {
+    return cachedCookieSession;
+  }
+
+  if (!config.username || !config.password) {
+    throw new Error(
+      'Reddit username and password not configured. Set them in config.yaml.',
+    );
+  }
+
+  const body = new URLSearchParams({
+    user: config.username,
+    passwd: config.password,
+    api_type: 'json',
+  });
+
+  const resp = await fetch(`${REDDIT_COOKIE_LOGIN_URL}/${config.username}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': config.userAgent,
+    },
+    body: body.toString(),
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(
+      `Reddit cookie login failed (${resp.status}): ${text.slice(0, 300)}`,
+    );
+  }
+
+  const data = (await resp.json()) as Record<string, unknown>;
+  const json = data.json as Record<string, unknown> | undefined;
+  const errors = (json?.errors as string[][]) ?? [];
+
+  if (errors.length > 0) {
+    const errorMsg = errors.map((e) => e.join(': ')).join('; ');
+    throw new Error(`Reddit login failed: ${errorMsg}`);
+  }
+
+  const loginData = json?.data as Record<string, unknown> | undefined;
+  const modhash = (loginData?.modhash as string) || '';
+  const cookie = (loginData?.cookie as string) || '';
+
+  // Also try to extract from Set-Cookie header as fallback
+  let sessionCookie = cookie;
+  if (!sessionCookie) {
+    const setCookie = resp.headers.get('set-cookie') || '';
+    const match = setCookie.match(/reddit_session=([^;]+)/);
+    if (match) sessionCookie = match[1];
+  }
+
+  if (!sessionCookie) {
+    throw new Error(
+      'Reddit cookie login: no session cookie in response. ' +
+      'This may mean the old login API is no longer available. ' +
+      'Consider applying for OAuth API access instead.',
+    );
+  }
+
+  cachedCookieSession = {
+    cookie: sessionCookie,
+    modhash,
+    expiresAt: Date.now() + 3600 * 1000, // 1 hour
+  };
+
+  return cachedCookieSession;
+}
+
+/** Clear cached cookie session (force re-login on next request). */
+export function clearCookieSessionCache(): void {
+  cachedCookieSession = null;
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -211,18 +331,55 @@ export interface RedditUser {
 // HTTP helper
 // ---------------------------------------------------------------------------
 
+/**
+ * Build the request URL for the given endpoint and auth mode.
+ * In cookie mode, non-API GET endpoints need a `.json` suffix.
+ */
+function buildUrl(endpoint: string, method: string, mode: AuthMode): string {
+  if (endpoint.startsWith('http')) return endpoint;
+
+  if (mode === 'oauth') {
+    return `${REDDIT_API_BASE}${endpoint}`;
+  }
+
+  // Cookie mode: use www.reddit.com
+  // Non-API GET paths need .json suffix to get JSON responses
+  let path = endpoint;
+  if (method === 'GET' && !path.startsWith('/api/') && !path.endsWith('.json')) {
+    path = `${path}.json`;
+  }
+  return `${REDDIT_WEB_API_BASE}${path}`;
+}
+
 async function redditFetch<T = unknown>(
   endpoint: string,
   method: string,
   config: RedditConfig,
   body?: Record<string, string> | URLSearchParams,
 ): Promise<T> {
-  const token = await getAccessToken(config);
+  const mode = getAuthMode(config);
+  const url = buildUrl(endpoint, method, mode);
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
     'User-Agent': config.userAgent,
   };
+
+  // Set auth headers based on mode
+  if (mode === 'oauth') {
+    const token = await getAccessToken(config);
+    headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    const session = await getCookieSession(config);
+    headers['Cookie'] = `reddit_session=${session.cookie}`;
+    // Add modhash to POST bodies
+    if (method === 'POST' && session.modhash) {
+      if (body instanceof URLSearchParams) {
+        body.set('uh', session.modhash);
+      } else if (body) {
+        body['uh'] = session.modhash;
+      }
+    }
+  }
 
   const init: RequestInit = {
     method,
@@ -239,15 +396,29 @@ async function redditFetch<T = unknown>(
     }
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `${REDDIT_API_BASE}${endpoint}`;
   const resp = await fetch(url, init);
 
   if (!resp.ok) {
-    // If 401, clear cache and retry once
-    if (resp.status === 401 && cachedToken) {
-      clearTokenCache();
-      const newToken = await getAccessToken(config);
-      headers['Authorization'] = `Bearer ${newToken}`;
+    // Retry once on auth failure
+    if (resp.status === 401 || (resp.status === 403 && mode === 'cookie')) {
+      if (mode === 'oauth' && cachedToken) {
+        clearTokenCache();
+        const newToken = await getAccessToken(config);
+        headers['Authorization'] = `Bearer ${newToken}`;
+      } else if (mode === 'cookie') {
+        clearCookieSessionCache();
+        const newSession = await getCookieSession(config);
+        headers['Cookie'] = `reddit_session=${newSession.cookie}`;
+        if (method === 'POST' && newSession.modhash && body) {
+          if (body instanceof URLSearchParams) {
+            body.set('uh', newSession.modhash);
+            init.body = body.toString();
+          } else {
+            body['uh'] = newSession.modhash;
+            init.body = new URLSearchParams(body).toString();
+          }
+        }
+      }
       const retryResp = await fetch(url, { ...init, headers });
       if (!retryResp.ok) {
         const text = await retryResp.text().catch(() => '');
@@ -269,6 +440,7 @@ async function redditFetch<T = unknown>(
 
 /**
  * Submit a self-post (text post) to a subreddit.
+ * In cookie mode, uses Playwright browser automation.
  */
 export async function submitSelfPost(
   config: RedditConfig,
@@ -277,6 +449,10 @@ export async function submitSelfPost(
   text: string,
   options?: SubmitOptions,
 ): Promise<RedditPost> {
+  if (getAuthMode(config) === 'cookie') {
+    return browserSubmitSelfPost(config, subreddit, title, text, options);
+  }
+
   const params: Record<string, string> = {
     api_type: 'json',
     kind: 'self',
@@ -327,6 +503,7 @@ export async function submitSelfPost(
 
 /**
  * Submit a link post to a subreddit.
+ * In cookie mode, uses Playwright browser automation.
  */
 export async function submitLink(
   config: RedditConfig,
@@ -335,6 +512,10 @@ export async function submitLink(
   url: string,
   options?: SubmitOptions,
 ): Promise<RedditPost> {
+  if (getAuthMode(config) === 'cookie') {
+    return browserSubmitLink(config, subreddit, title, url, options);
+  }
+
   const params: Record<string, string> = {
     api_type: 'json',
     kind: 'link',
@@ -434,8 +615,12 @@ export async function getSubredditInfo(
 
 /**
  * Get the authenticated user's profile.
+ * In cookie mode, uses Playwright browser automation.
  */
 export async function getMe(config: RedditConfig): Promise<RedditUser> {
+  if (getAuthMode(config) === 'cookie') {
+    return browserGetMe(config);
+  }
   return redditFetch<RedditUser>('/api/v1/me', 'GET', config);
 }
 

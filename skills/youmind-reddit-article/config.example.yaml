@@ -5,11 +5,15 @@ youmind:
   api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
   base_url: "https://youmind.com/openapi/v1"
 
-# Reddit API credentials
-# Create an app at https://www.reddit.com/prefs/apps (select "script" type)
+# Reddit credentials
+# Two auth modes (auto-detected):
+#   1. Cookie mode (recommended): Leave client_id/client_secret empty.
+#      Only needs username + password. No API approval required.
+#   2. OAuth mode: Fill in client_id/client_secret from https://www.reddit.com/prefs/apps
+#      Requires Reddit API approval (see Responsible Builder Policy).
 reddit:
-  client_id: ""            # From https://www.reddit.com/prefs/apps
-  client_secret: ""
-  username: ""
-  password: ""
+  client_id: ""            # Optional — leave empty to use cookie mode
+  client_secret: ""        # Optional — leave empty to use cookie mode
+  username: ""             # Required
+  password: ""             # Required
   user_agent: ""           # e.g. "youmind-reddit/1.0 by /u/yourname"

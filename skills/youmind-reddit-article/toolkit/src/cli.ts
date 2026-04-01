@@ -15,7 +15,8 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getMe, getSubredditRules, getFlairs, loadRedditConfig } from './reddit-api.js';
+import { getMe, getSubredditRules, getFlairs, loadRedditConfig, getAuthMode } from './reddit-api.js';
+import { closeBrowser, browserLogin } from './reddit-browser.js';
 import {
   publishSelfPost,
   publishLinkPost,
@@ -214,13 +215,33 @@ program
   .command('me')
   .description('Show authenticated Reddit user profile')
   .action(async () => {
+    try {
+      const config = loadRedditConfig();
+      const user = await getMe(config);
+      console.log('Reddit Profile:');
+      console.log(`  Username: ${user.name}`);
+      console.log(`  Link karma: ${user.link_karma}`);
+      console.log(`  Comment karma: ${user.comment_karma}`);
+      console.log(`  Account age: ${new Date(user.created_utc * 1000).toLocaleDateString()}`);
+    } finally {
+      await closeBrowser();
+    }
+  });
+
+program
+  .command('login')
+  .description('Log in to Reddit via browser (cookie mode). Opens a browser window for manual login.')
+  .action(async () => {
     const config = loadRedditConfig();
-    const user = await getMe(config);
-    console.log('Reddit Profile:');
-    console.log(`  Username: ${user.name}`);
-    console.log(`  Link karma: ${user.link_karma}`);
-    console.log(`  Comment karma: ${user.comment_karma}`);
-    console.log(`  Account age: ${new Date(user.created_utc * 1000).toLocaleDateString()}`);
+    if (getAuthMode(config) === 'oauth') {
+      console.log('OAuth mode is active (client_id/client_secret configured). No browser login needed.');
+      return;
+    }
+    try {
+      await browserLogin(config);
+    } finally {
+      await closeBrowser();
+    }
   });
 
 program.parse();

@@ -16,34 +16,43 @@ Publish posts to Reddit with AI. Research, write, adapt to subreddit culture, an
 
 ## Getting Credentials
 
-### Step 1 — Visit Reddit Apps Page
+This skill supports two auth modes, auto-detected from your config:
 
-Go to [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps) and sign in with your Reddit account.
+| Mode | What you need | API approval? | Best for |
+| ---- | ------------- | ------------- | -------- |
+| **Cookie mode** | username + password | No | Quick start, no waiting |
+| **OAuth mode** | username + password + client_id + client_secret | Yes (~7 days) | Already have API credentials |
 
-### Step 2 — Create an App
+### Cookie Mode (Recommended, No Approval Needed)
 
-Scroll to the bottom of the page and click **"create another app..."**.
+Only requires your Reddit username and password. **No API application needed.**
 
-### Step 3 — Fill in App Details
+Fill in `config.yaml`:
 
-Fill in the following:
+```yaml
+reddit:
+  client_id: ""
+  client_secret: ""
+  username: "your Reddit username"
+  password: "your Reddit password"
+  user_agent: "youmind-reddit/1.0 by /u/yourname"
+```
 
-- **name**: `youmind-publisher` (or any name you prefer)
-- **type**: Select **script**
-- **description**: optional
-- **about url**: can be left blank
-- **redirect uri**: `http://localhost:8080`
+Leave `client_id` and `client_secret` empty — the skill will automatically use cookie-based login.
 
-### Step 4 — Create and Copy Credentials
+### OAuth Mode (If You Have API Credentials)
 
-Click **"create app"**, then copy the following credentials:
+If you already have Reddit API credentials (created before Nov 2025, or approved), OAuth mode provides a more stable experience.
 
-- **Client ID**: the short string directly below the app name
-- **Client Secret**: the field labeled "secret"
+<details>
+<summary>Expand OAuth setup steps</summary>
 
-### Step 5 — Fill in Config
+> **Note (Nov 2025):** Reddit discontinued self-service API app creation. You must submit an application and wait for manual approval. See [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy).
 
-Fill credentials into `config.yaml`:
+1. Go to [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps), follow prompts to submit a developer application
+2. Once approved, create a **script** type app (redirect URI: `http://localhost:8080`)
+3. Copy the **Client ID** (short string under app name) and **Client Secret**
+4. Fill in `config.yaml`:
 
 ```yaml
 reddit:
@@ -54,10 +63,13 @@ reddit:
   user_agent: "youmind-reddit/1.0 by /u/yourname"
 ```
 
+</details>
+
 ### Important Notes
 
-- Script-type apps can only post as yourself.
+- Both modes can only post as yourself.
 - Include your username in `user_agent` to avoid rate limiting.
+- Cookie mode relies on Reddit's legacy login API. If Reddit disables it, switch to OAuth mode.
 
 ---
 
@@ -77,8 +89,8 @@ Fill in your credentials in `config.yaml`:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `reddit.client_id` | **Yes** | Reddit app client ID |
-| `reddit.client_secret` | **Yes** | Reddit app client secret |
+| `reddit.client_id` | Optional | Reddit app client ID (leave empty for cookie mode) |
+| `reddit.client_secret` | Optional | Reddit app client secret (leave empty for cookie mode) |
 | `reddit.username` | **Yes** | Your Reddit username |
 | `reddit.password` | **Yes** | Your Reddit password |
 | `reddit.user_agent` | **Yes** | User agent string, e.g. `youmind-reddit/1.0 by /u/yourname` |
@@ -139,7 +151,9 @@ npx tsx src/cli.ts me
 
 ## FAQ
 
-**403 Forbidden on publish** — Verify your `client_id`, `client_secret`, and account credentials are correct.
+**Cannot create app at reddit.com/prefs/apps** — Use Cookie mode instead (no API credentials needed). Leave `client_id` and `client_secret` empty, just fill in username and password. If you need OAuth, submit a developer application and wait for approval (~7 days). See [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy).
+
+**403 Forbidden on publish** — In cookie mode, verify username and password. In OAuth mode, also check `client_id` and `client_secret`.
 
 **Rate limited** — Reddit rate-limits new/low-karma accounts. Ensure `user_agent` includes your username.
 

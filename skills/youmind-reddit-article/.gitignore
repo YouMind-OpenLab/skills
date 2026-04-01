@@ -4,3 +4,4 @@ config.yaml
 output/
 .env
 toolkit/package-lock.json
+.reddit-browser-state.json

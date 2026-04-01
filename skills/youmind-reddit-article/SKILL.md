@@ -30,10 +30,8 @@ platforms:
 metadata:
   openclaw:
     emoji: "🤖"
-    primaryEnv: REDDIT_CLIENT_ID
     requires:
       anyBins: ["node", "npm"]
-      env: ["REDDIT_CLIENT_ID"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
@@ -44,7 +42,7 @@ allowed-tools:
 
 Write engaging Reddit posts with AI that fit the culture of each subreddit. Topic research via [YouMind](https://youmind.com?utm_source=youmind-reddit-article) knowledge base, subreddit-aware content adaptation, Reddit-flavored Markdown, flair selection hints, and one-click submission.
 
-> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-reddit-article) | [Reddit App Setup](https://www.reddit.com/prefs/apps) | [More Skills](https://youmind.com/skills?utm_source=youmind-reddit-article)
+> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-reddit-article) | [Reddit API Setup](https://www.reddit.com/prefs/apps) | [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy) | [More Skills](https://youmind.com/skills?utm_source=youmind-reddit-article)
 
 ## Onboarding
 
@@ -66,7 +64,7 @@ Write engaging Reddit posts with AI that fit the culture of each subreddit. Topi
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-reddit-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Create a Reddit "script" app at [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps) and fill the `reddit` section
+> 3. Fill your Reddit `username` and `password` in `config.yaml` (that's it! No API approval needed)
 >
 > **Need help?** Just ask!
 
@@ -105,23 +103,20 @@ cp config.example.yaml config.yaml
 2. Create a new API key
 3. Fill `youmind.api_key` in `config.yaml`
 
-### Step 4 -- Create Reddit App
+### Step 4 -- Fill in Reddit Credentials
 
-1. Go to [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps)
-2. Scroll down and click "create another app..."
-3. Select **script** as the app type
-4. Set redirect URI to `http://localhost:8080` (not used but required)
-5. Copy the client ID (under the app name) and secret
-6. Fill in `config.yaml`:
+Fill your Reddit username and password in `config.yaml`. Leave `client_id` and `client_secret` empty to use **cookie mode** (no API approval needed):
 
 ```yaml
 reddit:
-  client_id: "your_client_id"
-  client_secret: "your_client_secret"
+  client_id: ""
+  client_secret: ""
   username: "your_reddit_username"
   password: "your_reddit_password"
   user_agent: "youmind-reddit/1.0 by /u/your_username"
 ```
+
+> **Optional:** If you have Reddit API credentials (from before Nov 2025 or approved via [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy)), fill in `client_id` and `client_secret` to use OAuth mode for a more stable experience.
 
 ### Verify Setup
 
