@@ -91,20 +91,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadWordPressConfig(): WordPressConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const wp = raw.wordpress ?? {};
-      return {
-        siteUrl: (wp.site_url || '').replace(/\/+$/, ''),
-        username: wp.username || '',
-        appPassword: wp.app_password || '',
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { siteUrl: '', username: '', appPassword: '' };
+  const wp = { ...(central.wordpress as Record<string, unknown> ?? {}), ...(local.wordpress as Record<string, unknown> ?? {}) };
+  return {
+    siteUrl: ((wp.site_url as string) || '').replace(/\/+$/, ''),
+    username: (wp.username as string) || '',
+    appPassword: (wp.app_password as string) || '',
+  };
 }
 
 // ---------------------------------------------------------------------------

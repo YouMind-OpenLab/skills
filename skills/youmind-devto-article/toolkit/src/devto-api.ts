@@ -34,21 +34,33 @@ interface FullConfig {
   youmind?: { api_key?: string; base_url?: string };
 }
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadConfig(): FullConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const devto = raw.devto ?? {};
-      return {
-        devto: {
-          apiKey: devto.api_key || '',
-        },
-        youmind: raw.youmind,
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { devto: { apiKey: '' } };
+  const devto = { ...(central.devto as Record<string, unknown> ?? {}), ...(local.devto as Record<string, unknown> ?? {}) };
+  const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
+  return {
+    devto: {
+      apiKey: (devto.api_key as string) || '',
+    },
+    youmind: youmind as FullConfig['youmind'],
+  };
 }
 
 // ---------------------------------------------------------------------------

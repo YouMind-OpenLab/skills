@@ -34,28 +34,33 @@ interface FullConfig {
   youmind: { api_key?: string; base_url?: string };
 }
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadConfig(): FullConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const medium = raw.medium ?? {};
-      const youmind = raw.youmind ?? {};
-      return {
-        medium: {
-          token: medium.token || process.env.MEDIUM_TOKEN || '',
-          publicationId: medium.publication_id || '',
-        },
-        youmind,
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
+  const medium = { ...(central.medium as Record<string, unknown> ?? {}), ...(local.medium as Record<string, unknown> ?? {}) };
+  const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
   return {
     medium: {
-      token: process.env.MEDIUM_TOKEN || '',
-      publicationId: '',
+      token: (medium.token as string) || process.env.MEDIUM_TOKEN || '',
+      publicationId: (medium.publication_id as string) || '',
     },
-    youmind: {},
+    youmind: youmind as FullConfig['youmind'],
   };
 }
 

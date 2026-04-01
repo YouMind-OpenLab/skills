@@ -32,27 +32,32 @@ export interface RedditConfig {
   userAgent: string;
 }
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadRedditConfig(): RedditConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const r = raw.reddit ?? {};
-      return {
-        clientId: (r.client_id as string) || '',
-        clientSecret: (r.client_secret as string) || '',
-        username: (r.username as string) || '',
-        password: (r.password as string) || '',
-        userAgent: (r.user_agent as string) || 'youmind-reddit/1.0',
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
+  const r = { ...(central.reddit as Record<string, unknown> ?? {}), ...(local.reddit as Record<string, unknown> ?? {}) };
   return {
-    clientId: '',
-    clientSecret: '',
-    username: '',
-    password: '',
-    userAgent: 'youmind-reddit/1.0',
+    clientId: (r.client_id as string) || '',
+    clientSecret: (r.client_secret as string) || '',
+    username: (r.username as string) || '',
+    password: (r.password as string) || '',
+    userAgent: (r.user_agent as string) || 'youmind-reddit/1.0',
   };
 }
 

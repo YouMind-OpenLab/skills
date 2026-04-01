@@ -39,31 +39,42 @@ export interface XConfig {
   };
 }
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadXConfig(): XConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const x = raw.x ?? {};
-
-      const oauth1 =
-        x.api_key && x.api_secret && x.access_token_legacy && x.access_token_secret
-          ? {
-              apiKey: x.api_key as string,
-              apiSecret: x.api_secret as string,
-              accessToken: x.access_token_legacy as string,
-              accessTokenSecret: x.access_token_secret as string,
-            }
-          : undefined;
-
-      return {
-        accessToken: (x.access_token as string) || '',
-        bearerToken: (x.bearer_token as string) || '',
-        oauth1,
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { accessToken: '', bearerToken: '' };
+  const x = { ...(central.x as Record<string, unknown> ?? {}), ...(local.x as Record<string, unknown> ?? {}) };
+
+  const oauth1 =
+    x.api_key && x.api_secret && x.access_token_legacy && x.access_token_secret
+      ? {
+          apiKey: x.api_key as string,
+          apiSecret: x.api_secret as string,
+          accessToken: x.access_token_legacy as string,
+          accessTokenSecret: x.access_token_secret as string,
+        }
+      : undefined;
+
+  return {
+    accessToken: (x.access_token as string) || '',
+    bearerToken: (x.bearer_token as string) || '',
+    oauth1,
+  };
 }
 
 // ---------------------------------------------------------------------------

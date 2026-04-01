@@ -77,19 +77,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadGhostConfig(): GhostConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const ghost = raw.ghost ?? {};
-      return {
-        siteUrl: (ghost.site_url || '').replace(/\/+$/, ''),
-        adminApiKey: ghost.admin_api_key || '',
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { siteUrl: '', adminApiKey: '' };
+  const ghost = { ...(central.ghost as Record<string, unknown> ?? {}), ...(local.ghost as Record<string, unknown> ?? {}) };
+  return {
+    siteUrl: ((ghost.site_url as string) || '').replace(/\/+$/, ''),
+    adminApiKey: (ghost.admin_api_key as string) || '',
+  };
 }
 
 // ---------------------------------------------------------------------------

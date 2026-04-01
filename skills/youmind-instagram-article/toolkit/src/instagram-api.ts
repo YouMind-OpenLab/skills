@@ -76,19 +76,30 @@ const PROJECT_DIR = resolve(__dirname, '../..');
 
 const GRAPH_API_BASE = 'https://graph.facebook.com/v19.0';
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadInstagramConfig(): InstagramConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const ig = raw.instagram ?? {};
-      return {
-        businessAccountId: ig.business_account_id || '',
-        accessToken: ig.access_token || '',
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { businessAccountId: '', accessToken: '' };
+  const ig = { ...(central.instagram as Record<string, unknown> ?? {}), ...(local.instagram as Record<string, unknown> ?? {}) };
+  return {
+    businessAccountId: (ig.business_account_id as string) || '',
+    accessToken: (ig.access_token as string) || '',
+  };
 }
 
 function validateConfig(config: InstagramConfig): void {

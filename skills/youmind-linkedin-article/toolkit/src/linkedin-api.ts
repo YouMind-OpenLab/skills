@@ -29,20 +29,31 @@ export interface LinkedInConfig {
   organizationUrn?: string;
 }
 
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
 export function loadLinkedInConfig(): LinkedInConfig {
+  const central = loadCentralCredentials();
+  let local: Record<string, unknown> = {};
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const li = raw.linkedin ?? {};
-      return {
-        accessToken: li.access_token || '',
-        personUrn: li.person_urn || '',
-        organizationUrn: li.organization_urn || undefined,
-      };
+      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
+      break;
     }
   }
-  return { accessToken: '', personUrn: '' };
+  const li = { ...(central.linkedin as Record<string, unknown> ?? {}), ...(local.linkedin as Record<string, unknown> ?? {}) };
+  return {
+    accessToken: (li.access_token as string) || '',
+    personUrn: (li.person_urn as string) || '',
+    organizationUrn: (li.organization_urn as string) || undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
