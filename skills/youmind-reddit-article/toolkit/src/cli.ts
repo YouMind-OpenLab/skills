@@ -52,32 +52,39 @@ program
       process.exit(1);
     }
 
-    const result = await publishSelfPost({
-      subreddit: opts.subreddit,
-      title: opts.title,
-      content,
-      flairId: opts.flairId,
-      flairText: opts.flairText,
-      tldr: opts.tldr,
-      discussionQuestion: opts.question,
-    });
+    // Use non-headless mode so user can solve CAPTCHA if needed
+    process.env.HEADLESS = 'false';
 
-    if (result.success) {
-      console.log('\nPost submitted successfully!');
-      console.log(`Post ID: ${result.postId}`);
-      console.log(`URL: ${result.postUrl}`);
-      console.log(`Subreddit: r/${result.subreddit}`);
-    } else {
-      console.error(`\nSubmit failed: ${result.error}`);
-    }
+    try {
+      const result = await publishSelfPost({
+        subreddit: opts.subreddit,
+        title: opts.title,
+        content,
+        flairId: opts.flairId,
+        flairText: opts.flairText,
+        tldr: opts.tldr,
+        discussionQuestion: opts.question,
+      });
 
-    if (result.suggestedFlair) {
-      console.log(`\nSuggested flair: ${result.suggestedFlair}`);
-    }
+      if (result.success) {
+        console.log('\nPost submitted successfully!');
+        console.log(`Post ID: ${result.postId}`);
+        console.log(`URL: ${result.postUrl}`);
+        console.log(`Subreddit: r/${result.subreddit}`);
+      } else {
+        console.error(`\nSubmit failed: ${result.error}`);
+      }
 
-    if (result.warnings.length > 0) {
-      console.log('\nWarnings:');
-      for (const w of result.warnings) console.log(`  - ${w}`);
+      if (result.suggestedFlair) {
+        console.log(`\nSuggested flair: ${result.suggestedFlair}`);
+      }
+
+      if (result.warnings.length > 0) {
+        console.log('\nWarnings:');
+        for (const w of result.warnings) console.log(`  - ${w}`);
+      }
+    } finally {
+      await closeBrowser();
     }
   });
 
@@ -230,15 +237,16 @@ program
 
 program
   .command('login')
-  .description('Log in to Reddit via browser (cookie mode). Opens a browser window for manual login.')
-  .action(async () => {
+  .description('Log in to Reddit via cookie import')
+  .option('--cookies <cookies>', 'Cookie string: "reddit_session=xxx"')
+  .action(async (opts) => {
     const config = loadRedditConfig();
     if (getAuthMode(config) === 'oauth') {
       console.log('OAuth mode is active (client_id/client_secret configured). No browser login needed.');
       return;
     }
     try {
-      await browserLogin(config);
+      await browserLogin(config, opts.cookies);
     } finally {
       await closeBrowser();
     }

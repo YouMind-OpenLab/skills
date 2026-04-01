@@ -6,8 +6,8 @@
  *   2. `submit` / `me` commands: reuse saved session in headless mode.
  */
 
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
-import { existsSync } from 'node:fs';
+import { firefox, type Browser, type BrowserContext, type Page } from 'playwright';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RedditConfig, RedditPost, SubmitOptions, RedditUser } from './reddit-api.js';
@@ -16,103 +16,128 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 const STATE_PATH = resolve(PROJECT_DIR, '.reddit-browser-state.json');
+const PROFILE_DIR = resolve(PROJECT_DIR, '.reddit-browser-profile');
+const COOKIES_PATH = resolve(PROJECT_DIR, '.reddit-browser-cookies.json');
 
-let browser: Browser | null = null;
 let context: BrowserContext | null = null;
 
 // ---------------------------------------------------------------------------
 // Browser lifecycle
 // ---------------------------------------------------------------------------
 
-async function getBrowser(): Promise<Browser> {
-  if (!browser || !browser.isConnected()) {
-    const headless = process.env.HEADLESS !== 'false';
-    browser = await chromium.launch({ headless });
-  }
-  return browser;
-}
-
-async function getContext(config: RedditConfig): Promise<BrowserContext> {
+async function getContext(_config?: RedditConfig): Promise<BrowserContext> {
   if (context) return context;
 
-  const b = await getBrowser();
+  const headless = process.env.HEADLESS !== 'false';
+  context = await firefox.launchPersistentContext(PROFILE_DIR, {
+    headless,
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 800 },
+  });
 
-  const contextOptions: Record<string, unknown> = {
-    userAgent: config.userAgent.includes('/')
-      ? config.userAgent
-      : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  };
-
-  if (existsSync(STATE_PATH)) {
-    contextOptions.storageState = STATE_PATH;
+  // Load cookies from file if available
+  if (existsSync(COOKIES_PATH)) {
+    try {
+      const cookies = JSON.parse(readFileSync(COOKIES_PATH, 'utf-8'));
+      await context.addCookies(cookies);
+    } catch { /* ignore */ }
   }
 
-  context = await b.newContext(contextOptions);
   return context;
 }
 
 export async function closeBrowser(): Promise<void> {
   if (context) { await context.close().catch(() => {}); context = null; }
-  if (browser) { await browser.close().catch(() => {}); browser = null; }
 }
 
 export function hasSession(): boolean {
-  return existsSync(STATE_PATH);
+  return existsSync(PROFILE_DIR) || existsSync(COOKIES_PATH);
 }
 
 // ---------------------------------------------------------------------------
 // Login — opens browser for manual login, saves session
 // ---------------------------------------------------------------------------
 
-export async function browserLogin(config: RedditConfig): Promise<void> {
-  // Force non-headless for login
-  process.env.HEADLESS = 'false';
+/**
+ * Login by importing cookies from the user's real browser.
+ *
+ * Usage:
+ *   node dist/cli.js login --cookies 'reddit_session=xxx; ...'
+ *
+ * How to get cookies:
+ *   1. Open old.reddit.com in Chrome, log in
+ *   2. F12 → Application → Cookies → https://old.reddit.com
+ *   3. Copy the value of `reddit_session`
+ */
+export async function browserLogin(config: RedditConfig, cookieString?: string): Promise<void> {
+  if (!cookieString) {
+    console.log(`
+How to get your Reddit cookies:
+  1. Open https://old.reddit.com in Chrome and make sure you're logged in
+  2. Press F12 (DevTools) → Application tab → Cookies → https://old.reddit.com
+  3. Copy the value of "reddit_session"
+  4. Run:
 
-  // Clear cached context so it re-creates with new headless setting
+  node dist/cli.js login --cookies "reddit_session=YOUR_VALUE"
+`);
+    return;
+  }
+
+  // Parse cookie string
+  const cookies: Array<{
+    name: string;
+    value: string;
+    domain: string;
+    path: string;
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'Lax' | 'None' | 'Strict';
+  }> = [];
+
+  for (const part of cookieString.split(';')) {
+    const [name, ...rest] = part.trim().split('=');
+    if (name && rest.length > 0) {
+      cookies.push({
+        name: name.trim(),
+        value: rest.join('=').trim(),
+        domain: '.reddit.com',
+        path: '/',
+        httpOnly: name.trim() === 'reddit_session',
+        secure: true,
+        sameSite: 'None',
+      });
+    }
+  }
+
+  // Save cookies to file
+  writeFileSync(COOKIES_PATH, JSON.stringify(cookies, null, 2));
+
+  // Clear cached context
   if (context) { await context.close().catch(() => {}); context = null; }
-  if (browser) { await browser.close().catch(() => {}); browser = null; }
 
-  const ctx = await getContext(config);
+  const ctx = await getContext();
+  await ctx.addCookies(cookies);
+
+  // Verify login
   const page = await ctx.newPage();
-
   try {
-    console.log('\nOpening browser for Reddit login...');
-    console.log('Please log in to Reddit in the browser window.');
-    console.log('Waiting up to 3 minutes...\n');
-
-    await page.goto('https://www.reddit.com/login/', {
-      waitUntil: 'domcontentloaded',
+    console.log('Verifying login...');
+    await page.goto('https://old.reddit.com/', {
+      waitUntil: 'load',
       timeout: 30_000,
     });
-
-    // Wait for user to complete login (URL leaves /login)
-    await page.waitForURL(
-      (url: URL) => {
-        const href = url.href;
-        return !href.includes('/login') && !href.includes('/register') && href.includes('reddit.com');
-      },
-      { timeout: 180_000 },
-    );
-
-    // Let page settle
     await page.waitForTimeout(3000);
 
-    // Save session state
-    await ctx.storageState({ path: STATE_PATH });
-    console.log(`Session saved to ${STATE_PATH}`);
-
-    // Verify by checking old.reddit.com
-    await page.goto('https://old.reddit.com/', { waitUntil: 'domcontentloaded', timeout: 15_000 });
-    await page.waitForTimeout(1000);
     const username = await page.evaluate(() => {
       const el = document.querySelector('.user a');
       return el?.textContent?.trim() || '';
     }).catch(() => '');
 
     if (username) {
-      console.log(`Logged in as: ${username}`);
+      console.log(`Login successful! Logged in as: ${username}`);
     } else {
-      console.log('Login completed. Session saved.');
+      console.log('Login successful! Session saved.');
     }
   } finally {
     await page.close();
@@ -124,11 +149,11 @@ export async function browserLogin(config: RedditConfig): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function requireSession(): void {
-  if (!existsSync(STATE_PATH)) {
+  if (!existsSync(PROFILE_DIR) && !existsSync(COOKIES_PATH)) {
     throw new Error(
       'No Reddit session found. Please log in first:\n' +
-      '  cd toolkit && node dist/cli.js login\n' +
-      'This opens a browser window for you to log in manually.',
+      '  cd toolkit && node dist/cli.js login --cookies "reddit_session=YOUR_VALUE"\n' +
+      'Get the cookie from Chrome DevTools (F12 → Application → Cookies).',
     );
   }
 }
@@ -146,52 +171,60 @@ export async function browserSubmitSelfPost(
 ): Promise<RedditPost> {
   requireSession();
 
-  const ctx = await getContext(config);
+  const ctx = await getContext();
   const page = await ctx.newPage();
 
   try {
+    // Navigate to old.reddit.com submit form
     const submitUrl = `https://old.reddit.com/r/${subreddit}/submit?selftext=true`;
     console.log(`Navigating to ${submitUrl}...`);
-    await page.goto(submitUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.goto(submitUrl, { waitUntil: 'load', timeout: 30_000 });
     await page.waitForTimeout(2000);
 
-    // Check if redirected to login (session expired)
     if (page.url().includes('/login')) {
       throw new Error(
         'Reddit session expired. Please log in again:\n' +
-        '  cd toolkit && node dist/cli.js login',
+        '  cd toolkit && node dist/cli.js login --cookies "reddit_session=YOUR_VALUE"',
       );
     }
 
-    // Fill in the title
+    // Fill in title and text
     const titleSelector = 'textarea[name="title"], input[name="title"]';
     await page.waitForSelector(titleSelector, { timeout: 10_000 });
     await page.fill(titleSelector, title);
 
-    // Ensure we're on the "text" tab
     const textTab = page.locator('#text-field, .tabmenu.formtab li a').filter({ hasText: /text/i });
     if (await textTab.count() > 0 && await textTab.first().isVisible()) {
       await textTab.first().click();
       await page.waitForTimeout(500);
     }
-
-    // Fill in the body
     await page.fill('textarea[name="text"]', text);
 
-    // Click submit
-    console.log('Submitting post...');
-    await page.click('button[name="submit"], #newlink [type="submit"], .save-button button');
+    console.log('Form filled. Checking for CAPTCHA...');
 
-    // Wait for redirect to the new post
-    await page.waitForURL(/\/comments\//, { timeout: 30_000 });
+    // Check if CAPTCHA is present
+    const captcha = page.locator('.g-recaptcha, #recaptcha, iframe[src*="recaptcha"]');
+    if (await captcha.count() > 0) {
+      console.log('\n========================================');
+      console.log('  CAPTCHA detected! Please solve it in');
+      console.log('  the browser window, then click Submit.');
+      console.log('  Waiting up to 2 minutes...');
+      console.log('========================================\n');
+
+      // Wait for the user to solve CAPTCHA and submit — page will navigate to /comments/
+      await page.waitForURL(/\/comments\//, { timeout: 120_000 });
+    } else {
+      // No CAPTCHA — submit directly
+      console.log('Submitting post...');
+      await page.click('button[name="submit"], .save-button button, #newlink [type="submit"]');
+      await page.waitForURL(/\/comments\//, { timeout: 30_000 });
+    }
 
     const postUrl = page.url();
     const idMatch = postUrl.match(/\/comments\/([a-z0-9]+)\//);
     const postId = idMatch?.[1] || '';
 
-    // Update saved state
-    await ctx.storageState({ path: STATE_PATH });
-
+    console.log('Post submitted!');
     return {
       id: postId,
       name: `t3_${postId}`,
@@ -212,58 +245,72 @@ export async function browserSubmitLink(
   config: RedditConfig,
   subreddit: string,
   title: string,
-  url: string,
+  linkUrl: string,
   _options?: SubmitOptions,
 ): Promise<RedditPost> {
   requireSession();
 
-  const ctx = await getContext(config);
-  const page = await ctx.newPage();
+  const cookies = existsSync(COOKIES_PATH)
+    ? JSON.parse(readFileSync(COOKIES_PATH, 'utf-8')) as Array<{ name: string; value: string }>
+    : [];
 
-  try {
-    const submitUrl = `https://old.reddit.com/r/${subreddit}/submit`;
-    await page.goto(submitUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(2000);
+  const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
 
-    if (page.url().includes('/login')) {
-      throw new Error(
-        'Reddit session expired. Please log in again:\n' +
-        '  cd toolkit && node dist/cli.js login',
-      );
-    }
+  // Get modhash
+  const meResp = await fetch('https://old.reddit.com/api/me.json', {
+    headers: { Cookie: cookieHeader },
+  });
+  const meData = await meResp.json() as { data?: { modhash?: string } };
+  const modhash = meData.data?.modhash || '';
 
-    // Ensure "link" tab
-    const linkTab = page.locator('.tabmenu.formtab li a').filter({ hasText: /link/i });
-    if (await linkTab.count() > 0 && await linkTab.first().isVisible()) {
-      await linkTab.first().click();
-      await page.waitForTimeout(500);
-    }
-
-    await page.waitForSelector('input[name="url"]', { timeout: 10_000 });
-    await page.fill('input[name="url"]', url);
-
-    const titleSelector = 'textarea[name="title"], input[name="title"]';
-    await page.fill(titleSelector, title);
-
-    await page.click('button[name="submit"], #newlink [type="submit"], .save-button button');
-    await page.waitForURL(/\/comments\//, { timeout: 30_000 });
-
-    const postUrl = page.url();
-    const idMatch = postUrl.match(/\/comments\/([a-z0-9]+)\//);
-    const postId = idMatch?.[1] || '';
-
-    await ctx.storageState({ path: STATE_PATH });
-
-    return {
-      id: postId,
-      name: `t3_${postId}`,
-      url: postUrl,
-      permalink: postUrl,
-      title,
-    };
-  } finally {
-    await page.close();
+  if (!modhash) {
+    throw new Error(
+      'Could not get Reddit CSRF token. Session may be expired.\n' +
+      '  cd toolkit && node dist/cli.js login --cookies "reddit_session=YOUR_VALUE"',
+    );
   }
+
+  console.log(`Submitting link to r/${subreddit}...`);
+  const formData = new URLSearchParams({
+    kind: 'link',
+    sr: subreddit,
+    title,
+    url: linkUrl,
+    uh: modhash,
+    api_type: 'json',
+  });
+
+  const submitResp = await fetch('https://old.reddit.com/api/submit', {
+    method: 'POST',
+    headers: {
+      Cookie: cookieHeader,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData.toString(),
+  });
+
+  const submitData = await submitResp.json() as {
+    json?: {
+      errors?: string[][];
+      data?: { url?: string; id?: string; name?: string };
+    };
+  };
+
+  if (submitData.json?.errors?.length) {
+    throw new Error(`Reddit submit error: ${JSON.stringify(submitData.json.errors)}`);
+  }
+
+  const postUrl = submitData.json?.data?.url || '';
+  const postId = submitData.json?.data?.id || '';
+  const postName = submitData.json?.data?.name || '';
+
+  return {
+    id: postId,
+    name: postName,
+    url: postUrl,
+    permalink: postUrl,
+    title,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +320,7 @@ export async function browserSubmitLink(
 export async function browserGetMe(config: RedditConfig): Promise<RedditUser> {
   requireSession();
 
-  const ctx = await getContext(config);
+  const ctx = await getContext();
   const page = await ctx.newPage();
 
   try {

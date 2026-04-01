@@ -5,3 +5,5 @@ output/
 .env
 toolkit/package-lock.json
 .reddit-browser-state.json
+.reddit-browser-profile/
+.reddit-browser-cookies.json
