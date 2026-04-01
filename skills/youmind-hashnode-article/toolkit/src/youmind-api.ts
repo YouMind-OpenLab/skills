@@ -35,21 +35,40 @@ const YOUMIND_OPENAPI_BASE_URLS = [
   'https://youmind.com/openapi/v1',
 ];
 
-function loadConfig(): YouMindConfig {
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
+function loadLocalConfig(): Record<string, unknown> {
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const ym = raw.youmind ?? {};
-      // 兼容: 也从 image.providers.youmind 读取 api_key
-      const imgYm = raw.image?.providers?.youmind ?? {};
-      return {
-        apiKey: ym.api_key || imgYm.api_key || '',
-        baseUrl: ym.base_url || YOUMIND_OPENAPI_BASE_URLS[0],
-      };
+      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
     }
   }
-  return { apiKey: '', baseUrl: YOUMIND_OPENAPI_BASE_URLS[0] };
+  return {};
+}
+
+function loadConfig(): YouMindConfig {
+  const central = loadCentralCredentials();
+  const local = loadLocalConfig();
+  const ym = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
+  // 过滤本地的空字符串值，避免覆盖中心配置
+  for (const [k, v] of Object.entries(ym)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      ym[k] = (central.youmind as Record<string, unknown>)[k];
+    }
+  }
+  const imgYm = (local as any).image?.providers?.youmind ?? {};
+  return {
+    apiKey: (ym.api_key as string) || (imgYm.api_key as string) || '',
+    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+  };
 }
 
 // ---------------------------------------------------------------------------
