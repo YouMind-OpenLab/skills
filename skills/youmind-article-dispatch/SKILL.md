@@ -3,7 +3,7 @@ name: youmind-article-dispatch
 version: 1.0.0
 description: |
   Dispatch content to multiple platforms from a single topic — Dev.to, Hashnode, WordPress,
-  Ghost, LinkedIn, X/Twitter, Reddit, Facebook, Instagram, WeChat. Each platform skill adapts
+  Ghost, LinkedIn, X/Twitter, Reddit, Facebook, Instagram, WeChat, Qiita. Each platform skill adapts
   content independently for its audience and format. Pure orchestration, no publishing logic.
   Integrates YouMind knowledge base for topic research and content material mining.
   Use when user wants to "publish everywhere", "cross-post", "multi-platform publish",
@@ -63,7 +63,7 @@ Distribute your content to multiple platforms from a single topic. Each platform
 >
 > Tell me a topic and I'll help you publish it across multiple platforms.
 >
-> **Supported platforms:** Dev.to · Hashnode · WordPress · Ghost · LinkedIn · X/Twitter · Reddit · Facebook · Instagram · WeChat
+> **Supported platforms:** Dev.to · Hashnode · WordPress · Ghost · LinkedIn · X/Twitter · Reddit · Facebook · Instagram · WeChat · Qiita
 >
 > **Try it now:** "Help me write about AI agents and publish to Dev.to and LinkedIn"
 
@@ -109,6 +109,7 @@ User wants maximum reach → dispatch to all installed platform skills.
 | Instagram | `youmind-instagram-article` | Graph API | Business Token | Visual audiences | Carousel infographics, visual storytelling |
 | Medium | `youmind-medium-article` | REST | Token | General readers, writers | Narrative essays, thought leadership, personal stories |
 | WeChat | `youmind-wechat-article` | REST | AppID/Secret | Chinese audiences | Styled long-form articles, official account content |
+| Qiita | `youmind-qiita-article` | REST v2 | Bearer Token | Japanese developers | Technical articles, tutorials, knowledge sharing |
 
 > **Note:** Each platform skill must be installed separately. Dispatch will check which skills are available before proceeding.
 

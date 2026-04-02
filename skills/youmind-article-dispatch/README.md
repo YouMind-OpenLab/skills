@@ -16,7 +16,7 @@ One topic, every platform. AI-powered multi-platform content distribution hub.
 
 ## Getting Credentials
 
-Dispatch calls each platform's sub-skill. Each sub-skill requires its own credentials:
+Dispatch calls each platform's sub-skill. Each sub-skill requires  its own credentials:
 
 | Platform | Skill Name | Key Credential | Where to Get |
 |----------|------------|----------------|--------------|
@@ -31,6 +31,7 @@ Dispatch calls each platform's sub-skill. Each sub-skill requires its own creden
 | Instagram | youmind-instagram-article | Business Account Token | <https://developers.facebook.com/> |
 | Medium | youmind-medium-article | Integration Token | <https://medium.com/me/settings/security> |
 | WeChat | youmind-wechat-article | AppID/Secret | <https://mp.weixin.qq.com/> |
+| Qiita | youmind-qiita-article | Personal Access Token | <https://qiita.com/settings/applications> |
 
 > **Tip**: You only need to configure the platforms you use. Dispatch automatically skips unconfigured ones.
 
@@ -92,6 +93,7 @@ Dispatch doesn't just copy-paste. Each sub-skill adapts content to the platform:
 - **Medium**: Narrative storytelling, elegant formatting, compelling hook
 - **WeChat**: Chinese localization, styled formatting, cover images
 - **X/Twitter**: Distilled into tweet threads, hashtags
+- **Qiita**: Japanese developer focus, GFM Markdown, environment info, note boxes
 
 ### Cross-Platform SEO
 

@@ -1,0 +1,11 @@
+# YouMind Qiita Skill Configuration
+
+# YouMind OpenAPI (knowledge base search, web search, article archiving)
+youmind:
+  api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
+  base_url: "https://youmind.com/openapi/v1"
+
+# Qiita API credentials
+# Get your access token from https://qiita.com/settings/applications
+qiita:
+  access_token: ""         # Your Qiita personal access token

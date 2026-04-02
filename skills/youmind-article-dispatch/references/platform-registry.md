@@ -170,3 +170,22 @@
 - **Content format:** Styled HTML with CSS themes
 - **Best for:** Long-form articles with rich formatting, brand content, knowledge sharing
 - See the `youmind-wechat-article` skill for full details.
+
+## Qiita
+- **Skill:** `youmind-qiita-article`
+- **API:** REST v2 — `https://qiita.com/api/v2`
+- **Auth:** Personal Access Token (Bearer header), scope: `write_qiita`
+- **Rate Limit:** 1,000 requests/hour (authenticated)
+- **Audience:** Japanese software developers, engineering teams, tech learners
+- **Content format:** GitHub Flavored Markdown with Qiita extensions (note boxes, math, Mermaid)
+- **Constraints:** At least 1 tag required, max 5 recommended, tags are free-form and case-sensitive
+- **Tone:** Knowledge-sharing, technical, humble, peer-to-peer
+- **Best for:** Technical tutorials, development notes, tool reviews, learning memos, team knowledge sharing
+- **Anti-patterns:** Marketing language, untested code, missing environment info, copy-paste from docs without insights
+- **Adaptation rules:**
+  - Include environment section (OS, language/framework versions, tools)
+  - Code blocks must have language tags; use `python:filename.py` syntax for filenames
+  - Use Qiita note boxes (`:::note info/warn/alert`) for callouts
+  - Match user's language (Japanese or English)
+  - Default to private mode (limited sharing) for safety
+  - Use existing popular tags: `Python`, `JavaScript`, `TypeScript`, `Docker`, `React`, `AWS`, `機械学習`, `初心者`
