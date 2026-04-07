@@ -42,6 +42,8 @@ Read `content-adaptation.md` before this step.
 
 ## Step 5: Write
 
+**File location:** Save the draft as `output/<slug>.md` inside this skill directory. `output/` is git-ignored. Never save to the skill root, `references/`, `toolkit/`, or any new top-level directory. See "Draft Location Rule" in `SKILL.md`.
+
 1. Write introduction (why this topic matters)
 2. Write prerequisites section (versions, tools, OS)
 3. Write the main content following the chosen structure

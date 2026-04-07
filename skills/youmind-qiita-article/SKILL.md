@@ -139,7 +139,19 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | `references/content-adaptation.md` | Qiita writing rules, structure, tone | Step 4 (content adaptation) |
 | `references/api-reference.md` | Qiita API v2 endpoint documentation | When calling Qiita API |
 | `config.yaml` | API credentials (Qiita, YouMind) | Step 1 (config load) |
+| `output/` | **Drafts and published articles (git-ignored)** | Step 5 (write/save article) |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All article drafts MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-qiita-article/output/my-article.md`
+- Wrong: `skills/youmind-qiita-article/my-article.md` (pollutes skill root)
+- Wrong: `skills/youmind-qiita-article/drafts/my-article.md` (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `hono-zod-api.md`), and prefer descriptive slugs over timestamps.
 
 ---
 
