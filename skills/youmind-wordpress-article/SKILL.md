@@ -169,7 +169,19 @@ Every step has a fallback. If a step AND its fallback both fail, skip that step 
 | `references/content-adaptation.md` | WordPress-specific writing rules | When adapting content |
 | `references/api-reference.md` | WordPress REST API endpoints | When calling WordPress API |
 | `config.yaml` | API credentials | Step 1 (first-run check) |
+| `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-wordpress-article/output/my-article.md`
+- Wrong: `skills/youmind-wordpress-article/my-article.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore` (as `output/*.md` / `output/*.html`), so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
 
 ## References
 

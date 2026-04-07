@@ -166,7 +166,19 @@ cd toolkit && npx tsx src/cli.ts validate
 | `references/content-adaptation.md` | Instagram content format rules | When writing captions/planning carousels |
 | `references/api-reference.md` | Instagram Graph API reference | When debugging API issues |
 | `config.yaml` | API credentials | Step 1 (load config) |
+| `output/` | **Local caption/post Markdown drafts (git-ignored)** | When writing captions/post |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All local caption and post Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-instagram-article/output/my-caption.md`
+- Wrong: `skills/youmind-instagram-article/my-caption.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-caption.md`), and prefer descriptive slugs over timestamps.
 
 ## Resilience
 

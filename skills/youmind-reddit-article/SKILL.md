@@ -132,7 +132,19 @@ After configuration, say:
 | `references/content-adaptation.md` | Reddit content formatting rules | When adapting content |
 | `references/api-reference.md` | Reddit API endpoint details | When debugging API calls |
 | `config.yaml` | API credentials | Step 1 (first-run check) |
+| `output/` | **Local post Markdown drafts (git-ignored)** | When writing the post |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All local post Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-reddit-article/output/my-post.md`
+- Wrong: `skills/youmind-reddit-article/my-post.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
 
 ## Pipeline Overview
 

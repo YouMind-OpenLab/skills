@@ -144,7 +144,19 @@ cd toolkit && npx tsx src/cli.ts validate
 | `references/content-adaptation.md` | Facebook content format rules | When writing/adapting content |
 | `references/api-reference.md` | Facebook Graph API reference | When debugging API issues |
 | `config.yaml` | API credentials | Step 1 (load config) |
+| `output/` | **Local post Markdown drafts (git-ignored)** | When writing the post |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All local post Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-facebook-article/output/my-post.md`
+- Wrong: `skills/youmind-facebook-article/my-post.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
 
 ## Resilience
 

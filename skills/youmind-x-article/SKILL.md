@@ -138,7 +138,19 @@ After configuration, say:
 | `references/content-adaptation.md` | X content formatting rules | When adapting content |
 | `references/api-reference.md` | X API endpoint details | When debugging API calls |
 | `config.yaml` | API credentials | Step 1 (first-run check) |
+| `output/` | **Local tweet/thread Markdown drafts (git-ignored)** | When writing the tweet/thread |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All local tweet and thread Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-x-article/output/my-thread.md`
+- Wrong: `skills/youmind-x-article/my-thread.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-thread.md`), and prefer descriptive slugs over timestamps.
 
 ## Pipeline Overview
 

@@ -228,8 +228,20 @@ This skill is a folder. Read files on demand — do NOT load everything upfront.
 | `clients/{client}/playbook.md` | Client-specific writing rules (if exists) | Step 4 (writing) |
 | `clients/{client}/history.yaml` | Published article history | Step 2.5 (dedup) |
 | `config.yaml` | API credentials (WeChat, YouMind, image providers) | Step 1 (first-run check) |
+| `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 | `scripts/*.py` | Python scripts (trending topics, SEO keywords) | Steps 2, 2.5 |
+
+## Draft Location Rule (MANDATORY)
+
+**All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.** This is separate from the WeChat draft box (which is a server-side publishing target, not a file location).
+
+- Correct: `skills/youmind-wechat-article/output/my-article.md`
+- Wrong: `skills/youmind-wechat-article/my-article.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, `clients/`, `scripts/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-article.md`), and prefer descriptive slugs over timestamps.
 
 ---
 

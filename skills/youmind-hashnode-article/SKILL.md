@@ -146,7 +146,20 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | `references/content-adaptation.md` | Hashnode writing rules, SEO, structure | Step 4 (content adaptation) |
 | `references/api-reference.md` | Hashnode GraphQL API documentation | When calling Hashnode API |
 | `config.yaml` | API credentials (Hashnode, YouMind) | Step 1 (config load) |
+| `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
+
+## Draft Location Rule (MANDATORY)
+
+**All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-hashnode-article/output/my-article.md`
+- Wrong: `skills/youmind-hashnode-article/article.md` (pollutes skill root)
+- Wrong: `skills/youmind-hashnode-article/article.hashnode.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
 
 ---
 

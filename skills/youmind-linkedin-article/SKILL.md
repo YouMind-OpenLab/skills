@@ -139,6 +139,18 @@ After configuration, say:
 | `config.yaml` | API credentials | Step 1 (first-run check) |
 | `toolkit/dist/cli.js` | CLI: publish, preview, profile | Various steps |
 | `toolkit/dist/oauth-helper.js` | One-click OAuth: get token & person URN | Setup step 4 |
+| `output/` | **Local post Markdown drafts (git-ignored)** | When writing the post |
+
+## Draft Location Rule (MANDATORY)
+
+**All local post Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+
+- Correct: `skills/youmind-linkedin-article/output/my-post.md`
+- Wrong: `skills/youmind-linkedin-article/my-post.md` (pollutes skill root)
+- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
 
 ## Pipeline Overview
 
