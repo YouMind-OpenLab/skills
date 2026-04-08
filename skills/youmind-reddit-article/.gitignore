@@ -1,9 +1,0 @@
-node_modules/
-dist/
-config.yaml
-output/
-.env
-toolkit/package-lock.json
-.reddit-browser-state.json
-.reddit-browser-profile/
-.reddit-browser-cookies.json
