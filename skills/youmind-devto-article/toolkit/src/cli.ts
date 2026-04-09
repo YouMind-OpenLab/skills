@@ -13,7 +13,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 
-import { loadConfig, listMyArticles, getArticle } from './devto-api.js';
+import { loadDevtoConfig, listMyArticles } from './devto-api.js';
 import { publish } from './publisher.js';
 import { adaptForDevto } from './content-adapter.js';
 
@@ -77,13 +77,11 @@ program
   .option('--series <name>', 'Series name')
   .option('--canonical <url>', 'Canonical URL for cross-posting')
   .option('--description <text>', 'Article description (max 170 chars)')
-  .option('--api-key <key>', 'Dev.to API key (overrides config)')
   .action(async (input: string, opts) => {
-    const cfg = loadConfig();
-    const apiKey = opts.apiKey || cfg.devto.apiKey;
+    const config = loadDevtoConfig();
 
-    if (!apiKey) {
-      console.error('Error: Dev.to API key required. Set devto.api_key in config.yaml or pass --api-key.');
+    if (!config.apiKey) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
@@ -138,7 +136,7 @@ program
     // Publish
     try {
       const result = await publish({
-        apiKey,
+        config,
         title: adapted.title,
         markdown: adapted.bodyMarkdown,
         tags: adapted.tags,
@@ -235,34 +233,23 @@ program
 
 program
   .command('validate')
-  .description('Check API key and Dev.to connectivity')
-  .option('--api-key <key>', 'Dev.to API key (overrides config)')
-  .action(async (opts) => {
-    const cfg = loadConfig();
-    const apiKey = opts.apiKey || cfg.devto.apiKey;
+  .description('Check API key and Dev.to connectivity via YouMind proxy')
+  .action(async () => {
+    const config = loadDevtoConfig();
 
-    if (!apiKey) {
-      console.error('No Dev.to API key found.');
-      console.error('Set devto.api_key in config.yaml or pass --api-key.');
+    if (!config.apiKey) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
-    console.log('Checking Dev.to API connectivity...');
+    console.log('Checking Dev.to API connectivity via YouMind proxy...');
     try {
-      const articles = await listMyArticles(apiKey, 1, 1);
+      const articles = await listMyArticles(config, 1, 1);
       console.log('Dev.to API connection successful!');
       console.log(`Your account has articles. Latest: ${articles[0]?.title || '(no articles yet)'}`);
     } catch (err) {
       console.error(`Dev.to API check failed: ${(err as Error).message}`);
       process.exit(1);
-    }
-
-    // Check YouMind config
-    const ymKey = cfg.youmind?.api_key;
-    if (ymKey) {
-      console.log('YouMind API key: configured');
-    } else {
-      console.log('YouMind API key: not configured (optional, for knowledge base features)');
     }
   });
 
@@ -273,13 +260,11 @@ program
   .description("List your Dev.to articles")
   .option('--page <n>', 'Page number', '1')
   .option('--per-page <n>', 'Articles per page', '10')
-  .option('--api-key <key>', 'Dev.to API key (overrides config)')
   .action(async (opts) => {
-    const cfg = loadConfig();
-    const apiKey = opts.apiKey || cfg.devto.apiKey;
+    const config = loadDevtoConfig();
 
-    if (!apiKey) {
-      console.error('No Dev.to API key found.');
+    if (!config.apiKey) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
@@ -287,7 +272,7 @@ program
     const perPage = parseInt(opts.perPage, 10);
 
     try {
-      const articles = await listMyArticles(apiKey, page, perPage);
+      const articles = await listMyArticles(config, page, perPage);
 
       if (articles.length === 0) {
         console.log('No articles found.');

@@ -2,14 +2,18 @@
  * Dev.to article publisher — high-level wrapper around devto-api.
  */
 
-import { createArticle, type DevtoArticle } from './devto-api.js';
+import {
+  createArticle,
+  loadDevtoConfig,
+  type DevtoArticle,
+  type DevtoConfig,
+} from './devto-api.js';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface PublishOptions {
-  apiKey: string;
   title: string;
   markdown: string;
   tags?: string[];
@@ -18,6 +22,8 @@ export interface PublishOptions {
   canonicalUrl?: string;
   series?: string;
   published?: boolean;
+  /** Optional pre-loaded config */
+  config?: DevtoConfig;
 }
 
 export interface PublishResult {
@@ -39,7 +45,6 @@ export interface PublishResult {
  */
 export async function publish(options: PublishOptions): Promise<PublishResult> {
   const {
-    apiKey,
     title,
     markdown,
     tags,
@@ -50,8 +55,10 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     published = false,
   } = options;
 
-  if (!apiKey) {
-    throw new Error('Dev.to API key is required. Set devto.api_key in config.yaml.');
+  const config = options.config ?? loadDevtoConfig();
+
+  if (!config.apiKey) {
+    throw new Error('youmind.api_key not set in config.yaml');
   }
 
   if (!title || !title.trim()) {
@@ -68,7 +75,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     .map(t => t.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30))
     .filter(t => t.length > 0);
 
-  const article: DevtoArticle = await createArticle(apiKey, {
+  const article: DevtoArticle = await createArticle(config, {
     title: title.trim(),
     body_markdown: markdown,
     published,
