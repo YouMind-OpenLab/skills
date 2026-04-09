@@ -2,6 +2,11 @@
  * X (Twitter) publishing orchestrator.
  *
  * Coordinates content adaptation, media upload, and tweet/thread creation.
+ * All publishing now flows through YouMind's proxy via the x-api.ts mock —
+ * the dual OAuth wiring (OAuth 2.0 Bearer / OAuth 1.0a HMAC) is gone, and
+ * so is the browser-cookie fallback. The thread orchestration (split long
+ * text → chain replies) lives here, which is where it always belonged; only
+ * the token / auth wiring changed.
  */
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -12,15 +17,9 @@ import {
   createTweet,
   createThread,
   uploadMedia,
-  getMe,
   loadXConfig,
-  getAuthMode,
   type XConfig,
 } from './x-api.js';
-import {
-  browserPostTweet,
-  browserPostThread,
-} from './x-browser.js';
 import {
   adaptSingleTweet,
   splitIntoThread,
@@ -83,6 +82,17 @@ export async function publishTweet(
 ): Promise<PublishResult> {
   const config = options.config ?? loadXConfig();
 
+  if (!config.apiKey) {
+    return {
+      success: false,
+      type: 'tweet',
+      tweetIds: [],
+      content: options.content,
+      warnings: [],
+      error: 'youmind.api_key not set in config.yaml',
+    };
+  }
+
   // Adapt content
   const adapted = adaptSingleTweet(options.content, {
     hashtags: options.hashtags,
@@ -106,14 +116,11 @@ export async function publishTweet(
 
   // Create tweet
   try {
-    const authMode = getAuthMode(config);
-    const result = authMode === 'browser'
-      ? await browserPostTweet(adapted.text, { replyTo: options.replyTo })
-      : await createTweet(config, adapted.text, {
-          reply_to: options.replyTo,
-          quote_tweet_id: options.quoteTweetId,
-          media_ids: mediaIds.length > 0 ? mediaIds : undefined,
-        });
+    const result = await createTweet(config, adapted.text, {
+      reply_to: options.replyTo,
+      quote_tweet_id: options.quoteTweetId,
+      media_ids: mediaIds.length > 0 ? mediaIds : undefined,
+    });
 
     // Save output
     saveOutput('tweet', {
@@ -150,6 +157,17 @@ export async function publishThread(
 ): Promise<PublishResult> {
   const config = options.config ?? loadXConfig();
 
+  if (!config.apiKey) {
+    return {
+      success: false,
+      type: 'thread',
+      tweetIds: [],
+      content: [],
+      warnings: [],
+      error: 'youmind.api_key not set in config.yaml',
+    };
+  }
+
   // Split content into thread
   const thread = splitIntoThread(options.content, {
     hashtags: options.hashtags,
@@ -177,10 +195,7 @@ export async function publishThread(
   }
 
   try {
-    const authMode = getAuthMode(config);
-    const results = authMode === 'browser'
-      ? await browserPostThread(thread.tweets)
-      : await createThread(config, thread.tweets);
+    const results = await createThread(config, thread.tweets);
     const tweetIds = results.map((r) => r.data.id);
 
     saveOutput('thread', {
