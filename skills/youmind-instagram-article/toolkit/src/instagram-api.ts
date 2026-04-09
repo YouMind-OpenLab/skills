@@ -1,33 +1,60 @@
 /**
- * Instagram Graph API wrapper for media publishing.
+ * instagram-api.ts — MOCK IMPLEMENTATION
  *
- * Instagram publishing is done through the Facebook Graph API and uses a
- * TWO-STEP publish flow:
- *   1. Create a media container (POST /{ig_user_id}/media)
- *   2. Publish the container (POST /{ig_user_id}/media_publish)
+ * ⚠️ This file is a mock. The skill talks to Instagram exclusively through
+ * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Instagram
+ * namespace on that OpenAPI. This mock lets the rest of the skill
+ * (publisher, CLI) be built and smoke-tested end-to-end right now, without
+ * a real backend.
  *
- * For carousels:
- *   1. Create child containers for each image (is_carousel_item: true)
- *   2. Create a carousel container referencing the children
- *   3. Publish the carousel container
+ * IMPORTANT: Instagram uses a TWO-STEP publish flow:
+ *   1. Create a media container (createMediaContainer / createCarouselContainer)
+ *   2. Wait for Instagram to process the media (getMediaStatus / waitForContainerReady)
+ *   3. Publish the container (publishMedia)
+ * This mock PRESERVES that flow in its function signatures and return shapes
+ * so publisher.ts and the CLI can orchestrate the same way they will against
+ * the real backend. The mock skips the async processing step (containers go
+ * straight to FINISHED), but the polling/wait helper still exists with the
+ * same signature so callers don't have to change.
  *
- * IMPORTANT: Instagram REQUIRES images for every post. Text-only posting
- * is NOT possible. All image URLs must be publicly accessible.
+ * Swap-in plan when the real YouMind endpoints ship:
+ *   1. YouMind will expose endpoints whose request/response shape mirrors
+ *      Meta's Graph API (same field names like `image_url`, `caption`,
+ *      `media_type`, `children`, `creation_id`, same /media and
+ *      /media_publish endpoints, same `status_code` enum). The only auth
+ *      difference is that YouMind accepts `x-api-key: <youmind_api_key>`
+ *      instead of a Facebook page access token — YouMind holds the user's
+ *      Instagram/Facebook token server-side and attaches it.
+ *   2. Replace each mock function body below with a `fetch()` POST/GET to
+ *      the corresponding `https://youmind.com/openapi/v1/instagram/<op>`
+ *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
+ *      The proxy internally runs the real Graph API two-step flow.
+ *   3. waitForContainerReady will likely need to become real polling again
+ *      when swapping in, because the real backend WILL return IN_PROGRESS
+ *      while Instagram processes the media. The signature stays the same.
+ *   4. Keep the exported type signatures stable — they ARE the swap-in
+ *      contract. Nothing in publisher.ts / cli.ts should need to change.
+ *   5. Delete the `mockState`, `initMockState`, and the helper builders
+ *      at that point.
+ *
+ * loadInstagramConfig is NOT mocked — it reads real config the same way as
+ * youmind-api.ts, because users will set their YouMind API key through the
+ * normal config flow even before the Instagram endpoints exist.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-import fetch from 'node-fetch';
 
 // ---------------------------------------------------------------------------
-// Types
+// Public types — stable contract (do NOT change signatures when swapping to
+// real HTTP; only the function bodies below should change).
 // ---------------------------------------------------------------------------
 
 export interface InstagramConfig {
-  businessAccountId: string;
-  accessToken: string;
+  apiKey: string;
+  baseUrl: string;
 }
 
 export interface IGMedia {
@@ -67,14 +94,16 @@ export interface CreateMediaOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Config
+// Config loading — real implementation, mirrors youmind-api.ts pattern.
 // ---------------------------------------------------------------------------
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const GRAPH_API_BASE = 'https://graph.facebook.com/v19.0';
+const YOUMIND_OPENAPI_BASE_URLS = [
+  'https://youmind.com/openapi/v1',
+];
 
 function loadCentralCredentials(): Record<string, unknown> {
   const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -85,97 +114,57 @@ function loadCentralCredentials(): Record<string, unknown> {
   return {};
 }
 
-export function loadInstagramConfig(): InstagramConfig {
-  const central = loadCentralCredentials();
-  let local: Record<string, unknown> = {};
+function loadLocalConfig(): Record<string, unknown> {
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      break;
+      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
     }
   }
-  const ig = { ...(central.instagram as Record<string, unknown> ?? {}), ...(local.instagram as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(ig)) {
-    if (v === '' && (central.instagram as Record<string, unknown>)?.[k]) {
-      ig[k] = (central.instagram as Record<string, unknown>)[k];
+  return {};
+}
+
+export function loadInstagramConfig(): InstagramConfig {
+  const central = loadCentralCredentials();
+  const local = loadLocalConfig();
+  const ym = {
+    ...(central.youmind as Record<string, unknown> ?? {}),
+    ...(local.youmind as Record<string, unknown> ?? {}),
+  };
+  // Filter out local empty strings so central credentials aren't masked.
+  for (const [k, v] of Object.entries(ym)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      ym[k] = (central.youmind as Record<string, unknown>)[k];
     }
   }
   return {
-    businessAccountId: (ig.business_account_id as string) || '',
-    accessToken: (ig.access_token as string) || '',
+    apiKey: (ym.api_key as string) || '',
+    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
   };
 }
 
-function validateConfig(config: InstagramConfig): void {
-  if (!config.businessAccountId) {
-    throw new Error(
-      'Instagram Business Account ID not configured. Set instagram.business_account_id in config.yaml.',
-    );
-  }
-  if (!config.accessToken) {
-    throw new Error(
-      'Instagram Access Token not configured. Set instagram.access_token in config.yaml.',
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
-// HTTP helpers
+// Mock state — module-scoped, lives for the lifetime of the process. Not
+// exported; swap-in code should delete this whole block.
 // ---------------------------------------------------------------------------
 
-async function graphGet<T = unknown>(
-  path: string,
-  params: Record<string, string> = {},
-  config: InstagramConfig,
-): Promise<T> {
-  validateConfig(config);
-
-  const url = new URL(`${GRAPH_API_BASE}${path}`);
-  url.searchParams.set('access_token', config.accessToken);
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
-  }
-
-  const resp = await fetch(url.toString(), {
-    method: 'GET',
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`Instagram Graph API GET ${path} failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  return resp.json() as Promise<T>;
+interface MockState {
+  containerCounter: number;
+  mediaCounter: number;
+  containersById: Map<string, IGContainer>;
+  publishedMedia: IGMedia[];
 }
 
-async function graphPost<T = unknown>(
-  path: string,
-  params: Record<string, string>,
-  config: InstagramConfig,
-): Promise<T> {
-  validateConfig(config);
-
-  // Instagram Graph API uses query parameters for POST requests, not JSON body
-  const url = new URL(`${GRAPH_API_BASE}${path}`);
-  url.searchParams.set('access_token', config.accessToken);
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
-  }
-
-  const resp = await fetch(url.toString(), {
-    method: 'POST',
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`Instagram Graph API POST ${path} failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  return resp.json() as Promise<T>;
+function initMockState(): MockState {
+  return {
+    containerCounter: 0,
+    mediaCounter: 0,
+    containersById: new Map<string, IGContainer>(),
+    publishedMedia: [],
+  };
 }
+
+const mockState: MockState = initMockState();
 
 // ---------------------------------------------------------------------------
 // Public API — Container Creation (Step 1 of two-step publish)
@@ -184,36 +173,28 @@ async function graphPost<T = unknown>(
 /**
  * Create a media container for a single image post.
  *
- * The image_url must be publicly accessible. Instagram will download it
- * during processing.
+ * In the real backend the container starts as IN_PROGRESS while Instagram
+ * downloads and processes the image. The mock skips that and marks the
+ * container FINISHED immediately so the rest of the flow can proceed.
  */
 export async function createMediaContainer(
-  config: InstagramConfig,
+  _config: InstagramConfig,
   options: CreateMediaOptions,
 ): Promise<IGContainer> {
-  const params: Record<string, string> = {};
+  mockState.containerCounter += 1;
+  const id = `mock_ig_container_${mockState.containerCounter}`;
 
-  if (options.image_url) {
-    params.image_url = options.image_url;
-  }
-  if (options.caption) {
-    params.caption = options.caption;
-  }
-  if (options.is_carousel_item) {
-    params.is_carousel_item = 'true';
-  }
-  if (options.media_type === 'CAROUSEL') {
-    params.media_type = 'CAROUSEL';
-  }
-  if (options.children?.length) {
-    params.children = options.children.join(',');
-  }
-
-  return graphPost<IGContainer>(
-    `/${config.businessAccountId}/media`,
-    params,
-    config,
-  );
+  const container: IGContainer = {
+    id,
+    status_code: 'FINISHED',
+    caption: options.caption,
+    media_type: options.media_type ?? (options.is_carousel_item ? 'IMAGE' : 'IMAGE'),
+    image_url: options.image_url,
+    is_carousel_item: options.is_carousel_item ?? false,
+    children: options.children,
+  };
+  mockState.containersById.set(id, container);
+  return container;
 }
 
 /**
@@ -223,7 +204,7 @@ export async function createMediaContainer(
  * Carousels support 2-10 images.
  */
 export async function createCarouselContainer(
-  config: InstagramConfig,
+  _config: InstagramConfig,
   childrenIds: string[],
   caption?: string,
 ): Promise<IGContainer> {
@@ -234,20 +215,18 @@ export async function createCarouselContainer(
     throw new Error('Carousels support a maximum of 10 images.');
   }
 
-  const params: Record<string, string> = {
+  mockState.containerCounter += 1;
+  const id = `mock_ig_container_${mockState.containerCounter}`;
+
+  const container: IGContainer = {
+    id,
+    status_code: 'FINISHED',
     media_type: 'CAROUSEL',
-    children: childrenIds.join(','),
+    children: childrenIds,
+    caption,
   };
-
-  if (caption) {
-    params.caption = caption;
-  }
-
-  return graphPost<IGContainer>(
-    `/${config.businessAccountId}/media`,
-    params,
-    config,
-  );
+  mockState.containersById.set(id, container);
+  return container;
 }
 
 // ---------------------------------------------------------------------------
@@ -260,69 +239,71 @@ export async function createCarouselContainer(
  * Returns status_code which can be:
  * - IN_PROGRESS: Still processing
  * - FINISHED: Ready to publish
+ * - PUBLISHED: Already published
  * - ERROR: Processing failed
  * - EXPIRED: Container expired (24 hours)
+ *
+ * In the mock, containers are marked FINISHED at creation time, so this
+ * just looks up the stored container. If the container is unknown the mock
+ * fabricates a FINISHED entry so unfamiliar IDs don't crash callers.
  */
 export async function getMediaStatus(
-  config: InstagramConfig,
+  _config: InstagramConfig,
   containerId: string,
 ): Promise<IGContainer> {
-  return graphGet<IGContainer>(
-    `/${containerId}`,
-    { fields: 'id,status_code' },
-    config,
-  );
+  const found = mockState.containersById.get(containerId);
+  if (found) return found;
+  const fallback: IGContainer = {
+    id: containerId,
+    status_code: 'FINISHED',
+  };
+  return fallback;
 }
 
 /**
  * Poll a container's status until it reaches FINISHED or fails.
+ *
+ * In the mock the container is already FINISHED at creation time, so this
+ * resolves immediately without sleeping. The signature is preserved so the
+ * real swap-in (which WILL need to poll Instagram's processing status) is a
+ * drop-in replacement of just the function body.
  *
  * @param config - Instagram API config
  * @param containerId - The container ID to poll
  * @param maxWaitMs - Maximum wait time in ms (default: 60000)
  * @param intervalMs - Poll interval in ms (default: 3000)
  * @returns The container with FINISHED status
- * @throws If the container errors, expires, or times out
+ * @throws If the container errored or expired
  */
 export async function waitForContainerReady(
   config: InstagramConfig,
   containerId: string,
-  maxWaitMs: number = 60_000,
-  intervalMs: number = 3_000,
+  _maxWaitMs: number = 60_000,
+  _intervalMs: number = 3_000,
 ): Promise<IGContainer> {
-  const start = Date.now();
+  const status = await getMediaStatus(config, containerId);
 
-  while (Date.now() - start < maxWaitMs) {
-    const status = await getMediaStatus(config, containerId);
+  switch (status.status_code) {
+    case 'FINISHED':
+    case 'PUBLISHED':
+      return status;
 
-    switch (status.status_code) {
-      case 'FINISHED':
-        return status;
+    case 'ERROR':
+      throw new Error(
+        `Instagram media container ${containerId} failed processing. ` +
+        `Check that the image URL is publicly accessible and meets Instagram requirements.`,
+      );
 
-      case 'ERROR':
-        throw new Error(
-          `Instagram media container ${containerId} failed processing. ` +
-          `Check that the image URL is publicly accessible and meets Instagram requirements.`,
-        );
+    case 'EXPIRED':
+      throw new Error(
+        `Instagram media container ${containerId} expired. ` +
+        `Containers must be published within 24 hours of creation.`,
+      );
 
-      case 'EXPIRED':
-        throw new Error(
-          `Instagram media container ${containerId} expired. ` +
-          `Containers must be published within 24 hours of creation.`,
-        );
-
-      case 'IN_PROGRESS':
-      default:
-        // Still processing, wait and retry
-        await new Promise(r => setTimeout(r, intervalMs));
-        break;
-    }
+    default:
+      // In a real backend we'd loop here. The mock has nothing to wait for.
+      return status;
   }
-
-  throw new Error(
-    `Instagram media container ${containerId} processing timed out after ${maxWaitMs / 1000}s. ` +
-    `You can check status later with: npx tsx src/cli.ts status ${containerId}`,
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -335,14 +316,30 @@ export async function waitForContainerReady(
  * The container must have status_code FINISHED before publishing.
  */
 export async function publishMedia(
-  config: InstagramConfig,
+  _config: InstagramConfig,
   containerId: string,
 ): Promise<IGMedia> {
-  return graphPost<IGMedia>(
-    `/${config.businessAccountId}/media_publish`,
-    { creation_id: containerId },
-    config,
-  );
+  const container = mockState.containersById.get(containerId);
+  mockState.mediaCounter += 1;
+  const n = mockState.mediaCounter;
+  const id = `mock_ig_media_${Date.now()}_${n}`;
+
+  const isCarousel = container?.media_type === 'CAROUSEL';
+  const media: IGMedia = {
+    id,
+    caption: (container?.caption as string | undefined),
+    media_type: isCarousel ? 'CAROUSEL_ALBUM' : 'IMAGE',
+    media_url: (container?.image_url as string | undefined),
+    permalink: `https://instagram.com/p/mock_${n}/`,
+    timestamp: new Date().toISOString(),
+  };
+  mockState.publishedMedia.unshift(media);
+
+  if (container) {
+    container.status_code = 'PUBLISHED';
+  }
+
+  return media;
 }
 
 // ---------------------------------------------------------------------------
@@ -352,41 +349,37 @@ export async function publishMedia(
 /**
  * Get Instagram Business Account information.
  */
-export async function getAccountInfo(config: InstagramConfig): Promise<IGAccount> {
-  return graphGet<IGAccount>(
-    `/${config.businessAccountId}`,
-    { fields: 'id,username,media_count' },
-    config,
-  );
+export async function getAccountInfo(_config: InstagramConfig): Promise<IGAccount> {
+  return {
+    id: 'mock_ig_account',
+    username: 'mock_user',
+    media_count: mockState.publishedMedia.length,
+  };
 }
 
 /**
  * List recent media from the Instagram account.
  */
 export async function listMedia(
-  config: InstagramConfig,
+  _config: InstagramConfig,
   limit: number = 10,
 ): Promise<{ data: IGMedia[] }> {
-  return graphGet<{ data: IGMedia[] }>(
-    `/${config.businessAccountId}/media`,
-    {
-      fields: 'id,caption,media_type,media_url,permalink,timestamp',
-      limit: String(limit),
-    },
-    config,
-  );
+  return { data: mockState.publishedMedia.slice(0, limit) };
 }
 
 /**
  * Get a specific media item by ID.
  */
 export async function getMedia(
-  config: InstagramConfig,
+  _config: InstagramConfig,
   mediaId: string,
 ): Promise<IGMedia> {
-  return graphGet<IGMedia>(
-    `/${mediaId}`,
-    { fields: 'id,caption,media_type,media_url,permalink,timestamp' },
-    config,
-  );
+  const found = mockState.publishedMedia.find((m) => m.id === mediaId);
+  if (found) return found;
+  return {
+    id: mediaId,
+    media_type: 'IMAGE',
+    permalink: `https://instagram.com/p/mock_${mediaId}/`,
+    timestamp: new Date().toISOString(),
+  };
 }

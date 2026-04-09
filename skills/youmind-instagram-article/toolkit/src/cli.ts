@@ -218,21 +218,17 @@ program
 
 program
   .command('validate')
-  .description('Validate Instagram Business Account credentials')
+  .description('Validate Instagram credentials via YouMind proxy')
   .action(async () => {
     try {
       const config = loadInstagramConfig();
 
-      if (!config.businessAccountId) {
-        console.error('[ERROR] instagram.business_account_id not set in config.yaml');
-        process.exit(1);
-      }
-      if (!config.accessToken) {
-        console.error('[ERROR] instagram.access_token not set in config.yaml');
+      if (!config.apiKey) {
+        console.error('[ERROR] youmind.api_key not set in config.yaml');
         process.exit(1);
       }
 
-      console.log('[INFO] Validating Instagram credentials...');
+      console.log('[INFO] Validating Instagram credentials via YouMind proxy...');
       const account = await getAccountInfo(config);
 
       console.log('\n--- Account Info ---');
@@ -243,7 +239,7 @@ program
       if (account.media_count !== undefined) {
         console.log(`Media count: ${account.media_count}`);
       }
-      console.log('\nCredentials are valid!');
+      console.log('\nCredentials are valid (via YouMind proxy)!');
     } catch (err) {
       console.error(`[ERROR] Validation failed: ${(err as Error).message}`);
       process.exit(1);

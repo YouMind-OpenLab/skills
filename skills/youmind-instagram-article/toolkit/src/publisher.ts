@@ -73,6 +73,9 @@ export interface PublishResult {
  */
 export async function publishSingleImage(options: PublishSingleOptions): Promise<PublishResult> {
   const config = options.config ?? loadInstagramConfig();
+  if (!config.apiKey) {
+    throw new Error('youmind.api_key not set in config.yaml');
+  }
   const maxWaitMs = options.maxWaitMs ?? 60_000;
 
   if (!options.imageUrl) {
@@ -129,6 +132,9 @@ export async function publishSingleImage(options: PublishSingleOptions): Promise
  */
 export async function publishCarousel(options: PublishCarouselOptions): Promise<PublishResult> {
   const config = options.config ?? loadInstagramConfig();
+  if (!config.apiKey) {
+    throw new Error('youmind.api_key not set in config.yaml');
+  }
   const maxWaitMs = options.maxWaitMs ?? 60_000;
 
   if (!options.imageUrls?.length) {
