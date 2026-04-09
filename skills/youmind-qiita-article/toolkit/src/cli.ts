@@ -13,7 +13,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 
-import { loadConfig, listMyItems, getItem } from './qiita-api.js';
+import { loadQiitaConfig, listMyItems } from './qiita-api.js';
 import { publish } from './publisher.js';
 import { adaptForQiita } from './content-adapter.js';
 
@@ -72,13 +72,11 @@ program
   .option('--tweet', 'Post to Twitter/X if integration enabled')
   .option('--slide', 'Enable slide/presentation mode')
   .option('--org <name>', 'Publish under an organization')
-  .option('--access-token <token>', 'Qiita access token (overrides config)')
   .action(async (input: string, opts) => {
-    const cfg = loadConfig();
-    const accessToken = opts.accessToken || cfg.qiita.accessToken;
+    const cfg = loadQiitaConfig();
 
-    if (!accessToken) {
-      console.error('Error: Qiita access token required. Set qiita.access_token in config.yaml or pass --access-token.');
+    if (!cfg.apiKey) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
@@ -126,7 +124,7 @@ program
     // Publish
     try {
       const result = await publish({
-        accessToken,
+        config: cfg,
         title: adapted.title,
         markdown: adapted.bodyMarkdown,
         tags: adapted.tags,
@@ -212,21 +210,18 @@ program
 
 program
   .command('validate')
-  .description('Check access token and Qiita API connectivity')
-  .option('--access-token <token>', 'Qiita access token (overrides config)')
-  .action(async (opts) => {
-    const cfg = loadConfig();
-    const accessToken = opts.accessToken || cfg.qiita.accessToken;
+  .description('Check YouMind API key and Qiita API connectivity')
+  .action(async () => {
+    const cfg = loadQiitaConfig();
 
-    if (!accessToken) {
-      console.error('No Qiita access token found.');
-      console.error('Set qiita.access_token in config.yaml or pass --access-token.');
+    if (!cfg.apiKey) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
     console.log('Checking Qiita API connectivity...');
     try {
-      const items = await listMyItems(accessToken, 1, 1);
+      const items = await listMyItems(cfg, 1, 1);
       console.log('Qiita API connection successful!');
       console.log(`Your account has articles. Latest: ${items[0]?.title || '(no articles yet)'}`);
     } catch (err) {
@@ -234,13 +229,7 @@ program
       process.exit(1);
     }
 
-    // Check YouMind config
-    const ymKey = cfg.youmind?.api_key;
-    if (ymKey) {
-      console.log('YouMind API key: configured');
-    } else {
-      console.log('YouMind API key: not configured (optional, for knowledge base features)');
-    }
+    console.log('YouMind API key: configured');
   });
 
 // --- list ---
@@ -250,13 +239,11 @@ program
   .description('List your Qiita articles')
   .option('--page <n>', 'Page number', '1')
   .option('--per-page <n>', 'Articles per page', '10')
-  .option('--access-token <token>', 'Qiita access token (overrides config)')
   .action(async (opts) => {
-    const cfg = loadConfig();
-    const accessToken = opts.accessToken || cfg.qiita.accessToken;
+    const cfg = loadQiitaConfig();
 
-    if (!accessToken) {
-      console.error('No Qiita access token found.');
+    if (!cfg.apiKey) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
@@ -264,7 +251,7 @@ program
     const perPage = parseInt(opts.perPage, 10);
 
     try {
-      const items = await listMyItems(accessToken, page, perPage);
+      const items = await listMyItems(cfg, page, perPage);
 
       if (items.length === 0) {
         console.log('No articles found.');

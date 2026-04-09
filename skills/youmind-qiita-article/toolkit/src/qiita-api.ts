@@ -1,13 +1,29 @@
 /**
- * Qiita REST API v2 wrapper.
+ * qiita-api.ts — MOCK IMPLEMENTATION
  *
- * Endpoints:
- *   POST   /api/v2/items                    — create article
- *   PATCH  /api/v2/items/{id}               — update article
- *   GET    /api/v2/items/{id}               — get article by id
- *   GET    /api/v2/authenticated_user/items  — list authenticated user's articles
+ * ⚠️ This file is a mock. The skill talks to Qiita exclusively through
+ * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Qiita
+ * namespace on that OpenAPI. This mock lets the rest of the skill
+ * (publisher, CLI) be built and smoke-tested end-to-end right now, without
+ * a real backend.
  *
- * API docs: https://qiita.com/api/v2/docs
+ * Swap-in plan when the real YouMind endpoints ship:
+ *   1. YouMind will expose endpoints whose request/response shape mirrors
+ *      Qiita's REST API v2 (same field names like `title`, `body`, `tags`,
+ *      `private`, same /items endpoints). The only auth difference is that
+ *      YouMind accepts `x-api-key: <youmind_api_key>` instead of a Qiita
+ *      personal access token — YouMind holds the user's Qiita token
+ *      server-side and attaches it.
+ *   2. Replace each mock function body below with a `fetch()` POST/GET/PATCH
+ *      to the corresponding `https://youmind.com/openapi/v1/qiita/<op>`
+ *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
+ *   3. Keep the exported type signatures stable — they ARE the swap-in
+ *      contract. Nothing in publisher.ts / cli.ts should need to change.
+ *   4. Delete the `mockState` and `initMockState` at that point.
+ *
+ * loadQiitaConfig is NOT mocked — it reads real config the same way as
+ * youmind-api.ts, because users will set their YouMind API key through the
+ * normal config flow even before the Qiita endpoints exist.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -16,66 +32,14 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
-// Config
+// Public types — stable contract (do NOT change signatures when swapping to
+// real HTTP; only the function bodies below should change).
 // ---------------------------------------------------------------------------
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
-
-const QIITA_API_BASE = 'https://qiita.com/api/v2';
-
-interface QiitaConfig {
-  accessToken: string;
+export interface QiitaConfig {
+  apiKey: string;
+  baseUrl: string;
 }
-
-interface FullConfig {
-  qiita: QiitaConfig;
-  youmind?: { api_key?: string; base_url?: string };
-}
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
-export function loadConfig(): FullConfig {
-  const central = loadCentralCredentials();
-  let local: Record<string, unknown> = {};
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      break;
-    }
-  }
-  const qiita = { ...(central.qiita as Record<string, unknown> ?? {}), ...(local.qiita as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(qiita)) {
-    if (v === '' && (central.qiita as Record<string, unknown>)?.[k]) {
-      qiita[k] = (central.qiita as Record<string, unknown>)[k];
-    }
-  }
-  const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(youmind)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      youmind[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
-  return {
-    qiita: {
-      accessToken: (qiita.access_token as string) || '',
-    },
-    youmind: youmind as FullConfig['youmind'],
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface QiitaTag {
   name: string;
@@ -120,117 +84,182 @@ export interface CreateItemOptions {
 export interface UpdateItemOptions extends Partial<CreateItemOptions> {}
 
 // ---------------------------------------------------------------------------
-// HTTP helpers
+// Config loading — real implementation, mirrors youmind-api.ts pattern.
 // ---------------------------------------------------------------------------
 
-async function apiRequest<T = unknown>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
-  path: string,
-  accessToken: string,
-  body?: Record<string, unknown>,
-): Promise<T> {
-  if (!accessToken) {
-    throw new Error(
-      'Qiita access token not configured. Set qiita.access_token in config.yaml or pass --access-token.',
-    );
-  }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_DIR = resolve(__dirname, '../..');
 
-  const url = `${QIITA_API_BASE}${path}`;
-  const headers: Record<string, string> = {
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
+const YOUMIND_OPENAPI_BASE_URLS = [
+  'https://youmind.com/openapi/v1',
+];
+
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
+function loadLocalConfig(): Record<string, unknown> {
+  for (const name of ['config.yaml', 'config.example.yaml']) {
+    const p = resolve(PROJECT_DIR, name);
+    if (existsSync(p)) {
+      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+    }
+  }
+  return {};
+}
+
+export function loadQiitaConfig(): QiitaConfig {
+  const central = loadCentralCredentials();
+  const local = loadLocalConfig();
+  const ym = {
+    ...(central.youmind as Record<string, unknown> ?? {}),
+    ...(local.youmind as Record<string, unknown> ?? {}),
   };
-
-  const resp = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(
-      `Qiita API ${method} ${path} failed (${resp.status}): ${text.slice(0, 500)}`,
-    );
+  // Filter out local empty strings so central credentials aren't masked.
+  for (const [k, v] of Object.entries(ym)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      ym[k] = (central.youmind as Record<string, unknown>)[k];
+    }
   }
-
-  return resp.json() as Promise<T>;
+  return {
+    apiKey: (ym.api_key as string) || '',
+    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Mock state — module-scoped, lives for the lifetime of the process. Not
+// exported; swap-in code should delete this whole block.
+// ---------------------------------------------------------------------------
+
+interface MockState {
+  itemCounter: number;
+  publishedItems: QiitaItem[];
+}
+
+function initMockState(): MockState {
+  return {
+    itemCounter: 0,
+    publishedItems: [],
+  };
+}
+
+const mockState: MockState = initMockState();
+
+function mockItemUrl(itemId: string): string {
+  return `https://qiita.com/mock_user/items/${itemId}`;
+}
+
+function buildMockItem(
+  id: string,
+  options: CreateItemOptions,
+): QiitaItem {
+  const now = new Date().toISOString();
+  return {
+    id,
+    title: options.title,
+    body: options.body,
+    rendered_body: options.body,
+    url: mockItemUrl(id),
+    private: options.private ?? false,
+    tags: options.tags,
+    likes_count: 0,
+    stocks_count: 0,
+    comments_count: 0,
+    page_views_count: null,
+    created_at: now,
+    updated_at: now,
+    slide: options.slide ?? false,
+    user: {
+      id: 'mock_user',
+      permanent_id: 1,
+      name: 'Mock User',
+      items_count: mockState.publishedItems.length,
+      followers_count: 0,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Exported mock functions
 // ---------------------------------------------------------------------------
 
 /**
  * Create a new Qiita article (item).
  */
 export async function createItem(
-  accessToken: string,
+  _config: QiitaConfig,
   options: CreateItemOptions,
 ): Promise<QiitaItem> {
-  const item: Record<string, unknown> = {
-    title: options.title,
-    body: options.body,
-    tags: options.tags,
-    private: options.private ?? false,
-  };
-
-  if (options.tweet !== undefined) {
-    item.tweet = options.tweet;
-  }
-  if (options.slide !== undefined) {
-    item.slide = options.slide;
-  }
-  if (options.organization_url_name !== undefined) {
-    item.organization_url_name = options.organization_url_name;
-  }
-
-  return apiRequest<QiitaItem>('POST', '/items', accessToken, item);
+  mockState.itemCounter += 1;
+  const id = `mock_qiita_item_${Date.now()}_${mockState.itemCounter}`;
+  const item = buildMockItem(id, options);
+  mockState.publishedItems.unshift(item);
+  return item;
 }
 
 /**
  * Update an existing Qiita article (item).
  */
 export async function updateItem(
-  accessToken: string,
+  _config: QiitaConfig,
   id: string,
   options: UpdateItemOptions,
 ): Promise<QiitaItem> {
-  const item: Record<string, unknown> = {};
-
-  if (options.title !== undefined) item.title = options.title;
-  if (options.body !== undefined) item.body = options.body;
-  if (options.tags !== undefined) item.tags = options.tags;
-  if (options.private !== undefined) item.private = options.private;
-  if (options.slide !== undefined) item.slide = options.slide;
-  if (options.organization_url_name !== undefined) item.organization_url_name = options.organization_url_name;
-
-  return apiRequest<QiitaItem>('PATCH', `/items/${id}`, accessToken, item);
+  const existing = mockState.publishedItems.find((it) => it.id === id);
+  const now = new Date().toISOString();
+  if (existing) {
+    if (options.title !== undefined) existing.title = options.title;
+    if (options.body !== undefined) {
+      existing.body = options.body;
+      existing.rendered_body = options.body;
+    }
+    if (options.tags !== undefined) existing.tags = options.tags;
+    if (options.private !== undefined) existing.private = options.private;
+    if (options.slide !== undefined) existing.slide = options.slide;
+    existing.updated_at = now;
+    return existing;
+  }
+  // Not found — return a synthesized item so callers still get a stable shape.
+  return buildMockItem(id, {
+    title: options.title ?? 'Mock Qiita Item',
+    body: options.body ?? '',
+    tags: options.tags ?? [],
+    private: options.private,
+    slide: options.slide,
+  });
 }
 
 /**
  * Get a single Qiita article by ID.
  */
 export async function getItem(
-  accessToken: string,
+  _config: QiitaConfig,
   id: string,
 ): Promise<QiitaItem> {
-  return apiRequest<QiitaItem>('GET', `/items/${id}`, accessToken);
+  const found = mockState.publishedItems.find((it) => it.id === id);
+  if (found) return found;
+  return buildMockItem(id, {
+    title: 'Mock Qiita Item',
+    body: '',
+    tags: [],
+  });
 }
 
 /**
  * List the authenticated user's articles.
  */
 export async function listMyItems(
-  accessToken: string,
+  _config: QiitaConfig,
   page = 1,
   perPage = 20,
 ): Promise<QiitaItem[]> {
-  return apiRequest<QiitaItem[]>(
-    'GET',
-    `/authenticated_user/items?page=${page}&per_page=${perPage}`,
-    accessToken,
-  );
+  const start = (page - 1) * perPage;
+  return mockState.publishedItems.slice(start, start + perPage);
 }

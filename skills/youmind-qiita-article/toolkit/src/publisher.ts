@@ -2,14 +2,14 @@
  * Qiita article publisher — high-level wrapper around qiita-api.
  */
 
-import { createItem, type QiitaItem, type QiitaTag } from './qiita-api.js';
+import { createItem, type QiitaConfig, type QiitaItem, type QiitaTag } from './qiita-api.js';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface PublishOptions {
-  accessToken: string;
+  config: QiitaConfig;
   title: string;
   markdown: string;
   tags: QiitaTag[];
@@ -38,7 +38,7 @@ export interface PublishResult {
  */
 export async function publish(options: PublishOptions): Promise<PublishResult> {
   const {
-    accessToken,
+    config,
     title,
     markdown,
     tags,
@@ -48,8 +48,8 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     organizationUrlName,
   } = options;
 
-  if (!accessToken) {
-    throw new Error('Qiita access token is required. Set qiita.access_token in config.yaml.');
+  if (!config.apiKey) {
+    throw new Error('youmind.api_key not set in config.yaml');
   }
 
   if (!title || !title.trim()) {
@@ -64,7 +64,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     throw new Error('At least one tag is required for Qiita articles.');
   }
 
-  const item: QiitaItem = await createItem(accessToken, {
+  const item: QiitaItem = await createItem(config, {
     title: title.trim(),
     body: markdown,
     tags,
