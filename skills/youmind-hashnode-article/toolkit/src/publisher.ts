@@ -2,15 +2,18 @@
  * Hashnode article publisher — high-level wrapper around hashnode-api.
  */
 
-import { publishPost, type HashnodePost } from './hashnode-api.js';
+import {
+  publishPost,
+  loadHashnodeConfig,
+  type HashnodePost,
+  type HashnodeConfig,
+} from './hashnode-api.js';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface PublishOptions {
-  token: string;
-  publicationId: string;
   title: string;
   markdown: string;
   subtitle?: string;
@@ -20,6 +23,8 @@ export interface PublishOptions {
   seriesId?: string;
   metaTitle?: string;
   metaDescription?: string;
+  /** Optional pre-loaded config */
+  config?: HashnodeConfig;
 }
 
 export interface PublishResult {
@@ -35,15 +40,14 @@ export interface PublishResult {
 // ---------------------------------------------------------------------------
 
 /**
- * Publish an article to a Hashnode publication.
+ * Publish an article to a Hashnode publication via the YouMind proxy.
  *
- * Hashnode publishes posts immediately (no draft API in the public GraphQL API).
- * Articles are always published to the specified publication.
+ * Hashnode publishes posts immediately (no draft API in the public GraphQL
+ * API). Articles are always published to the user's publication, which is
+ * bound server-side by YouMind to the API key.
  */
 export async function publish(options: PublishOptions): Promise<PublishResult> {
   const {
-    token,
-    publicationId,
     title,
     markdown,
     subtitle,
@@ -55,12 +59,10 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     metaDescription,
   } = options;
 
-  if (!token) {
-    throw new Error('Hashnode token is required. Set hashnode.token in config.yaml.');
-  }
+  const config = options.config ?? loadHashnodeConfig();
 
-  if (!publicationId) {
-    throw new Error('Hashnode publication_id is required. Set hashnode.publication_id in config.yaml.');
+  if (!config.apiKey) {
+    throw new Error('youmind.api_key not set in config.yaml');
   }
 
   if (!title || !title.trim()) {
@@ -85,7 +87,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
       }
     : undefined;
 
-  const post: HashnodePost = await publishPost(token, publicationId, {
+  const post: HashnodePost = await publishPost(config, {
     title: title.trim(),
     contentMarkdown: markdown,
     subtitle: subtitle?.trim(),

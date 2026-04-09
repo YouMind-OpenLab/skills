@@ -1,10 +1,34 @@
 /**
- * Hashnode GraphQL API client.
+ * hashnode-api.ts — MOCK IMPLEMENTATION
  *
- * API endpoint: https://gql.hashnode.com
- * Auth: Bearer token (Personal Access Token)
+ * This file is a mock. The skill talks to Hashnode exclusively through
+ * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Hashnode
+ * namespace on that OpenAPI. This mock lets the rest of the skill
+ * (publisher, CLI) be built and smoke-tested end-to-end right now, without
+ * a real backend.
  *
- * Docs: https://apidocs.hashnode.com
+ * Swap-in plan when the real YouMind endpoints ship:
+ *   1. YouMind will expose REST-style POST/GET endpoints under
+ *      `https://youmind.com/openapi/v1/hashnode/<op>`. Internally the YouMind
+ *      proxy will translate these REST calls into Hashnode's GraphQL API
+ *      (publishPost / updatePost / post / publication.posts / searchTags
+ *      mutations and queries), so the mock's stable TypeScript signatures
+ *      below already encode the response shape the real endpoints will
+ *      return. The only auth difference is that YouMind accepts
+ *      `x-api-key: <youmind_api_key>` instead of a Hashnode Personal Access
+ *      Token — YouMind holds the user's Hashnode token server-side and
+ *      attaches it to the upstream GraphQL request.
+ *   2. Replace each mock function body below with a `fetch()` POST/GET to
+ *      the corresponding `https://youmind.com/openapi/v1/hashnode/<op>`
+ *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
+ *   3. Keep the exported type signatures stable — they ARE the swap-in
+ *      contract. Nothing in publisher.ts / cli.ts should need to change.
+ *   4. Delete the `mockState`, `initMockState`, and the mock builder
+ *      helpers at that point.
+ *
+ * loadHashnodeConfig is NOT mocked — it reads real config the same way as
+ * youmind-api.ts, because users will set their YouMind API key through the
+ * normal config flow even before the Hashnode endpoints exist.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -13,68 +37,14 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
-// Config
+// Public types — stable contract (do NOT change signatures when swapping to
+// real HTTP; only the function bodies below should change).
 // ---------------------------------------------------------------------------
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
-
-const HASHNODE_GQL_ENDPOINT = 'https://gql.hashnode.com';
-
-interface HashnodeConfig {
-  token: string;
-  publicationId: string;
+export interface HashnodeConfig {
+  apiKey: string;
+  baseUrl: string;
 }
-
-interface FullConfig {
-  hashnode: HashnodeConfig;
-  youmind?: { api_key?: string; base_url?: string };
-}
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
-export function loadConfig(): FullConfig {
-  const central = loadCentralCredentials();
-  let local: Record<string, unknown> = {};
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      break;
-    }
-  }
-  const hn = { ...(central.hashnode as Record<string, unknown> ?? {}), ...(local.hashnode as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(hn)) {
-    if (v === '' && (central.hashnode as Record<string, unknown>)?.[k]) {
-      hn[k] = (central.hashnode as Record<string, unknown>)[k];
-    }
-  }
-  const youmind = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(youmind)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      youmind[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
-  return {
-    hashnode: {
-      token: (hn.token as string) || '',
-      publicationId: (hn.publication_id as string) || '',
-    },
-    youmind: youmind as FullConfig['youmind'],
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface HashnodePost {
   id: string;
@@ -121,332 +91,257 @@ export interface UpdatePostInput {
   metaTags?: { title?: string; description?: string; image?: string };
 }
 
-interface GraphQLResponse<T> {
-  data?: T;
-  errors?: { message: string; extensions?: Record<string, unknown> }[];
+export interface HashnodeTag {
+  id: string;
+  name: string;
+  slug: string;
+  postsCount: number;
 }
 
 // ---------------------------------------------------------------------------
-// GraphQL client
+// Config loading — real implementation, mirrors youmind-api.ts pattern.
 // ---------------------------------------------------------------------------
 
-async function gql<T = unknown>(
-  token: string,
-  query: string,
-  variables?: Record<string, unknown>,
-): Promise<T> {
-  if (!token) {
-    throw new Error(
-      'Hashnode token not configured. Set hashnode.token in config.yaml.',
-    );
-  }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_DIR = resolve(__dirname, '../..');
 
-  const resp = await fetch(HASHNODE_GQL_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token,
+const YOUMIND_OPENAPI_BASE_URLS = [
+  'https://youmind.com/openapi/v1',
+];
+
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
+function loadLocalConfig(): Record<string, unknown> {
+  for (const name of ['config.yaml', 'config.example.yaml']) {
+    const p = resolve(PROJECT_DIR, name);
+    if (existsSync(p)) {
+      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+    }
+  }
+  return {};
+}
+
+export function loadHashnodeConfig(): HashnodeConfig {
+  const central = loadCentralCredentials();
+  const local = loadLocalConfig();
+  const ym = {
+    ...(central.youmind as Record<string, unknown> ?? {}),
+    ...(local.youmind as Record<string, unknown> ?? {}),
+  };
+  // Filter out local empty strings so central credentials aren't masked.
+  for (const [k, v] of Object.entries(ym)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      ym[k] = (central.youmind as Record<string, unknown>)[k];
+    }
+  }
+  return {
+    apiKey: (ym.api_key as string) || '',
+    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Mock state — module-scoped, lives for the lifetime of the process. Not
+// exported; swap-in code should delete this whole block.
+// ---------------------------------------------------------------------------
+
+interface MockState {
+  postCounter: number;
+  publishedPosts: HashnodePost[];
+  mockTags: HashnodeTag[];
+}
+
+function initMockState(): MockState {
+  return {
+    postCounter: 0,
+    publishedPosts: [],
+    mockTags: [
+      { id: 'mock_tag_1', name: 'JavaScript', slug: 'javascript', postsCount: 12345 },
+      { id: 'mock_tag_2', name: 'TypeScript', slug: 'typescript', postsCount: 8765 },
+      { id: 'mock_tag_3', name: 'React', slug: 'react', postsCount: 9876 },
+      { id: 'mock_tag_4', name: 'Node.js', slug: 'nodejs', postsCount: 6543 },
+      { id: 'mock_tag_5', name: 'GraphQL', slug: 'graphql', postsCount: 4321 },
+      { id: 'mock_tag_6', name: 'Web Development', slug: 'web-development', postsCount: 15432 },
+      { id: 'mock_tag_7', name: 'Python', slug: 'python', postsCount: 11234 },
+      { id: 'mock_tag_8', name: 'API', slug: 'api', postsCount: 5678 },
+    ],
+  };
+}
+
+const mockState: MockState = initMockState();
+
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
+function normalizeTags(
+  tags?: { id: string; name: string; slug: string }[],
+  tagSlugs?: string[],
+): { id: string; name: string; slug: string }[] {
+  if (tags?.length) return tags;
+  if (tagSlugs?.length) {
+    return tagSlugs.map((slug, idx) => ({
+      id: `mock_tag_${Date.now()}_${idx}`,
+      name: slug,
+      slug,
+    }));
+  }
+  return [];
+}
+
+function estimateReadTime(markdown: string): number {
+  const words = markdown.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+function buildMockPost(
+  counter: number,
+  input: PublishPostInput,
+): HashnodePost {
+  const slugBase = slugify(input.title) || `mock-article-${counter}`;
+  const id = `mock_hashnode_post_${Date.now()}_${counter}`;
+  const now = new Date().toISOString();
+  const markdown = input.contentMarkdown;
+
+  return {
+    id,
+    title: input.title,
+    subtitle: input.subtitle ?? null,
+    slug: slugBase,
+    url: `https://mock.hashnode.dev/mock-article-${counter}`,
+    canonicalUrl: input.canonicalUrl ?? null,
+    coverImage: input.coverImageOptions?.coverImageURL
+      ? { url: input.coverImageOptions.coverImageURL }
+      : null,
+    brief: markdown.slice(0, 250),
+    content: {
+      markdown,
+      html: `<p>${markdown.slice(0, 200)}</p>`,
     },
-    body: JSON.stringify({ query, variables }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(
-      `Hashnode API request failed (${resp.status}): ${text.slice(0, 500)}`,
-    );
-  }
-
-  const result = (await resp.json()) as GraphQLResponse<T>;
-
-  if (result.errors?.length) {
-    const messages = result.errors.map(e => e.message).join('; ');
-    throw new Error(`Hashnode GraphQL error: ${messages}`);
-  }
-
-  if (!result.data) {
-    throw new Error('Hashnode API returned no data.');
-  }
-
-  return result.data;
+    tags: normalizeTags(input.tags, input.tagSlugs),
+    series: input.seriesId ? { id: input.seriesId, name: 'Mock Series' } : null,
+    publishedAt: now,
+    readTimeInMinutes: estimateReadTime(markdown),
+    reactionCount: 0,
+    views: 0,
+  };
 }
 
 // ---------------------------------------------------------------------------
-// GraphQL Queries & Mutations
-// ---------------------------------------------------------------------------
-
-const PUBLISH_POST_MUTATION = `
-  mutation PublishPost($input: PublishPostInput!) {
-    publishPost(input: $input) {
-      post {
-        id
-        title
-        subtitle
-        slug
-        url
-        canonicalUrl
-        coverImage {
-          url
-        }
-        brief
-        tags {
-          id
-          name
-          slug
-        }
-        series {
-          id
-          name
-        }
-        publishedAt
-        readTimeInMinutes
-      }
-    }
-  }
-`;
-
-const UPDATE_POST_MUTATION = `
-  mutation UpdatePost($input: UpdatePostInput!) {
-    updatePost(input: $input) {
-      post {
-        id
-        title
-        subtitle
-        slug
-        url
-        canonicalUrl
-        coverImage {
-          url
-        }
-        brief
-        tags {
-          id
-          name
-          slug
-        }
-        series {
-          id
-          name
-        }
-        publishedAt
-        readTimeInMinutes
-      }
-    }
-  }
-`;
-
-const GET_POST_QUERY = `
-  query GetPost($id: ID!) {
-    post(id: $id) {
-      id
-      title
-      subtitle
-      slug
-      url
-      canonicalUrl
-      coverImage {
-        url
-      }
-      brief
-      content {
-        markdown
-        html
-      }
-      tags {
-        id
-        name
-        slug
-      }
-      series {
-        id
-        name
-      }
-      publishedAt
-      readTimeInMinutes
-      reactionCount
-      views
-    }
-  }
-`;
-
-const LIST_POSTS_QUERY = `
-  query ListPosts($publicationId: ObjectId!, $first: Int!) {
-    publication(id: $publicationId) {
-      id
-      title
-      posts(first: $first) {
-        edges {
-          node {
-            id
-            title
-            subtitle
-            slug
-            url
-            brief
-            coverImage {
-              url
-            }
-            tags {
-              id
-              name
-              slug
-            }
-            series {
-              id
-              name
-            }
-            publishedAt
-            readTimeInMinutes
-            reactionCount
-            views
-          }
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  }
-`;
-
-const SEARCH_TAGS_QUERY = `
-  query SearchTags($keyword: String!, $first: Int!) {
-    searchTags(keyword: $keyword, first: $first) {
-      edges {
-        node {
-          id
-          name
-          slug
-          postsCount
-        }
-      }
-    }
-  }
-`;
-
-// ---------------------------------------------------------------------------
-// Public API
+// Exported mock functions
 // ---------------------------------------------------------------------------
 
 /**
  * Publish a new post to a Hashnode publication.
  */
 export async function publishPost(
-  token: string,
-  publicationId: string,
+  _config: HashnodeConfig,
   options: PublishPostInput,
 ): Promise<HashnodePost> {
-  const input: Record<string, unknown> = {
-    publicationId,
-    title: options.title,
-    contentMarkdown: options.contentMarkdown,
-  };
-
-  if (options.subtitle) input.subtitle = options.subtitle;
-  if (options.tagSlugs?.length) {
-    // Use slug-based matching — omit id field to avoid ObjectId validation
-    input.tags = options.tagSlugs.map(slug => ({ slug, name: slug }));
-  }
-  if (options.tags?.length) input.tags = options.tags;
-  if (options.coverImageOptions) input.coverImageOptions = options.coverImageOptions;
-  if (options.canonicalUrl) input.canonicalUrl = options.canonicalUrl;
-  if (options.seriesId) input.seriesId = options.seriesId;
-  if (options.metaTags) input.metaTags = options.metaTags;
-  if (options.disableComments !== undefined) input.disableComments = options.disableComments;
-
-  const result = await gql<{ publishPost: { post: HashnodePost } }>(
-    token,
-    PUBLISH_POST_MUTATION,
-    { input },
-  );
-
-  return result.publishPost.post;
+  mockState.postCounter += 1;
+  const post = buildMockPost(mockState.postCounter, options);
+  mockState.publishedPosts.unshift(post);
+  return post;
 }
 
 /**
  * Update an existing Hashnode post.
  */
 export async function updatePost(
-  token: string,
+  _config: HashnodeConfig,
   postId: string,
   options: UpdatePostInput,
 ): Promise<HashnodePost> {
-  const input: Record<string, unknown> = {
-    id: postId,
-  };
-
-  if (options.title !== undefined) input.title = options.title;
-  if (options.contentMarkdown !== undefined) input.contentMarkdown = options.contentMarkdown;
-  if (options.subtitle !== undefined) input.subtitle = options.subtitle;
-  if (options.tags?.length) input.tags = options.tags;
-  if (options.tagSlugs?.length) {
-    input.tags = options.tagSlugs.map(slug => ({ slug, name: slug, id: '' }));
+  const existing = mockState.publishedPosts.find((p) => p.id === postId);
+  if (existing) {
+    if (options.title !== undefined) existing.title = options.title;
+    if (options.contentMarkdown !== undefined) {
+      existing.content = {
+        markdown: options.contentMarkdown,
+        html: `<p>${options.contentMarkdown.slice(0, 200)}</p>`,
+      };
+      existing.brief = options.contentMarkdown.slice(0, 250);
+      existing.readTimeInMinutes = estimateReadTime(options.contentMarkdown);
+    }
+    if (options.subtitle !== undefined) existing.subtitle = options.subtitle ?? null;
+    const normalized = normalizeTags(options.tags, options.tagSlugs);
+    if (normalized.length) existing.tags = normalized;
+    if (options.coverImageOptions) {
+      existing.coverImage = { url: options.coverImageOptions.coverImageURL };
+    }
+    if (options.canonicalUrl !== undefined) existing.canonicalUrl = options.canonicalUrl ?? null;
+    if (options.seriesId !== undefined) {
+      existing.series = options.seriesId
+        ? { id: options.seriesId, name: 'Mock Series' }
+        : null;
+    }
+    return existing;
   }
-  if (options.coverImageOptions) input.coverImageOptions = options.coverImageOptions;
-  if (options.canonicalUrl !== undefined) input.canonicalUrl = options.canonicalUrl;
-  if (options.seriesId !== undefined) input.seriesId = options.seriesId;
-  if (options.metaTags) input.metaTags = options.metaTags;
 
-  const result = await gql<{ updatePost: { post: HashnodePost } }>(
-    token,
-    UPDATE_POST_MUTATION,
-    { input },
-  );
-
-  return result.updatePost.post;
+  // Fabricate a plausible post if we've never seen this id.
+  mockState.postCounter += 1;
+  return buildMockPost(mockState.postCounter, {
+    title: options.title ?? `Mock Article ${postId}`,
+    contentMarkdown: options.contentMarkdown ?? '# Mock content',
+    subtitle: options.subtitle,
+    tags: options.tags,
+    tagSlugs: options.tagSlugs,
+    coverImageOptions: options.coverImageOptions,
+    canonicalUrl: options.canonicalUrl,
+    seriesId: options.seriesId,
+    metaTags: options.metaTags,
+  });
 }
 
 /**
  * Get a single Hashnode post by ID.
  */
 export async function getPost(
-  token: string,
+  _config: HashnodeConfig,
   postId: string,
 ): Promise<HashnodePost> {
-  const result = await gql<{ post: HashnodePost }>(
-    token,
-    GET_POST_QUERY,
-    { id: postId },
-  );
-
-  return result.post;
+  const found = mockState.publishedPosts.find((p) => p.id === postId);
+  if (found) return found;
+  mockState.postCounter += 1;
+  return buildMockPost(mockState.postCounter, {
+    title: `Mock Article ${postId}`,
+    contentMarkdown: '# Mock content\n\nThis is a mock Hashnode post.',
+  });
 }
 
 /**
  * List posts from a Hashnode publication.
  */
 export async function listPosts(
-  token: string,
-  publicationId: string,
+  _config: HashnodeConfig,
   first = 10,
 ): Promise<HashnodePost[]> {
-  const result = await gql<{
-    publication: {
-      posts: {
-        edges: { node: HashnodePost }[];
-        pageInfo: { hasNextPage: boolean; endCursor: string | null };
-      };
-    };
-  }>(token, LIST_POSTS_QUERY, { publicationId, first });
-
-  return result.publication.posts.edges.map(e => e.node);
+  return mockState.publishedPosts.slice(0, first);
 }
 
 /**
  * Search for Hashnode tags by keyword.
  */
 export async function searchTags(
-  token: string,
+  _config: HashnodeConfig,
   keyword: string,
   first = 10,
-): Promise<{ id: string; name: string; slug: string; postsCount: number }[]> {
-  const result = await gql<{
-    searchTags: {
-      edges: { node: { id: string; name: string; slug: string; postsCount: number } }[];
-    };
-  }>(token, SEARCH_TAGS_QUERY, { keyword, first });
-
-  return result.searchTags.edges.map(e => e.node);
+): Promise<HashnodeTag[]> {
+  const needle = keyword.toLowerCase();
+  const matches = mockState.mockTags.filter(
+    (t) => t.name.toLowerCase().includes(needle) || t.slug.toLowerCase().includes(needle),
+  );
+  return matches.slice(0, first);
 }

@@ -13,7 +13,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 
-import { loadConfig, listPosts, getPost, searchTags } from './hashnode-api.js';
+import { loadHashnodeConfig, listPosts, searchTags } from './hashnode-api.js';
 import { publish } from './publisher.js';
 import { adaptForHashnode } from './content-adapter.js';
 
@@ -64,7 +64,7 @@ program
 
 program
   .command('publish')
-  .description('Publish a markdown file to Hashnode')
+  .description('Publish a markdown file to Hashnode via YouMind proxy')
   .argument('<input>', 'Markdown file path')
   .option('--tags <tags>', 'Comma-separated tags (max 5)')
   .option('--subtitle <text>', 'Article subtitle / hook')
@@ -72,20 +72,11 @@ program
   .option('--series-id <id>', 'Series ID to add the post to')
   .option('--canonical <url>', 'Canonical URL for cross-posting')
   .option('--meta-description <text>', 'SEO meta description (max 160 chars)')
-  .option('--token <token>', 'Hashnode token (overrides config)')
-  .option('--publication-id <id>', 'Hashnode publication ID (overrides config)')
   .action(async (input: string, opts) => {
-    const cfg = loadConfig();
-    const token = opts.token || cfg.hashnode.token;
-    const publicationId = opts.publicationId || cfg.hashnode.publicationId;
+    const config = loadHashnodeConfig();
 
-    if (!token) {
-      console.error('Error: Hashnode token required. Set hashnode.token in config.yaml or pass --token.');
-      process.exit(1);
-    }
-
-    if (!publicationId) {
-      console.error('Error: Hashnode publication_id required. Set hashnode.publication_id in config.yaml or pass --publication-id.');
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
@@ -141,8 +132,7 @@ program
     // Publish
     try {
       const result = await publish({
-        token,
-        publicationId,
+        config,
         title: adapted.title,
         markdown: adapted.bodyMarkdown,
         subtitle: adapted.subtitle,
@@ -239,29 +229,18 @@ program
 
 program
   .command('validate')
-  .description('Check API token and Hashnode connectivity')
-  .option('--token <token>', 'Hashnode token (overrides config)')
-  .option('--publication-id <id>', 'Publication ID (overrides config)')
-  .action(async (opts) => {
-    const cfg = loadConfig();
-    const token = opts.token || cfg.hashnode.token;
-    const publicationId = opts.publicationId || cfg.hashnode.publicationId;
+  .description('Check API key and Hashnode connectivity via YouMind proxy')
+  .action(async () => {
+    const config = loadHashnodeConfig();
 
-    if (!token) {
-      console.error('No Hashnode token found.');
-      console.error('Set hashnode.token in config.yaml or pass --token.');
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
-    if (!publicationId) {
-      console.error('No Hashnode publication_id found.');
-      console.error('Set hashnode.publication_id in config.yaml or pass --publication-id.');
-      process.exit(1);
-    }
-
-    console.log('Checking Hashnode API connectivity...');
+    console.log('Checking Hashnode API connectivity via YouMind proxy...');
     try {
-      const posts = await listPosts(token, publicationId, 1);
+      const posts = await listPosts(config, 1);
       console.log('Hashnode API connection successful!');
       if (posts.length > 0) {
         console.log(`Latest post: ${posts[0].title}`);
@@ -272,38 +251,26 @@ program
       console.error(`Hashnode API check failed: ${(err as Error).message}`);
       process.exit(1);
     }
-
-    // Check YouMind config
-    const ymKey = cfg.youmind?.api_key;
-    if (ymKey) {
-      console.log('YouMind API key: configured');
-    } else {
-      console.log('YouMind API key: not configured (optional, for knowledge base features)');
-    }
   });
 
 // --- list ---
 
 program
   .command('list')
-  .description('List posts from your Hashnode publication')
+  .description('List posts from your Hashnode publication via YouMind proxy')
   .option('--count <n>', 'Number of posts to fetch', '10')
-  .option('--token <token>', 'Hashnode token (overrides config)')
-  .option('--publication-id <id>', 'Publication ID (overrides config)')
   .action(async (opts) => {
-    const cfg = loadConfig();
-    const token = opts.token || cfg.hashnode.token;
-    const publicationId = opts.publicationId || cfg.hashnode.publicationId;
+    const config = loadHashnodeConfig();
 
-    if (!token || !publicationId) {
-      console.error('Hashnode token and publication_id required.');
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
     const count = parseInt(opts.count, 10);
 
     try {
-      const posts = await listPosts(token, publicationId, count);
+      const posts = await listPosts(config, count);
 
       if (posts.length === 0) {
         console.log('No posts found in this publication.');
@@ -336,23 +303,21 @@ program
 
 program
   .command('search-tags')
-  .description('Search for Hashnode tags')
+  .description('Search for Hashnode tags via YouMind proxy')
   .argument('<keyword>', 'Tag keyword to search')
   .option('--count <n>', 'Number of results', '10')
-  .option('--token <token>', 'Hashnode token (overrides config)')
   .action(async (keyword: string, opts) => {
-    const cfg = loadConfig();
-    const token = opts.token || cfg.hashnode.token;
+    const config = loadHashnodeConfig();
 
-    if (!token) {
-      console.error('Hashnode token required.');
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
     const count = parseInt(opts.count, 10);
 
     try {
-      const tags = await searchTags(token, keyword, count);
+      const tags = await searchTags(config, keyword, count);
 
       if (tags.length === 0) {
         console.log(`No tags found for "${keyword}".`);

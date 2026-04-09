@@ -1,12 +1,3 @@
-# YouMind Hashnode Skill Configuration
-
-# YouMind OpenAPI (knowledge base search, web search, article archiving)
 youmind:
-  api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx
+  api_key: ""
   base_url: "https://youmind.com/openapi/v1"
-
-# Hashnode API credentials
-# Get your token from https://hashnode.com/settings/developer
-hashnode:
-  token: ""                # Your Hashnode Personal Access Token
-  publication_id: ""       # Your Hashnode publication ID
