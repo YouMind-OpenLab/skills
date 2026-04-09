@@ -11,7 +11,6 @@ import { fileURLToPath } from 'node:url';
 import {
   createPost,
   uploadImage,
-  getProfile,
   loadLinkedInConfig,
   type LinkedInConfig,
   type CreatePostOptions,
@@ -78,6 +77,16 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   };
 
   const adapted = adaptForLinkedIn(options.content, adaptOptions);
+
+  if (!config.apiKey) {
+    return {
+      success: false,
+      postText: adapted.text,
+      extractedLinks: adapted.extractedLinks,
+      warnings: adapted.warnings,
+      error: 'youmind.api_key not set in config.yaml',
+    };
+  }
 
   // Step 3: Upload images if provided
   const mediaAssets: CreatePostOptions['mediaAssets'] = [];

@@ -1,10 +1,50 @@
 /**
- * LinkedIn Posts API wrapper.
+ * linkedin-api.ts — MOCK IMPLEMENTATION
  *
- * Handles post creation, image upload, and profile retrieval via LinkedIn API v2.
+ * This file is a mock. The skill talks to LinkedIn exclusively through
+ * YouMind's OpenAPI proxy, but YouMind has not yet shipped the LinkedIn
+ * namespace on that OpenAPI. This mock lets the rest of the skill
+ * (publisher, CLI) be built and smoke-tested end-to-end right now, without
+ * a real backend.
  *
- * Usage:
- *   import { createPost, uploadImage, getProfile } from './linkedin-api.js';
+ * LinkedIn's two-step image -> post flow is PRESERVED in the public
+ * signatures: callers still uploadImage() first to get a fake asset URN,
+ * then pass it via mediaAssets[] to createPost(). When YouMind ships its
+ * `/linkedin/*` endpoints, only the function bodies below need to change;
+ * the orchestration in publisher.ts stays the same.
+ *
+ * Person vs. organization distinction is YouMind's responsibility
+ * server-side, based on the user's bound LinkedIn account. The skill no
+ * longer needs to know person/organization URN types at the config level;
+ * `createPost` still accepts an `asOrganization` hint, but the mock (and
+ * the future proxy) will rely on the bound account, not on URNs the skill
+ * sends in.
+ *
+ * Swap-in plan when the real YouMind endpoints ship:
+ *   1. YouMind will expose endpoints whose request/response shape mirrors
+ *      LinkedIn's REST API (same field names like `commentary`, `author`,
+ *      `lifecycleState`, `visibility`, same `/posts` and `/assets` style
+ *      operations). The auth difference is that YouMind accepts
+ *      `x-api-key: <youmind_api_key>` instead of a LinkedIn OAuth bearer
+ *      token — YouMind holds the user's LinkedIn token server-side and
+ *      attaches it, and decides person-vs-organization authorship from
+ *      the bound account.
+ *   2. Replace each mock function body below with a `fetch()` POST/GET to
+ *      the corresponding `https://youmind.com/openapi/v1/linkedin/<op>`
+ *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
+ *      `uploadImage` becomes a single POST to `/linkedin/uploadImage` —
+ *      the proxy internally runs LinkedIn's two-step register-then-PUT
+ *      asset upload and returns the resulting asset URN. `createPost`
+ *      becomes a POST to `/linkedin/createPost` — the proxy attaches the
+ *      asset URN(s) and creates the post against LinkedIn's REST API.
+ *   3. Keep the exported type signatures stable — they ARE the swap-in
+ *      contract. Nothing in publisher.ts / cli.ts should need to change.
+ *   4. Delete the `mockState`, `initMockState`, and the env-var switches
+ *      at that point.
+ *
+ * loadLinkedInConfig is NOT mocked — it reads real config the same way as
+ * youmind-api.ts, because users will set their YouMind API key through the
+ * normal config flow even before the LinkedIn endpoints exist.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -13,57 +53,14 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
-// Config
+// Public types — stable contract (do NOT change signatures when swapping to
+// real HTTP; only the function bodies below should change).
 // ---------------------------------------------------------------------------
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
-
-const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2';
-const LINKEDIN_REST_BASE = 'https://api.linkedin.com/rest';
 
 export interface LinkedInConfig {
-  accessToken: string;
-  personUrn: string;
-  organizationUrn?: string;
+  apiKey: string;
+  baseUrl: string;
 }
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
-export function loadLinkedInConfig(): LinkedInConfig {
-  const central = loadCentralCredentials();
-  let local: Record<string, unknown> = {};
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      break;
-    }
-  }
-  const li = { ...(central.linkedin as Record<string, unknown> ?? {}), ...(local.linkedin as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(li)) {
-    if (v === '' && (central.linkedin as Record<string, unknown>)?.[k]) {
-      li[k] = (central.linkedin as Record<string, unknown>)[k];
-    }
-  }
-  return {
-    accessToken: (li.access_token as string) || '',
-    personUrn: (li.person_urn as string) || '',
-    organizationUrn: (li.organization_urn as string) || undefined,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface LinkedInPost {
   id: string;
@@ -74,9 +71,11 @@ export interface LinkedInPost {
 export interface CreatePostOptions {
   text: string;
   visibility?: 'PUBLIC' | 'CONNECTIONS';
-  /** Post as organization instead of person */
+  /** Post as organization page instead of personal profile. The mock
+   *  ignores this; the real YouMind proxy will use the user's bound
+   *  account to decide person vs. organization authorship. */
   asOrganization?: boolean;
-  /** Media asset URNs to attach (from uploadImage) */
+  /** Media asset URNs to attach (returned by uploadImage). */
   mediaAssets?: Array<{
     id: string;
     title?: string;
@@ -98,211 +97,149 @@ export interface LinkedInProfile {
 }
 
 // ---------------------------------------------------------------------------
-// HTTP helpers
+// Config loading — real implementation, mirrors youmind-api.ts pattern.
 // ---------------------------------------------------------------------------
 
-async function linkedInFetch<T = unknown>(
-  url: string,
-  options: RequestInit,
-  config: LinkedInConfig,
-): Promise<T> {
-  if (!config.accessToken) {
-    throw new Error(
-      'LinkedIn access token not configured. Set linkedin.access_token in config.yaml.',
-    );
-  }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_DIR = resolve(__dirname, '../..');
 
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${config.accessToken}`,
-    'X-Restli-Protocol-Version': '2.0.0',
-    'LinkedIn-Version': '202601',
-    ...(options.headers as Record<string, string> || {}),
+const YOUMIND_OPENAPI_BASE_URLS = [
+  'https://youmind.com/openapi/v1',
+];
+
+function loadCentralCredentials(): Record<string, unknown> {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(p)) {
+    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  }
+  return {};
+}
+
+function loadLocalConfig(): Record<string, unknown> {
+  for (const name of ['config.yaml', 'config.example.yaml']) {
+    const p = resolve(PROJECT_DIR, name);
+    if (existsSync(p)) {
+      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+    }
+  }
+  return {};
+}
+
+export function loadLinkedInConfig(): LinkedInConfig {
+  const central = loadCentralCredentials();
+  const local = loadLocalConfig();
+  const ym = {
+    ...(central.youmind as Record<string, unknown> ?? {}),
+    ...(local.youmind as Record<string, unknown> ?? {}),
   };
-
-  const resp = await fetch(url, {
-    ...options,
-    headers,
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(
-      `LinkedIn API error (${resp.status}): ${text.slice(0, 500)}`,
-    );
+  // Filter out local empty strings so central credentials aren't masked.
+  for (const [k, v] of Object.entries(ym)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      ym[k] = (central.youmind as Record<string, unknown>)[k];
+    }
   }
-
-  // LinkedIn returns post ID in x-restli-id header for POST /posts
-  const restliId = resp.headers.get('x-restli-id') || '';
-
-  const contentType = resp.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    const json = await resp.json() as Record<string, unknown>;
-    if (restliId) json.id = restliId;
-    return json as T;
-  }
-
-  if (restliId) return { id: restliId } as T;
-  return {} as T;
+  return {
+    apiKey: (ym.api_key as string) || '',
+    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Public API -- Create Post
+// Mock state — module-scoped, lives for the lifetime of the process. Not
+// exported; swap-in code should delete this whole block.
 // ---------------------------------------------------------------------------
 
-/**
- * Create a LinkedIn post (UGC format via /posts endpoint).
- */
-export async function createPost(
-  config: LinkedInConfig,
-  options: CreatePostOptions,
-): Promise<LinkedInPost> {
-  const author = options.asOrganization && config.organizationUrn
-    ? config.organizationUrn
-    : config.personUrn;
+interface MockState {
+  postCounter: number;
+  assetCounter: number;
+  uploadedAssets: Map<string, { url: string; asset: string }>;
+  publishedPosts: LinkedInPost[];
+}
 
-  if (!author) {
-    throw new Error(
-      'No author URN configured. Set linkedin.person_urn (or linkedin.organization_urn for org posts) in config.yaml.',
-    );
-  }
-
-  const body: Record<string, unknown> = {
-    author,
-    commentary: options.text,
-    visibility: options.visibility || 'PUBLIC',
-    distribution: {
-      feedDistribution: 'MAIN_FEED',
-      targetEntities: [],
-      thirdPartyDistributionChannels: [],
-    },
-    lifecycleState: 'PUBLISHED',
+function initMockState(): MockState {
+  return {
+    postCounter: 0,
+    assetCounter: 0,
+    uploadedAssets: new Map<string, { url: string; asset: string }>(),
+    publishedPosts: [],
   };
+}
 
-  // Attach media if provided
-  if (options.mediaAssets?.length) {
-    body.content = {
-      multiImage: {
-        images: options.mediaAssets.map(asset => ({
-          id: asset.id,
-          altText: asset.title || '',
-        })),
-      },
-    };
-  }
+const mockState: MockState = initMockState();
 
-  const result = await linkedInFetch<LinkedInPost>(
-    `${LINKEDIN_REST_BASE}/posts`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    },
-    config,
-  );
-
-  return result;
+function mockPermalink(postId: string): string {
+  return `https://linkedin.com/feed/update/${postId}`;
 }
 
 // ---------------------------------------------------------------------------
-// Public API -- Upload Image
+// Public API -- Upload Image (step 1 of the two-step image -> post flow)
 // ---------------------------------------------------------------------------
 
 /**
  * Upload an image to LinkedIn for use in posts.
- * Two-step process: register upload, then PUT binary data.
+ *
+ * In the real LinkedIn API this is a two-step register-then-PUT flow. The
+ * future YouMind proxy collapses that into a single POST and returns the
+ * resulting asset URN. This mock just fabricates a URN; no upload happens.
  *
  * @param config LinkedIn configuration
- * @param imageSource Local file path or URL to download from
- * @returns The asset URN to use in createPost
+ * @param imageSource Local file path or URL (the proxy will handle either)
+ * @returns A fake `{ asset }` URN that can be passed to createPost via
+ *          `mediaAssets[].id`.
  */
 export async function uploadImage(
-  config: LinkedInConfig,
+  _config: LinkedInConfig,
   imageSource: string,
 ): Promise<ImageUploadResult> {
-  const owner = config.personUrn;
-  if (!owner) {
-    throw new Error('linkedin.person_urn required for image upload.');
+  mockState.assetCounter += 1;
+  const asset = `urn:li:digitalmediaAsset:mock_${mockState.assetCounter}`;
+  const downloadUrl = `https://linkedin.com/dms/mock/${mockState.assetCounter}`;
+  mockState.uploadedAssets.set(asset, { url: imageSource, asset });
+  return { asset, downloadUrl };
+}
+
+// ---------------------------------------------------------------------------
+// Public API -- Create Post (step 2 of the two-step image -> post flow)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a LinkedIn post (UGC format via /posts endpoint).
+ *
+ * If `options.mediaAssets` contains asset URNs returned by an earlier
+ * uploadImage() call, they'll be attached to the post.
+ */
+export async function createPost(
+  _config: LinkedInConfig,
+  options: CreatePostOptions,
+): Promise<LinkedInPost> {
+  if (!options.text || !options.text.trim()) {
+    throw new Error('createPost requires non-empty text');
   }
 
-  // Step 1: Register the upload
-  const registerBody = {
-    registerUploadRequest: {
-      recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
-      owner,
-      serviceRelationships: [
-        {
-          relationshipType: 'OWNER',
-          identifier: 'urn:li:userGeneratedContent',
-        },
-      ],
-    },
+  mockState.postCounter += 1;
+  const id = `urn:li:share:mock_${Date.now()}_${mockState.postCounter}`;
+  const post: LinkedInPost = {
+    id,
+    activity: `urn:li:activity:mock_${mockState.postCounter}`,
+    commentary: options.text,
+    visibility: options.visibility || 'PUBLIC',
+    lifecycleState: 'PUBLISHED',
+    permalink: mockPermalink(`urn:li:share:mock_${mockState.postCounter}`),
+    asOrganization: !!options.asOrganization,
   };
 
-  const registerResp = await linkedInFetch<Record<string, unknown>>(
-    `${LINKEDIN_API_BASE}/assets?action=registerUpload`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(registerBody),
-    },
-    config,
-  );
-
-  const value = registerResp.value as Record<string, unknown> | undefined;
-  if (!value) {
-    throw new Error('LinkedIn image register failed: no value in response');
+  if (options.mediaAssets?.length) {
+    post.mediaAssets = options.mediaAssets.map((a) => ({
+      id: a.id,
+      altText: a.title || '',
+      description: a.description || '',
+    }));
   }
 
-  const asset = value.asset as string;
-  const uploadMechanism = value.uploadMechanism as Record<string, unknown>;
-  const uploadRequest =
-    uploadMechanism?.[
-      'com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'
-    ] as Record<string, unknown> | undefined;
-
-  if (!uploadRequest?.uploadUrl) {
-    throw new Error('LinkedIn image register failed: no uploadUrl in response');
-  }
-
-  const uploadUrl = uploadRequest.uploadUrl as string;
-
-  // Step 2: Get the image binary
-  let imageBuffer: Buffer;
-
-  if (imageSource.startsWith('http://') || imageSource.startsWith('https://')) {
-    const imgResp = await fetch(imageSource, {
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!imgResp.ok) {
-      throw new Error(`Failed to download image from ${imageSource}: ${imgResp.status}`);
-    }
-    imageBuffer = Buffer.from(await imgResp.arrayBuffer());
-  } else {
-    const imgPath = resolve(imageSource);
-    if (!existsSync(imgPath)) {
-      throw new Error(`Image file not found: ${imgPath}`);
-    }
-    imageBuffer = readFileSync(imgPath);
-  }
-
-  // Step 3: PUT the binary to the upload URL
-  const putResp = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${config.accessToken}`,
-      'Content-Type': 'application/octet-stream',
-    },
-    body: new Uint8Array(imageBuffer),
-    signal: AbortSignal.timeout(60_000),
-  });
-
-  if (!putResp.ok) {
-    const errText = await putResp.text().catch(() => '');
-    throw new Error(`LinkedIn image upload PUT failed (${putResp.status}): ${errText.slice(0, 300)}`);
-  }
-
-  return { asset };
+  mockState.publishedPosts.unshift(post);
+  return post;
 }
 
 // ---------------------------------------------------------------------------
@@ -312,81 +249,15 @@ export async function uploadImage(
 /**
  * Get the authenticated user's profile info.
  */
-export async function getProfile(config: LinkedInConfig): Promise<LinkedInProfile> {
-  return linkedInFetch<LinkedInProfile>(
-    `${LINKEDIN_API_BASE}/userinfo`,
-    { method: 'GET' },
-    config,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// CLI (when run directly)
-// ---------------------------------------------------------------------------
-
-async function cli() {
-  const args = process.argv.slice(2);
-  const command = args[0];
-  const config = loadLinkedInConfig();
-
-  if (!command || command === '--help') {
-    console.log(`LinkedIn API CLI
-
-Commands:
-  create-post --text "..." [--visibility PUBLIC|CONNECTIONS] [--as-org]
-  upload-image <file-or-url>
-  profile`);
-    return;
-  }
-
-  const getArg = (flag: string): string | undefined => {
-    const i = args.indexOf(flag);
-    return i >= 0 && i + 1 < args.length ? args[i + 1] : undefined;
+export async function getProfile(
+  _config: LinkedInConfig,
+): Promise<LinkedInProfile> {
+  return {
+    sub: 'urn:li:person:mock_user',
+    name: 'Mock User',
+    localizedFirstName: 'Mock',
+    localizedLastName: 'User',
+    email: 'mock.user@example.com',
+    picture: 'https://linkedin.com/dms/mock/profile.jpg',
   };
-
-  switch (command) {
-    case 'create-post': {
-      const text = getArg('--text');
-      if (!text) {
-        console.error('--text required');
-        process.exit(1);
-      }
-      const visibility = (getArg('--visibility') || 'PUBLIC') as 'PUBLIC' | 'CONNECTIONS';
-      const asOrg = args.includes('--as-org');
-      const result = await createPost(config, { text, visibility, asOrganization: asOrg });
-      console.log(JSON.stringify(result, null, 2));
-      break;
-    }
-
-    case 'upload-image': {
-      const source = args[1];
-      if (!source) {
-        console.error('Image file path or URL required');
-        process.exit(1);
-      }
-      const result = await uploadImage(config, source);
-      console.log(JSON.stringify(result, null, 2));
-      break;
-    }
-
-    case 'profile': {
-      const profile = await getProfile(config);
-      console.log(JSON.stringify(profile, null, 2));
-      break;
-    }
-
-    default:
-      console.error(`Unknown command: ${command}`);
-      process.exit(1);
-  }
-}
-
-const isMain =
-  process.argv[1]?.endsWith('linkedin-api.ts') ||
-  process.argv[1]?.endsWith('linkedin-api.js');
-if (isMain) {
-  cli().catch((e) => {
-    console.error(e.message);
-    process.exit(1);
-  });
 }

@@ -163,12 +163,24 @@ program
 
 program
   .command('profile')
-  .description('Show authenticated LinkedIn profile')
+  .description('Show authenticated LinkedIn profile (via YouMind proxy)')
   .action(async () => {
     const config = loadLinkedInConfig();
-    const profile = await getProfile(config);
-    console.log('LinkedIn Profile:');
-    console.log(JSON.stringify(profile, null, 2));
+
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      process.exit(1);
+    }
+
+    try {
+      console.log('[INFO] Fetching LinkedIn profile via YouMind proxy...');
+      const profile = await getProfile(config);
+      console.log('LinkedIn Profile:');
+      console.log(JSON.stringify(profile, null, 2));
+    } catch (err) {
+      console.error(`[ERROR] ${(err as Error).message}`);
+      process.exit(1);
+    }
   });
 
 program.parse();
