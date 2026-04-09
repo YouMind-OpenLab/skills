@@ -180,28 +180,16 @@ program
 
 program
   .command('validate')
-  .description('Check Ghost credentials and API connectivity')
+  .description('Check YouMind API key and Ghost connectivity via YouMind proxy')
   .action(async () => {
     const config = loadGhostConfig();
 
-    console.log('Ghost Configuration:');
-    console.log(`  Site URL:      ${config.siteUrl || '(not set)'}`);
-    console.log(`  Admin API Key: ${config.adminApiKey ? config.adminApiKey.slice(0, 8) + '...' : '(not set)'}`);
-    console.log();
-
-    if (!config.siteUrl || !config.adminApiKey) {
-      console.error('Missing required Ghost configuration. Please fill in config.yaml.');
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
-    // Validate API key format
-    if (!config.adminApiKey.includes(':')) {
-      console.error('Invalid Admin API Key format. Expected {id}:{secret}.');
-      console.error('Get your key from Ghost Admin > Settings > Integrations.');
-      process.exit(1);
-    }
-
-    console.log('Testing API connection...');
+    console.log('[INFO] Validating Ghost credentials via YouMind proxy...');
     const result = await validateConnection(config);
     if (result.ok) {
       console.log(`OK: ${result.message}`);
