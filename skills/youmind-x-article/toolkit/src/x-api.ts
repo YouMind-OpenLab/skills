@@ -91,11 +91,10 @@ export interface MediaUploadResult {
   [key: string]: unknown;
 }
 
-// Auth-mode type kept for backwards compatibility with x-browser.ts and any
-// downstream code that imports it. Now degenerate: there is exactly one
-// effective mode — the YouMind proxy — but the type is preserved so the
-// public surface stays stable.
-export type AuthMode = 'oauth2' | 'oauth1' | 'browser' | 'youmind';
+// Auth-mode type kept as a stable public surface. Now degenerate: there is
+// exactly one effective mode — the YouMind proxy — but the type is preserved
+// so the shape doesn't change when YouMind ships the real /x/* endpoints.
+export type AuthMode = 'youmind';
 
 // ---------------------------------------------------------------------------
 // Config loading — real implementation, mirrors youmind-api.ts pattern.
@@ -301,9 +300,7 @@ export async function uploadMedia(
 
 // ---------------------------------------------------------------------------
 // Auth mode — degenerate. Always reports the YouMind-proxy mode now that the
-// dual OAuth complexity is gone. The function is preserved so that any
-// downstream caller (publisher.ts, x-browser.ts type imports, etc.) keeps
-// compiling without modification.
+// dual OAuth complexity is gone. Preserved as a stable export.
 // ---------------------------------------------------------------------------
 
 export function getAuthMode(_config: XConfig): AuthMode {
