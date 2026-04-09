@@ -142,8 +142,6 @@ program
   .argument('<input>', 'Markdown file path')
   .option('-t, --theme <key>', 'Theme key')
   .option('-c, --color <hex>', 'Theme color (HEX)')
-  .option('--appid <id>', 'WeChat AppID')
-  .option('--secret <key>', 'WeChat AppSecret')
   .option('--cover <path>', 'Cover image file path')
   .option('--title <text>', 'Override article title')
   .option('--author <name>', 'Article author')
@@ -154,16 +152,14 @@ program
   .option('--custom-theme <path>', 'Custom theme JSON file path')
   .action(async (input: string, opts) => {
     const cfg = loadConfig();
-    const wechatCfg = (cfg.wechat as Record<string, string>) || {};
+    const youmindCfg = (cfg.youmind as Record<string, string>) || {};
 
-    const appid = opts.appid || wechatCfg.appid;
-    const secret = opts.secret || wechatCfg.secret;
     const themeKey = (opts.theme || (cfg.theme as string) || DEFAULT_THEME) as ThemeKey;
     const color = opts.color || (cfg.theme_color as string) || DEFAULT_COLOR;
-    const author = opts.author || wechatCfg.author;
+    const author = opts.author;
 
-    if (!appid || !secret) {
-      console.error('Error: --appid and --secret required (or set in config.yaml)');
+    if (!youmindCfg.api_key) {
+      console.error('Error: youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
@@ -184,7 +180,7 @@ program
     console.log(`Images found: ${result.images.length}`);
     console.log(`Theme: ${themeKey} | Color: ${color}`);
 
-    const token = await getAccessToken(appid, secret);
+    const token = await getAccessToken('', '');
     console.log('Access token obtained.');
 
     let html = result.html;

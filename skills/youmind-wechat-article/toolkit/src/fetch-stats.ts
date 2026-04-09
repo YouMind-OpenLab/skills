@@ -1,6 +1,15 @@
 /**
  * Fetch WeChat article statistics and update history.yaml.
  *
+ * ⚠️ MOCKED: this file currently talks to a mocked WeChat API (see
+ * wechat-api.ts for the full swap-in plan). The stats fetch itself also
+ * stays inside this file as a mock — `getArticleTotal()` returns an
+ * empty list so the CLI still runs end-to-end without hitting WeChat's
+ * real datacube endpoint. When YouMind ships the `/wechat/*` proxy,
+ * replace `getArticleTotal()` below with a `fetch()` POST to
+ * `https://youmind.com/openapi/v1/wechat/getarticletotal` using the
+ * `x-api-key` header (same pattern as youmind-api.ts).
+ *
  * Usage:
  *   npx tsx src/fetch-stats.ts --client demo --days 7
  *   npx tsx src/fetch-stats.ts --client demo --days 7 --token "ACCESS_TOKEN"
@@ -17,49 +26,17 @@ const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
 // ---------------------------------------------------------------------------
-// HTTP with retry
-// ---------------------------------------------------------------------------
-
-async function httpRetry(
-  method: string, url: string, body?: unknown, retries = 3,
-): Promise<Record<string, unknown>> {
-  for (let i = 1; i <= retries; i++) {
-    try {
-      const init: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
-      if (body) init.body = JSON.stringify(body);
-      const resp = await fetch(url, init);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return await resp.json() as Record<string, unknown>;
-    } catch (e) {
-      if (i === retries) throw e;
-      const wait = 2 ** i * 1000;
-      console.error(`[WARN] 请求失败 (${i}/${retries}): ${e} — ${wait / 1000}s 后重试`);
-      await new Promise(r => setTimeout(r, wait));
-    }
-  }
-  throw new Error('unreachable');
-}
-
-// ---------------------------------------------------------------------------
-// WeChat stats API
+// WeChat stats API — MOCKED
 // ---------------------------------------------------------------------------
 
 async function getArticleTotal(
-  token: string, beginDate: string, endDate: string,
+  _token: string, _beginDate: string, _endDate: string,
 ): Promise<Record<string, unknown>[]> {
-  const url = `https://api.weixin.qq.com/datacube/getarticletotal?access_token=${token}`;
-  const data = await httpRetry('POST', url, { begin_date: beginDate, end_date: endDate });
-
-  if (data.errcode && data.errcode !== 0) {
-    throw new Error(`WeChat datacube error: errcode=${data.errcode}, errmsg=${data.errmsg}`);
-  }
-
-  const list = data.list;
-  if (!Array.isArray(list)) {
-    console.error(`[WARN] API 返回中缺少 'list' 字段`);
-    return [];
-  }
-  return list;
+  // Mock: returns an empty stats list. The downstream matching loop simply
+  // finds no updates, which is the graceful no-op behaviour we want until
+  // the real YouMind `/wechat/getarticletotal` proxy ships.
+  console.error('[INFO] fetch-stats is using a mocked WeChat datacube — returning empty stats');
+  return [];
 }
 
 // ---------------------------------------------------------------------------
@@ -92,20 +69,21 @@ async function main() {
     process.exit(1);
   }
 
-  // Get access token
+  // Get access token (mocked — youmind.api_key is the real credential now,
+  // but the mock wechat-api ignores whatever we pass).
   if (!token) {
     const configPath = resolve(PROJECT_DIR, 'config.yaml');
+    let youmindKey: string | undefined;
     if (existsSync(configPath)) {
       const cfg = parseYaml(readFileSync(configPath, 'utf-8')) ?? {};
-      const wechat = (cfg as Record<string, unknown>).wechat as Record<string, string> | undefined;
-      if (wechat?.appid && wechat?.secret) {
-        token = await getAccessToken(wechat.appid, wechat.secret);
-      }
+      const youmind = (cfg as Record<string, unknown>).youmind as Record<string, string> | undefined;
+      youmindKey = youmind?.api_key;
     }
-    if (!token) {
-      console.error('请提供 --token 或在 config.yaml 配置 wechat.appid/secret');
+    if (!youmindKey) {
+      console.error('请提供 --token 或在 config.yaml 配置 youmind.api_key');
       process.exit(1);
     }
+    token = await getAccessToken('', '');
   }
 
   const end = new Date();
