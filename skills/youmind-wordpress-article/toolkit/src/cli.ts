@@ -6,7 +6,7 @@
  * Commands:
  *   publish <input>     Publish a Markdown file to WordPress
  *   preview <input>     Convert Markdown and preview HTML locally
- *   validate            Check WordPress credentials and API connectivity
+ *   validate            Check WordPress connectivity via YouMind proxy
  *   list                List recent posts
  *   upload-media <file> Upload a media file to WordPress
  */
@@ -47,6 +47,12 @@ program
   .option('--title <title>', 'Override post title')
   .action(async (input: string, opts: Record<string, string | boolean | undefined>) => {
     try {
+      const config = loadWordPressConfig();
+      if (!config.apiKey) {
+        console.error('[ERROR] youmind.api_key not set in config.yaml');
+        process.exit(1);
+      }
+
       // Determine status
       let status: 'publish' | 'draft' | 'pending' | 'private' = 'draft';
       if (opts.publish) status = 'publish';
@@ -64,6 +70,7 @@ program
       console.log(`Publishing ${input} as ${status}...`);
 
       const result = await publish({
+        config,
         input: resolve(input),
         isFile: true,
         status,
@@ -180,22 +187,21 @@ program
 
 program
   .command('validate')
-  .description('Check WordPress credentials and API connectivity')
+  .description('Check WordPress connectivity via YouMind proxy')
   .action(async () => {
     const config = loadWordPressConfig();
 
-    console.log('WordPress Configuration:');
-    console.log(`  Site URL:  ${config.siteUrl || '(not set)'}`);
-    console.log(`  Username:  ${config.username || '(not set)'}`);
-    console.log(`  Password:  ${config.appPassword ? '****' + config.appPassword.slice(-4) : '(not set)'}`);
+    console.log('WordPress Configuration (via YouMind proxy):');
+    console.log(`  Base URL:  ${config.baseUrl || '(not set)'}`);
+    console.log(`  API Key:   ${config.apiKey ? '****' + config.apiKey.slice(-4) : '(not set)'}`);
     console.log();
 
-    if (!config.siteUrl || !config.username || !config.appPassword) {
-      console.error('Missing required WordPress configuration. Please fill in config.yaml.');
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
       process.exit(1);
     }
 
-    console.log('Testing API connection...');
+    console.log('Testing WordPress API connection via YouMind proxy...');
     const result = await validateConnection(config);
     if (result.ok) {
       console.log(`OK: ${result.message}`);
@@ -217,6 +223,10 @@ program
   .action(async (opts: { page: string; perPage: string }) => {
     try {
       const config = loadWordPressConfig();
+      if (!config.apiKey) {
+        console.error('[ERROR] youmind.api_key not set in config.yaml');
+        process.exit(1);
+      }
       const page = parseInt(opts.page, 10);
       const perPage = parseInt(opts.perPage, 10);
 
@@ -256,6 +266,10 @@ program
       }
 
       const config = loadWordPressConfig();
+      if (!config.apiKey) {
+        console.error('[ERROR] youmind.api_key not set in config.yaml');
+        process.exit(1);
+      }
       console.log(`Uploading ${basename(filePath)}...`);
 
       const media = await uploadMedia(config, filePath);

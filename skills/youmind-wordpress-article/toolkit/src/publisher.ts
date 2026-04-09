@@ -10,7 +10,6 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   type WordPressConfig,
-  type WPPost,
   loadWordPressConfig,
   createPost,
   uploadMedia,
@@ -54,7 +53,11 @@ export interface PublishResult {
 // ---------------------------------------------------------------------------
 
 export async function publish(options: PublishOptions): Promise<PublishResult> {
-  const config = options.config || loadWordPressConfig();
+  const config = options.config ?? loadWordPressConfig();
+
+  if (!config.apiKey) {
+    throw new Error('youmind.api_key not set in config.yaml');
+  }
 
   // Read Markdown content
   let markdown: string;
