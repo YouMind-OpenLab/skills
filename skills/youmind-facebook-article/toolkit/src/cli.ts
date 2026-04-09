@@ -143,16 +143,12 @@ program
     try {
       const config = loadFacebookConfig();
 
-      if (!config.pageId) {
-        console.error('[ERROR] facebook.page_id not set in config.yaml');
-        process.exit(1);
-      }
-      if (!config.pageAccessToken) {
-        console.error('[ERROR] facebook.page_access_token not set in config.yaml');
+      if (!config.apiKey) {
+        console.error('[ERROR] youmind.api_key not set in config.yaml');
         process.exit(1);
       }
 
-      console.log('[INFO] Validating Facebook credentials...');
+      console.log('[INFO] Validating Facebook credentials via YouMind proxy...');
       const page = await getPageInfo(config);
 
       console.log('\n--- Page Info ---');

@@ -1,24 +1,45 @@
 /**
- * Facebook Graph API wrapper for Page post management.
+ * facebook-api.ts — MOCK IMPLEMENTATION
  *
- * Handles text posts, link posts, photo posts, and page info retrieval
- * via the Facebook Graph API v19.0.
+ * ⚠️ This file is a mock. The skill talks to Facebook exclusively through
+ * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Facebook
+ * namespace on that OpenAPI. This mock lets the rest of the skill
+ * (publisher, CLI) be built and smoke-tested end-to-end right now, without
+ * a real backend.
+ *
+ * Swap-in plan when the real YouMind endpoints ship:
+ *   1. YouMind will expose endpoints whose request/response shape mirrors
+ *      Meta's Graph API (same field names like `message`, `link`, `url`,
+ *      `caption`, same feed/photos endpoints). The only auth difference is
+ *      that YouMind accepts `x-api-key: <youmind_api_key>` instead of a
+ *      Facebook page access token — YouMind holds the user's Facebook token
+ *      server-side and attaches it.
+ *   2. Replace each mock function body below with a `fetch()` POST/GET to
+ *      the corresponding `https://youmind.com/openapi/v1/facebook/<op>`
+ *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
+ *   3. Keep the exported type signatures stable — they ARE the swap-in
+ *      contract. Nothing in publisher.ts / cli.ts should need to change.
+ *   4. Delete the `mockState`, `initMockState`, and the env-var switches
+ *      at that point.
+ *
+ * loadFacebookConfig is NOT mocked — it reads real config the same way as
+ * youmind-api.ts, because users will set their YouMind API key through the
+ * normal config flow even before the Facebook endpoints exist.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-import fetch from 'node-fetch';
-import FormData from 'form-data';
 
 // ---------------------------------------------------------------------------
-// Types
+// Public types — stable contract (do NOT change signatures when swapping to
+// real HTTP; only the function bodies below should change).
 // ---------------------------------------------------------------------------
 
 export interface FacebookConfig {
-  pageId: string;
-  pageAccessToken: string;
+  apiKey: string;
+  baseUrl: string;
 }
 
 export interface FBPost {
@@ -57,14 +78,16 @@ export interface CreatePostResult {
 }
 
 // ---------------------------------------------------------------------------
-// Config
+// Config loading — real implementation, mirrors youmind-api.ts pattern.
 // ---------------------------------------------------------------------------
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const GRAPH_API_BASE = 'https://graph.facebook.com/v19.0';
+const YOUMIND_OPENAPI_BASE_URLS = [
+  'https://youmind.com/openapi/v1',
+];
 
 function loadCentralCredentials(): Record<string, unknown> {
   const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -75,134 +98,117 @@ function loadCentralCredentials(): Record<string, unknown> {
   return {};
 }
 
-export function loadFacebookConfig(): FacebookConfig {
-  const central = loadCentralCredentials();
-  let local: Record<string, unknown> = {};
+function loadLocalConfig(): Record<string, unknown> {
   for (const name of ['config.yaml', 'config.example.yaml']) {
     const p = resolve(PROJECT_DIR, name);
     if (existsSync(p)) {
-      local = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      break;
+      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
     }
   }
-  const fb = { ...(central.facebook as Record<string, unknown> ?? {}), ...(local.facebook as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(fb)) {
-    if (v === '' && (central.facebook as Record<string, unknown>)?.[k]) {
-      fb[k] = (central.facebook as Record<string, unknown>)[k];
+  return {};
+}
+
+export function loadFacebookConfig(): FacebookConfig {
+  const central = loadCentralCredentials();
+  const local = loadLocalConfig();
+  const ym = {
+    ...(central.youmind as Record<string, unknown> ?? {}),
+    ...(local.youmind as Record<string, unknown> ?? {}),
+  };
+  // Filter out local empty strings so central credentials aren't masked.
+  for (const [k, v] of Object.entries(ym)) {
+    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
+      ym[k] = (central.youmind as Record<string, unknown>)[k];
     }
   }
   return {
-    pageId: (fb.page_id as string) || '',
-    pageAccessToken: (fb.page_access_token as string) || '',
+    apiKey: (ym.api_key as string) || '',
+    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
   };
 }
 
-function validateConfig(config: FacebookConfig): void {
-  if (!config.pageId) {
-    throw new Error('Facebook Page ID not configured. Set facebook.page_id in config.yaml.');
-  }
-  if (!config.pageAccessToken) {
-    throw new Error('Facebook Page Access Token not configured. Set facebook.page_access_token in config.yaml.');
-  }
+// ---------------------------------------------------------------------------
+// Mock state — module-scoped, lives for the lifetime of the process. Not
+// exported; swap-in code should delete this whole block.
+// ---------------------------------------------------------------------------
+
+interface MockState {
+  postCounter: number;
+  photoCounter: number;
+  publishedPosts: FBPost[];
+  photosById: Map<string, FBPhoto>;
+}
+
+function initMockState(): MockState {
+  return {
+    postCounter: 0,
+    photoCounter: 0,
+    publishedPosts: [],
+    photosById: new Map<string, FBPhoto>(),
+  };
+}
+
+const mockState: MockState = initMockState();
+
+function mockPermalink(postId: string): string {
+  return `https://facebook.com/mock_page/posts/${postId}`;
 }
 
 // ---------------------------------------------------------------------------
-// HTTP helpers
-// ---------------------------------------------------------------------------
-
-async function graphGet<T = unknown>(
-  path: string,
-  params: Record<string, string> = {},
-  config: FacebookConfig,
-): Promise<T> {
-  validateConfig(config);
-
-  const url = new URL(`${GRAPH_API_BASE}${path}`);
-  url.searchParams.set('access_token', config.pageAccessToken);
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
-  }
-
-  const resp = await fetch(url.toString(), {
-    method: 'GET',
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`Facebook Graph API GET ${path} failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  return resp.json() as Promise<T>;
-}
-
-async function graphPost<T = unknown>(
-  path: string,
-  body: Record<string, unknown>,
-  config: FacebookConfig,
-): Promise<T> {
-  validateConfig(config);
-
-  const url = new URL(`${GRAPH_API_BASE}${path}`);
-  url.searchParams.set('access_token', config.pageAccessToken);
-
-  const resp = await fetch(url.toString(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`Facebook Graph API POST ${path} failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  return resp.json() as Promise<T>;
-}
-
-// ---------------------------------------------------------------------------
-// Public API — Posts
+// Exported mock functions — Posts
 // ---------------------------------------------------------------------------
 
 /**
  * Create a text or link post on a Facebook Page.
  */
 export async function createPost(
-  config: FacebookConfig,
+  _config: FacebookConfig,
   message: string,
   options?: CreatePostOptions,
 ): Promise<CreatePostResult> {
-  const body: Record<string, unknown> = { message };
-
-  if (options?.link) {
-    body.link = options.link;
-  }
-  if (options?.published === false) {
-    body.published = false;
-  }
-  if (options?.scheduled_publish_time) {
-    body.published = false;
-    body.scheduled_publish_time = options.scheduled_publish_time;
-  }
-
-  return graphPost<CreatePostResult>(`/${config.pageId}/feed`, body, config);
+  mockState.postCounter += 1;
+  const id = `mock_fb_post_${Date.now()}_${mockState.postCounter}`;
+  const post: FBPost = {
+    id,
+    message,
+    created_time: new Date().toISOString(),
+    permalink_url: mockPermalink(id),
+    type: options?.link ? 'link' : 'status',
+  };
+  mockState.publishedPosts.unshift(post);
+  return { id };
 }
 
 /**
  * Create a photo post on a Facebook Page using a hosted image URL.
  */
 export async function createPhotoPost(
-  config: FacebookConfig,
+  _config: FacebookConfig,
   photoUrl: string,
   caption?: string,
 ): Promise<FBPhoto> {
-  const body: Record<string, unknown> = { url: photoUrl };
-  if (caption) {
-    body.caption = caption;
-  }
+  mockState.photoCounter += 1;
+  mockState.postCounter += 1;
+  const photoId = `mock_fb_photo_${Date.now()}_${mockState.photoCounter}`;
+  const postId = `mock_fb_post_${Date.now()}_${mockState.postCounter}`;
+  const photo: FBPhoto = {
+    id: photoId,
+    post_id: postId,
+    link: mockPermalink(postId),
+  };
+  mockState.photosById.set(photoId, photo);
 
-  return graphPost<FBPhoto>(`/${config.pageId}/photos`, body, config);
+  const post: FBPost = {
+    id: postId,
+    message: caption,
+    created_time: new Date().toISOString(),
+    permalink_url: mockPermalink(postId),
+    full_picture: photoUrl,
+    type: 'photo',
+  };
+  mockState.publishedPosts.unshift(post);
+
+  return photo;
 }
 
 /**
@@ -210,72 +216,51 @@ export async function createPhotoPost(
  * Returns a photo ID that can be attached to a post.
  */
 export async function uploadPhoto(
-  config: FacebookConfig,
-  imageBuffer: Buffer,
-  filename: string,
+  _config: FacebookConfig,
+  _imageBuffer: Buffer,
+  _filename: string,
 ): Promise<FBPhoto> {
-  validateConfig(config);
-
-  const url = new URL(`${GRAPH_API_BASE}/${config.pageId}/photos`);
-  url.searchParams.set('access_token', config.pageAccessToken);
-
-  const form = new FormData();
-  form.append('source', imageBuffer, { filename, contentType: 'image/jpeg' });
-  form.append('published', 'false');
-
-  const resp = await fetch(url.toString(), {
-    method: 'POST',
-    body: form,
-    signal: AbortSignal.timeout(60_000),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`Facebook photo upload failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  return resp.json() as Promise<FBPhoto>;
+  mockState.photoCounter += 1;
+  const photoId = `mock_fb_unpublished_${Date.now()}_${mockState.photoCounter}`;
+  const photo: FBPhoto = { id: photoId };
+  mockState.photosById.set(photoId, photo);
+  return photo;
 }
 
 // ---------------------------------------------------------------------------
-// Public API — Read
+// Exported mock functions — Read
 // ---------------------------------------------------------------------------
 
 /**
  * Get information about the Facebook Page.
  */
-export async function getPageInfo(config: FacebookConfig): Promise<FBPage> {
-  return graphGet<FBPage>(
-    `/${config.pageId}`,
-    { fields: 'name,id,fan_count' },
-    config,
-  );
+export async function getPageInfo(_config: FacebookConfig): Promise<FBPage> {
+  return {
+    id: 'mock_page_id',
+    name: 'Mock Facebook Page',
+    fan_count: 0,
+  };
 }
 
 /**
  * Get a specific post by ID.
  */
-export async function getPost(config: FacebookConfig, postId: string): Promise<FBPost> {
-  return graphGet<FBPost>(
-    `/${postId}`,
-    { fields: 'message,created_time,permalink_url,full_picture,type' },
-    config,
-  );
+export async function getPost(_config: FacebookConfig, postId: string): Promise<FBPost> {
+  const found = mockState.publishedPosts.find((p) => p.id === postId);
+  if (found) return found;
+  return {
+    id: postId,
+    created_time: new Date().toISOString(),
+    permalink_url: mockPermalink(postId),
+  };
 }
 
 /**
  * List recent posts from the Page feed.
  */
 export async function listPosts(
-  config: FacebookConfig,
+  _config: FacebookConfig,
   limit: number = 10,
 ): Promise<{ data: FBPost[] }> {
-  return graphGet<{ data: FBPost[] }>(
-    `/${config.pageId}/feed`,
-    {
-      fields: 'message,created_time,permalink_url,type',
-      limit: String(limit),
-    },
-    config,
-  );
+  return { data: mockState.publishedPosts.slice(0, limit) };
 }
