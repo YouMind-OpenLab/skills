@@ -53,13 +53,17 @@ metadata:
     primaryEnv: YOUMIND_API_KEY
     requires:
       anyBins: ["node", "npm", "python3"]
-      env: ["YOUMIND_API_KEY"]
 allowed-tools:
-  - Bash(node dist/cli.js *)
-  - Bash(python3 scripts/*)
-  - Bash(npm install)
-  - Bash(npm run build)
-  - Bash([ -n "$YOUMIND_API_KEY" ] *)
+  - Bash(node toolkit/dist/cli.js convert *)
+  - Bash(node toolkit/dist/cli.js publish *)
+  - Bash(node toolkit/dist/cli.js stats *)
+  - Bash(node toolkit/dist/cli.js learn-edits *)
+  - Bash(node toolkit/dist/cli.js build-playbook *)
+  - Bash(python3 scripts/fetch_hotspots.py *)
+  - Bash(python3 scripts/seo_keywords.py *)
+  - Bash(python3 scripts/validate_skill.py *)
+  - Bash(cd toolkit && npm install && npm run build)
+  - Bash(pip install -r requirements.txt)
 ---
 
 # AI WeChat Article Writer — From Topic to Draft Box in One Prompt
