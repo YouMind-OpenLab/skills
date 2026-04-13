@@ -30,8 +30,6 @@ Parsed:
 | linkedin, li | linkedin | youmind-linkedin-article |
 | x, twitter | x | youmind-x-article |
 | reddit | reddit | youmind-reddit-article |
-| facebook, fb | facebook | youmind-facebook-article |
-| instagram, ig, ins | instagram | youmind-instagram-article |
 | wechat, 微信, 公众号 | wechat | youmind-wechat-article |
 | qiita | qiita | youmind-qiita-article |
 | all, everywhere, 全部 | ALL | all installed skills |

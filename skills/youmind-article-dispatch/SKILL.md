@@ -3,7 +3,7 @@ name: youmind-article-dispatch
 version: 1.0.0
 description: |
   Dispatch content to multiple platforms from a single topic — Dev.to, Hashnode, WordPress,
-  Ghost, LinkedIn, X/Twitter, Reddit, Facebook, Instagram, WeChat, Qiita. Each platform skill adapts
+  Ghost, LinkedIn, X/Twitter, Reddit, Medium, WeChat, Qiita. Each platform skill adapts
   content independently for its audience and format. Pure orchestration, no publishing logic.
   Integrates YouMind knowledge base for topic research and content material mining.
   Use when user wants to "publish everywhere", "cross-post", "multi-platform publish",
@@ -51,7 +51,7 @@ allowed-tools:
 
 # Content Dispatch Hub — One Topic, Every Platform
 
-Distribute your content to multiple platforms from a single topic. Each platform skill independently adapts content for its target audience — developers on Dev.to, professionals on LinkedIn, communities on Reddit, general audiences on Facebook, and more.
+Distribute your content to multiple platforms from a single topic. Each platform skill independently adapts content for its target audience — developers on Dev.to, professionals on LinkedIn, communities on Reddit, readers on Medium, and more.
 
 > [Get YouMind API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch) · [More Skills →](https://youmind.com/skills?utm_source=youmind-article-dispatch)
 
@@ -63,7 +63,7 @@ Distribute your content to multiple platforms from a single topic. Each platform
 >
 > Tell me a topic and I'll help you publish it across multiple platforms.
 >
-> **Supported platforms:** Dev.to · Hashnode · WordPress · Ghost · LinkedIn · X/Twitter · Reddit · Facebook · Instagram · WeChat · Qiita
+> **Supported platforms:** Dev.to · Hashnode · WordPress · Ghost · LinkedIn · X/Twitter · Reddit · Medium · WeChat · Qiita
 >
 > **Try it now:** "Help me write about AI agents and publish to Dev.to and LinkedIn"
 
@@ -105,8 +105,6 @@ User wants maximum reach → dispatch to all installed platform skills.
 | LinkedIn | `youmind-linkedin-article` | Posts API | OAuth 2.0 | Professionals, B2B | Thought leadership, industry insights, career advice |
 | X/Twitter | `youmind-x-article` | API v2 | OAuth 2.0 | General, viral audiences | Hot takes, threads, breaking news commentary |
 | Reddit | `youmind-reddit-article` | REST | OAuth 2.0 | Niche communities | Community discussions, AMAs, experience sharing |
-| Facebook | `youmind-facebook-article` | Graph API | Page Token | General audiences | Community engagement, brand storytelling |
-| Instagram | `youmind-instagram-article` | Graph API | Business Token | Visual audiences | Carousel infographics, visual storytelling |
 | Medium | `youmind-medium-article` | REST | Token | General readers, writers | Narrative essays, thought leadership, personal stories |
 | WeChat | `youmind-wechat-article` | REST | AppID/Secret | Chinese audiences | Styled long-form articles, official account content |
 | Qiita | `youmind-qiita-article` | REST v2 | Bearer Token | Japanese developers | Technical articles, tutorials, knowledge sharing |
@@ -174,7 +172,6 @@ Present a summary table to the user:
 | LinkedIn | ✅ Published | "Why AI Agents Matter for..." | https://linkedin.com/... |
 | X/Twitter | ✅ Thread posted | "🧵 AI Agents are changing..." | https://x.com/... |
 | Reddit | ⚠️ Draft | "AI Agents - My Experience" | (draft, not yet submitted) |
-| Instagram | ❌ Failed | — | Error: No image provided |
 ```
 
 ## Resilience Rules

@@ -27,8 +27,6 @@ Dispatch calls each platform's sub-skill. Each sub-skill requires  its own crede
 | LinkedIn | youmind-linkedin-article | OAuth 2.0 Access Token | <https://developer.linkedin.com/> |
 | X/Twitter | youmind-x-article | OAuth Token | <https://developer.x.com/en/portal> |
 | Reddit | youmind-reddit-article | Client ID/Secret | <https://www.reddit.com/prefs/apps> |
-| Facebook | youmind-facebook-article | Page Access Token | <https://developers.facebook.com/> |
-| Instagram | youmind-instagram-article | Business Account Token | <https://developers.facebook.com/> |
 | Medium | youmind-medium-article | Integration Token | <https://medium.com/me/settings/security> |
 | WeChat | youmind-wechat-article | AppID/Secret | <https://mp.weixin.qq.com/> |
 | Qiita | youmind-qiita-article | Personal Access Token | <https://qiita.com/settings/applications> |

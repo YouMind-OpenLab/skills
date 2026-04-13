@@ -1,8 +1,0 @@
-node_modules/
-dist/
-config.yaml
-output/
-.env
-toolkit/package-lock.json
-profiles/*/
-!profiles/_index.json
