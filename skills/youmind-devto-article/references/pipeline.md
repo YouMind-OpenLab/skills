@@ -9,7 +9,7 @@
 3. Check that the user's Dev.to account is already connected in YouMind
 4. Report config status
 
-**Fallback:** If `config.yaml` is missing, check environment variable `YOUMIND_API_KEY`.
+**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change the local config file.
 
 ## Step 2: YouMind Knowledge Mining
 

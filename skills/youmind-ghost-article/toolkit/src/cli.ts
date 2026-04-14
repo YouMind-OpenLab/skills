@@ -235,7 +235,7 @@ program
       const config = loadGhostConfig();
 
       if (!config.apiKey) {
-        console.error('[ERROR] YouMind API key not set. Configure youmind.api_key or YOUMIND_API_KEY.');
+        console.error('[ERROR] YouMind API key not set. Configure youmind.api_key in config.yaml.');
         process.exit(1);
       }
 

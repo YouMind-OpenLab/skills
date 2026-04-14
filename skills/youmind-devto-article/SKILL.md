@@ -30,10 +30,8 @@ platforms:
 metadata:
   openclaw:
     emoji: "👩‍💻"
-    primaryEnv: YOUMIND_API_KEY
     requires:
       anyBins: ["node", "npm"]
-      env: ["YOUMIND_API_KEY"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
@@ -66,7 +64,8 @@ Write technical Dev.to articles with AI that resonate with developers. Topic res
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Connect your Dev.to account inside YouMind before publishing. This skill no longer reads `devto.api_key` locally.
+> 3. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs. If you need local backend debugging, change only your local `config.yaml`.
+> 4. Connect your Dev.to account inside YouMind before publishing. This skill no longer reads `devto.api_key` locally.
 >
 > No Dev.to connection yet? You can still write and preview locally — just skip the publish step.
 >
@@ -112,6 +111,7 @@ YouMind API Key enables knowledge base search, web search, article archiving, an
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
 4. Fill in `config.yaml` under `youmind.api_key`
+5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override your local `config.yaml`.
 
 ### Step 4 -- Connect Dev.to in YouMind
 

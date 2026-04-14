@@ -31,43 +31,31 @@ interface YouMindConfig {
   baseUrl: string;
 }
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
+const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
 
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
+}
+
+function loadLocalConfig(): Record<string, unknown> {
+  const p = resolve(PROJECT_DIR, 'config.yaml');
   if (existsSync(p)) {
     return parseYaml(readFileSync(p, 'utf-8')) ?? {};
   }
   return {};
 }
 
-function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-    }
-  }
-  return {};
-}
-
 function loadConfig(): YouMindConfig {
-  const central = loadCentralCredentials();
   const local = loadLocalConfig();
-  const ym = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
-  // 过滤本地的空字符串值，避免覆盖中心配置
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
+  const ym = local.youmind as Record<string, unknown> ?? {};
   const imgYm = (local as any).image?.providers?.youmind ?? {};
   return {
     apiKey: (ym.api_key as string) || (imgYm.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    baseUrl: normalizeBaseUrl(ym.base_url as string | undefined) || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
   };
 }
 
@@ -85,39 +73,23 @@ async function post<T = unknown>(
     throw new Error('YouMind API key 未配置。请在 config.yaml 的 youmind.api_key 中设置。');
   }
 
-  // 尝试配置的 baseUrl，失败后尝试备选地址
-  const baseUrls = [cfg.baseUrl, ...YOUMIND_OPENAPI_BASE_URLS.filter(u => u !== cfg.baseUrl)];
-  let lastError: Error | null = null;
+  const resp = await fetch(`${cfg.baseUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': cfg.apiKey,
+    },
+    body: JSON.stringify(body),
+    // createChat 需要等 AI 响应，给 120s；其他 API 15s 足够
+    signal: AbortSignal.timeout(endpoint.includes('Chat') || endpoint.includes('Message') ? 120_000 : 15_000),
+  });
 
-  for (const base of baseUrls) {
-    try {
-      const url = `${base}${endpoint}`;
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': cfg.apiKey,
-        },
-        body: JSON.stringify(body),
-        // createChat 需要等 AI 响应，给 120s；其他 API 15s 足够
-        signal: AbortSignal.timeout(endpoint.includes('Chat') || endpoint.includes('Message') ? 120_000 : 15_000),
-      });
-
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => '');
-        throw new Error(`YouMind API ${endpoint} 失败 (${resp.status}): ${text.slice(0, 300)}`);
-      }
-
-      return resp.json() as Promise<T>;
-    } catch (e) {
-      lastError = e as Error;
-      if (base !== baseUrls[baseUrls.length - 1]) {
-        console.error(`[WARN] ${base}${endpoint} 失败: ${(e as Error).message?.slice(0, 100)}, 尝试备选地址...`);
-      }
-    }
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`YouMind API ${endpoint} 失败 (${resp.status}): ${text.slice(0, 300)}`);
   }
 
-  throw lastError ?? new Error(`YouMind API ${endpoint} 所有地址均失败`);
+  return resp.json() as Promise<T>;
 }
 
 // ---------------------------------------------------------------------------

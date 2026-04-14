@@ -1,347 +1,420 @@
 /**
- * hashnode-api.ts — MOCK IMPLEMENTATION
+ * Hashnode API client via YouMind OpenAPI.
  *
- * This file is a mock. The skill talks to Hashnode exclusively through
- * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Hashnode
- * namespace on that OpenAPI. This mock lets the rest of the skill
- * (publisher, CLI) be built and smoke-tested end-to-end right now, without
- * a real backend.
- *
- * Swap-in plan when the real YouMind endpoints ship:
- *   1. YouMind will expose REST-style POST/GET endpoints under
- *      `https://youmind.com/openapi/v1/hashnode/<op>`. Internally the YouMind
- *      proxy will translate these REST calls into Hashnode's GraphQL API
- *      (publishPost / updatePost / post / publication.posts / searchTags
- *      mutations and queries), so the mock's stable TypeScript signatures
- *      below already encode the response shape the real endpoints will
- *      return. The only auth difference is that YouMind accepts
- *      `x-api-key: <youmind_api_key>` instead of a Hashnode Personal Access
- *      Token — YouMind holds the user's Hashnode token server-side and
- *      attaches it to the upstream GraphQL request.
- *   2. Replace each mock function body below with a `fetch()` POST/GET to
- *      the corresponding `https://youmind.com/openapi/v1/hashnode/<op>`
- *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
- *   3. Keep the exported type signatures stable — they ARE the swap-in
- *      contract. Nothing in publisher.ts / cli.ts should need to change.
- *   4. Delete the `mockState`, `initMockState`, and the mock builder
- *      helpers at that point.
- *
- * loadHashnodeConfig is NOT mocked — it reads real config the same way as
- * youmind-api.ts, because users will set their YouMind API key through the
- * normal config flow even before the Hashnode endpoints exist.
+ * The skill only requires a YouMind API key locally. The user's Hashnode
+ * token and publication binding are managed inside YouMind, and the backend
+ * attaches them when proxying Hashnode GraphQL requests.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-
-// ---------------------------------------------------------------------------
-// Public types — stable contract (do NOT change signatures when swapping to
-// real HTTP; only the function bodies below should change).
-// ---------------------------------------------------------------------------
 
 export interface HashnodeConfig {
   apiKey: string;
   baseUrl: string;
 }
 
-export interface HashnodePost {
-  id: string;
-  title: string;
-  subtitle: string | null;
-  slug: string;
-  url: string;
-  canonicalUrl: string | null;
-  coverImage: { url: string } | null;
-  brief: string;
-  content: { markdown: string; html: string };
-  tags: { id: string; name: string; slug: string }[];
-  series: { id: string; name: string } | null;
-  publishedAt: string | null;
-  readTimeInMinutes: number;
-  reactionCount: number;
-  views: number;
-  [key: string]: unknown;
-}
-
-export interface PublishPostInput {
-  title: string;
-  contentMarkdown: string;
-  subtitle?: string;
-  tags?: { id: string; name: string; slug: string }[];
-  tagSlugs?: string[];
-  coverImageOptions?: { coverImageURL: string };
-  canonicalUrl?: string;
-  seriesId?: string;
-  metaTags?: { title?: string; description?: string; image?: string };
-  publishAs?: string;
-  disableComments?: boolean;
-}
-
-export interface UpdatePostInput {
-  title?: string;
-  contentMarkdown?: string;
-  subtitle?: string;
-  tags?: { id: string; name: string; slug: string }[];
-  tagSlugs?: string[];
-  coverImageOptions?: { coverImageURL: string };
-  canonicalUrl?: string;
-  seriesId?: string;
-  metaTags?: { title?: string; description?: string; image?: string };
-}
-
 export interface HashnodeTag {
   id: string;
   name: string;
   slug: string;
-  postsCount: number;
+  postsCount?: number;
+  followersCount?: number;
+  [key: string]: unknown;
 }
 
-// ---------------------------------------------------------------------------
-// Config loading — real implementation, mirrors youmind-api.ts pattern.
-// ---------------------------------------------------------------------------
+export interface HashnodePublication {
+  id: string;
+  title: string;
+  displayTitle: string | null;
+  url: string;
+  dashboardUrl: string | null;
+}
+
+export interface HashnodeSeries {
+  id: string;
+  name: string;
+}
+
+export interface HashnodePost {
+  id: string;
+  status: 'draft' | 'published';
+  title: string | null;
+  subtitle: string | null;
+  slug: string;
+  url: string | null;
+  dashboardUrl: string | null;
+  canonicalUrl: string | null;
+  brief: string | null;
+  coverImageUrl: string | null;
+  readTimeInMinutes: number;
+  reactionCount: number;
+  views: number;
+  publishedAt: string | null;
+  updatedAt: string | null;
+  content: {
+    markdown: string | null;
+    html: string | null;
+    text: string | null;
+  } | null;
+  seo: {
+    title: string | null;
+    description: string | null;
+  } | null;
+  tags: HashnodeTag[];
+  series: HashnodeSeries | null;
+  publication: HashnodePublication | null;
+  [key: string]: unknown;
+}
+
+export interface HashnodePostListResponse {
+  posts: HashnodePost[];
+  total: number;
+  hasNextPage: boolean;
+  endCursor: string | null;
+}
+
+export interface HashnodeConnectionResult {
+  ok: boolean;
+  message: string;
+  username?: string | null;
+  name?: string | null;
+  publicationTitle?: string | null;
+  publicationUrl?: string | null;
+  dashboardUrl?: string | null;
+  totalPublished?: number;
+  totalDrafts?: number;
+}
+
+export interface CreateHashnodePostOptions {
+  title: string;
+  contentMarkdown: string;
+  subtitle?: string;
+  tags?: string[];
+  coverImageUrl?: string;
+  canonicalUrl?: string;
+  seriesId?: string;
+  slug?: string;
+  publishedAt?: string;
+  disableComments?: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaImage?: string;
+}
+
+export interface UpdateHashnodePostOptions extends Partial<CreateHashnodePostOptions> {}
+
+interface OpenApiErrorDetail {
+  connectUrl?: string;
+  upgradeUrl?: string;
+  hint?: string;
+}
+
+interface OpenApiErrorResponse {
+  message?: string;
+  code?: string;
+  detail?: OpenApiErrorDetail;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
+const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
 }
 
 function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-    }
+  const path = resolve(PROJECT_DIR, 'config.yaml');
+  if (existsSync(path)) {
+    return parseYaml(readFileSync(path, 'utf-8')) ?? {};
   }
   return {};
 }
 
 export function loadHashnodeConfig(): HashnodeConfig {
-  const central = loadCentralCredentials();
   const local = loadLocalConfig();
-  const ym = {
-    ...(central.youmind as Record<string, unknown> ?? {}),
-    ...(local.youmind as Record<string, unknown> ?? {}),
-  };
-  // Filter out local empty strings so central credentials aren't masked.
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
+  const ym = local.youmind as Record<string, unknown> ?? {};
+  const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
+
   return {
     apiKey: (ym.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    baseUrl: configuredBaseUrl || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Mock state — module-scoped, lives for the lifetime of the process. Not
-// exported; swap-in code should delete this whole block.
-// ---------------------------------------------------------------------------
-
-interface MockState {
-  postCounter: number;
-  publishedPosts: HashnodePost[];
-  mockTags: HashnodeTag[];
-}
-
-function initMockState(): MockState {
-  return {
-    postCounter: 0,
-    publishedPosts: [],
-    mockTags: [
-      { id: 'mock_tag_1', name: 'JavaScript', slug: 'javascript', postsCount: 12345 },
-      { id: 'mock_tag_2', name: 'TypeScript', slug: 'typescript', postsCount: 8765 },
-      { id: 'mock_tag_3', name: 'React', slug: 'react', postsCount: 9876 },
-      { id: 'mock_tag_4', name: 'Node.js', slug: 'nodejs', postsCount: 6543 },
-      { id: 'mock_tag_5', name: 'GraphQL', slug: 'graphql', postsCount: 4321 },
-      { id: 'mock_tag_6', name: 'Web Development', slug: 'web-development', postsCount: 15432 },
-      { id: 'mock_tag_7', name: 'Python', slug: 'python', postsCount: 11234 },
-      { id: 'mock_tag_8', name: 'API', slug: 'api', postsCount: 5678 },
-    ],
-  };
-}
-
-const mockState: MockState = initMockState();
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
-function normalizeTags(
-  tags?: { id: string; name: string; slug: string }[],
-  tagSlugs?: string[],
-): { id: string; name: string; slug: string }[] {
-  if (tags?.length) return tags;
-  if (tagSlugs?.length) {
-    return tagSlugs.map((slug, idx) => ({
-      id: `mock_tag_${Date.now()}_${idx}`,
-      name: slug,
-      slug,
-    }));
+async function postJson<T = unknown>(
+  endpoint: string,
+  body: Record<string, unknown> = {},
+  config?: HashnodeConfig,
+): Promise<T> {
+  const cfg = config ?? loadHashnodeConfig();
+  if (!cfg.apiKey) {
+    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
   }
-  return [];
-}
 
-function estimateReadTime(markdown: string): number {
-  const words = markdown.split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(words / 200));
-}
-
-function buildMockPost(
-  counter: number,
-  input: PublishPostInput,
-): HashnodePost {
-  const slugBase = slugify(input.title) || `mock-article-${counter}`;
-  const id = `mock_hashnode_post_${Date.now()}_${counter}`;
-  const now = new Date().toISOString();
-  const markdown = input.contentMarkdown;
-
-  return {
-    id,
-    title: input.title,
-    subtitle: input.subtitle ?? null,
-    slug: slugBase,
-    url: `https://mock.hashnode.dev/mock-article-${counter}`,
-    canonicalUrl: input.canonicalUrl ?? null,
-    coverImage: input.coverImageOptions?.coverImageURL
-      ? { url: input.coverImageOptions.coverImageURL }
-      : null,
-    brief: markdown.slice(0, 250),
-    content: {
-      markdown,
-      html: `<p>${markdown.slice(0, 200)}</p>`,
+  const response = await fetch(`${cfg.baseUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': cfg.apiKey,
     },
-    tags: normalizeTags(input.tags, input.tagSlugs),
-    series: input.seriesId ? { id: input.seriesId, name: 'Mock Series' } : null,
-    publishedAt: now,
-    readTimeInMinutes: estimateReadTime(markdown),
-    reactionCount: 0,
-    views: 0,
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const parsed = parseOpenApiError(text);
+    throw new Error(
+      `YouMind Hashnode API ${endpoint} failed (${response.status})` +
+        `: ${formatOpenApiError(parsed, text)}`,
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function parseOpenApiError(text: string): OpenApiErrorResponse | null {
+  try {
+    return JSON.parse(text) as OpenApiErrorResponse;
+  } catch {
+    return null;
+  }
+}
+
+function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string): string {
+  if (!parsed) {
+    return rawText.slice(0, 300);
+  }
+
+  const parts = [parsed.message, parsed.code, parsed.detail?.hint].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
+
+  if (parsed.detail?.connectUrl) {
+    parts.push(`Connect Hashnode: ${parsed.detail.connectUrl}`);
+  }
+
+  if (parsed.detail?.upgradeUrl) {
+    parts.push(`Upgrade plan: ${parsed.detail.upgradeUrl}`);
+  }
+
+  return parts.join(' | ') || rawText.slice(0, 300);
+}
+
+function normalizeTag(tag: Record<string, unknown>): HashnodeTag {
+  return {
+    ...tag,
+    id: String(tag.id ?? ''),
+    name: String(tag.name ?? ''),
+    slug: String(tag.slug ?? ''),
+    postsCount: Number(tag.postsCount ?? 0),
+    followersCount: Number(tag.followersCount ?? 0),
   };
 }
 
-// ---------------------------------------------------------------------------
-// Exported mock functions
-// ---------------------------------------------------------------------------
+function normalizePublication(publication: Record<string, unknown> | null | undefined): HashnodePublication | null {
+  if (!publication) return null;
 
-/**
- * Publish a new post to a Hashnode publication.
- */
-export async function publishPost(
-  _config: HashnodeConfig,
-  options: PublishPostInput,
+  return {
+    id: String(publication.id ?? ''),
+    title: String(publication.title ?? ''),
+    displayTitle: (publication.displayTitle as string | null | undefined) ?? null,
+    url: String(publication.url ?? ''),
+    dashboardUrl:
+      (publication.dashboardUrl as string | null | undefined) ??
+      (publication.dashboard_url as string | null | undefined) ??
+      null,
+  };
+}
+
+function normalizePost(post: Record<string, unknown>): HashnodePost {
+  return {
+    ...post,
+    id: String(post.id ?? ''),
+    status: (post.status as HashnodePost['status']) ?? 'draft',
+    title: (post.title as string | null | undefined) ?? null,
+    subtitle: (post.subtitle as string | null | undefined) ?? null,
+    slug: String(post.slug ?? ''),
+    url: (post.url as string | null | undefined) ?? null,
+    dashboardUrl:
+      (post.dashboardUrl as string | null | undefined) ??
+      (post.dashboard_url as string | null | undefined) ??
+      null,
+    canonicalUrl: (post.canonicalUrl as string | null | undefined) ?? null,
+    brief: (post.brief as string | null | undefined) ?? null,
+    coverImageUrl:
+      (post.coverImageUrl as string | null | undefined) ??
+      (post.cover_image_url as string | null | undefined) ??
+      null,
+    readTimeInMinutes: Number(post.readTimeInMinutes ?? 0),
+    reactionCount: Number(post.reactionCount ?? 0),
+    views: Number(post.views ?? 0),
+    publishedAt: (post.publishedAt as string | null | undefined) ?? null,
+    updatedAt: (post.updatedAt as string | null | undefined) ?? null,
+    content:
+      post.content && typeof post.content === 'object'
+        ? {
+            markdown: ((post.content as Record<string, unknown>).markdown as string | null | undefined) ?? null,
+            html: ((post.content as Record<string, unknown>).html as string | null | undefined) ?? null,
+            text: ((post.content as Record<string, unknown>).text as string | null | undefined) ?? null,
+          }
+        : null,
+    seo:
+      post.seo && typeof post.seo === 'object'
+        ? {
+            title: ((post.seo as Record<string, unknown>).title as string | null | undefined) ?? null,
+            description:
+              ((post.seo as Record<string, unknown>).description as string | null | undefined) ?? null,
+          }
+        : null,
+    tags: Array.isArray(post.tags)
+      ? post.tags.map((tag) => normalizeTag(tag as Record<string, unknown>))
+      : [],
+    series:
+      post.series && typeof post.series === 'object'
+        ? {
+            id: String((post.series as Record<string, unknown>).id ?? ''),
+            name: String((post.series as Record<string, unknown>).name ?? ''),
+          }
+        : null,
+    publication:
+      post.publication && typeof post.publication === 'object'
+        ? normalizePublication(post.publication as Record<string, unknown>)
+        : null,
+  };
+}
+
+function normalizeListResponse(payload: Record<string, unknown>): HashnodePostListResponse {
+  return {
+    posts: Array.isArray(payload.posts)
+      ? payload.posts.map((post) => normalizePost(post as Record<string, unknown>))
+      : [],
+    total: Number(payload.total ?? 0),
+    hasNextPage: Boolean(payload.hasNextPage ?? false),
+    endCursor: (payload.endCursor as string | null | undefined) ?? null,
+  };
+}
+
+export async function createDraft(
+  config: HashnodeConfig,
+  options: CreateHashnodePostOptions,
 ): Promise<HashnodePost> {
-  mockState.postCounter += 1;
-  const post = buildMockPost(mockState.postCounter, options);
-  mockState.publishedPosts.unshift(post);
-  return post;
-}
-
-/**
- * Update an existing Hashnode post.
- */
-export async function updatePost(
-  _config: HashnodeConfig,
-  postId: string,
-  options: UpdatePostInput,
-): Promise<HashnodePost> {
-  const existing = mockState.publishedPosts.find((p) => p.id === postId);
-  if (existing) {
-    if (options.title !== undefined) existing.title = options.title;
-    if (options.contentMarkdown !== undefined) {
-      existing.content = {
-        markdown: options.contentMarkdown,
-        html: `<p>${options.contentMarkdown.slice(0, 200)}</p>`,
-      };
-      existing.brief = options.contentMarkdown.slice(0, 250);
-      existing.readTimeInMinutes = estimateReadTime(options.contentMarkdown);
-    }
-    if (options.subtitle !== undefined) existing.subtitle = options.subtitle ?? null;
-    const normalized = normalizeTags(options.tags, options.tagSlugs);
-    if (normalized.length) existing.tags = normalized;
-    if (options.coverImageOptions) {
-      existing.coverImage = { url: options.coverImageOptions.coverImageURL };
-    }
-    if (options.canonicalUrl !== undefined) existing.canonicalUrl = options.canonicalUrl ?? null;
-    if (options.seriesId !== undefined) {
-      existing.series = options.seriesId
-        ? { id: options.seriesId, name: 'Mock Series' }
-        : null;
-    }
-    return existing;
-  }
-
-  // Fabricate a plausible post if we've never seen this id.
-  mockState.postCounter += 1;
-  return buildMockPost(mockState.postCounter, {
-    title: options.title ?? `Mock Article ${postId}`,
-    contentMarkdown: options.contentMarkdown ?? '# Mock content',
-    subtitle: options.subtitle,
-    tags: options.tags,
-    tagSlugs: options.tagSlugs,
-    coverImageOptions: options.coverImageOptions,
-    canonicalUrl: options.canonicalUrl,
-    seriesId: options.seriesId,
-    metaTags: options.metaTags,
-  });
-}
-
-/**
- * Get a single Hashnode post by ID.
- */
-export async function getPost(
-  _config: HashnodeConfig,
-  postId: string,
-): Promise<HashnodePost> {
-  const found = mockState.publishedPosts.find((p) => p.id === postId);
-  if (found) return found;
-  mockState.postCounter += 1;
-  return buildMockPost(mockState.postCounter, {
-    title: `Mock Article ${postId}`,
-    contentMarkdown: '# Mock content\n\nThis is a mock Hashnode post.',
-  });
-}
-
-/**
- * List posts from a Hashnode publication.
- */
-export async function listPosts(
-  _config: HashnodeConfig,
-  first = 10,
-): Promise<HashnodePost[]> {
-  return mockState.publishedPosts.slice(0, first);
-}
-
-/**
- * Search for Hashnode tags by keyword.
- */
-export async function searchTags(
-  _config: HashnodeConfig,
-  keyword: string,
-  first = 10,
-): Promise<HashnodeTag[]> {
-  const needle = keyword.toLowerCase();
-  const matches = mockState.mockTags.filter(
-    (t) => t.name.toLowerCase().includes(needle) || t.slug.toLowerCase().includes(needle),
+  const post = await postJson<Record<string, unknown>>(
+    '/hashnode/createDraft',
+    { ...options },
+    config,
   );
-  return matches.slice(0, first);
+  return normalizePost(post);
+}
+
+export async function publishDraft(config: HashnodeConfig, id: string): Promise<HashnodePost> {
+  const post = await postJson<Record<string, unknown>>('/hashnode/publishDraft', { id }, config);
+  return normalizePost(post);
+}
+
+export async function getDraft(config: HashnodeConfig, id: string): Promise<HashnodePost> {
+  const post = await postJson<Record<string, unknown>>('/hashnode/getDraft', { id }, config);
+  return normalizePost(post);
+}
+
+export async function listDrafts(
+  config: HashnodeConfig,
+  page = 1,
+  limit = 15,
+): Promise<HashnodePostListResponse> {
+  const payload = await postJson<Record<string, unknown>>(
+    '/hashnode/listDrafts',
+    { page, limit },
+    config,
+  );
+  return normalizeListResponse(payload);
+}
+
+export async function createPost(
+  config: HashnodeConfig,
+  options: CreateHashnodePostOptions,
+): Promise<HashnodePost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/hashnode/createPost',
+    { ...options },
+    config,
+  );
+  return normalizePost(post);
+}
+
+export async function publishPost(
+  config: HashnodeConfig,
+  options: CreateHashnodePostOptions,
+): Promise<HashnodePost> {
+  return createPost(config, options);
+}
+
+export async function updatePost(
+  config: HashnodeConfig,
+  id: string,
+  options: UpdateHashnodePostOptions,
+): Promise<HashnodePost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/hashnode/updatePost',
+    { id, ...options },
+    config,
+  );
+  return normalizePost(post);
+}
+
+export async function getPost(config: HashnodeConfig, id: string): Promise<HashnodePost> {
+  const post = await postJson<Record<string, unknown>>('/hashnode/getPost', { id }, config);
+  return normalizePost(post);
+}
+
+export async function listPosts(
+  config: HashnodeConfig,
+  page = 1,
+  limit = 15,
+): Promise<HashnodePostListResponse> {
+  const payload = await postJson<Record<string, unknown>>(
+    '/hashnode/listPosts',
+    { page, limit },
+    config,
+  );
+  return normalizeListResponse(payload);
+}
+
+export async function listPublishedPosts(
+  config: HashnodeConfig,
+  page = 1,
+  limit = 15,
+): Promise<HashnodePostListResponse> {
+  const payload = await postJson<Record<string, unknown>>(
+    '/hashnode/listPublished',
+    { page, limit },
+    config,
+  );
+  return normalizeListResponse(payload);
+}
+
+export async function searchTags(
+  config: HashnodeConfig,
+  query: string,
+  limit = 5,
+): Promise<HashnodeTag[]> {
+  const payload = await postJson<unknown[]>('/hashnode/searchTags', { query, limit }, config);
+  return Array.isArray(payload)
+    ? payload.map((tag) => normalizeTag(tag as Record<string, unknown>))
+    : [];
+}
+
+export async function validateConnection(
+  config: HashnodeConfig,
+): Promise<HashnodeConnectionResult> {
+  return postJson<HashnodeConnectionResult>('/hashnode/validateConnection', {}, config);
 }

@@ -1,11 +1,10 @@
 ---
 name: youmind-hashnode-article
-version: 1.0.0
+version: 2.0.0
 description: |
-  Write and publish Hashnode articles with AI — topic research via YouMind knowledge base,
-  SEO-optimized writing, Markdown formatting with subtitle and series support,
-  and one-click publishing to your Hashnode publication.
-  Use when user wants to "write Hashnode article", "publish to Hashnode", "post on Hashnode".
+  Write and publish Hashnode articles through YouMind OpenAPI. Supports draft-first
+  publishing, published post listing, draft listing, tag lookup, and clear connector / pricing
+  guidance when the user's Hashnode account is not ready inside YouMind.
 triggers:
   - "hashnode article"
   - "publish to hashnode"
@@ -15,26 +14,8 @@ triggers:
   - "hashnode blog"
   - "Hashnode 文章"
   - "发布到 Hashnode"
-  - "hashnode publication"
-  - "write hashnode"
 platforms:
-  - openclaw
-  - claude-code
-  - cursor
   - codex
-  - gemini-cli
-  - windsurf
-  - kilo
-  - opencode
-  - goose
-  - roo
-metadata:
-  openclaw:
-    emoji: "📝"
-    primaryEnv: HASHNODE_TOKEN
-    requires:
-      anyBins: ["node", "npm"]
-      env: ["HASHNODE_TOKEN"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
@@ -43,193 +24,115 @@ allowed-tools:
 
 # AI Hashnode Article Writer
 
-Write SEO-optimized Hashnode articles with AI. Topic research via [YouMind](https://youmind.com?utm_source=youmind-hashnode-article) knowledge base, structured writing with subtitle and series support, and one-click publishing to your Hashnode publication.
+Write Hashnode articles with AI, then publish them through YouMind OpenAPI.
 
-> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-hashnode-article) | [Get Hashnode Token](https://hashnode.com/settings/developer) | [More Skills](https://youmind.com/skills?utm_source=youmind-hashnode-article)
+The local skill only requires a YouMind API key. The user's Hashnode token and publication are configured in YouMind, not in the local skill config.
 
 ## Onboarding
 
-**MANDATORY: When the user has just installed this skill, present this message IMMEDIATELY. Translate to the user's language:**
+**MANDATORY: When the user has just installed this skill, present this message immediately. Translate to the user's language.**
 
 > **AI Hashnode Article Writer installed!**
 >
-> Tell me your topic and I'll write and publish a Hashnode article for you.
+> Tell me your topic and I'll help write and publish it to Hashnode.
 >
 > **Try it now:** "Write a Hashnode article about building APIs with GraphQL"
 >
 > **What it does:**
-> - Research topics from developer communities and your YouMind knowledge base
-> - Write SEO-optimized articles with proper structure
-> - Support subtitles, series, cover images, and canonical URLs
-> - Validate content for Hashnode best practices
-> - Publish directly to your Hashnode publication
+> - Research topics from your YouMind knowledge base and the web
+> - Write Hashnode-friendly technical articles with subtitle and SEO metadata
+> - Create Hashnode drafts by default
+> - Publish existing drafts when you're ready
+> - Show clear setup help if your Hashnode account is not yet connected in YouMind
 >
-> **Setup (one-time):**
-> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-hashnode-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Get [Hashnode Personal Access Token](https://hashnode.com/settings/developer) and fill `hashnode.token` in `config.yaml`
-> 4. Get your publication ID from Hashnode dashboard and fill `hashnode.publication_id` in `config.yaml`
+> **One-time setup:**
+> 1. Install & build: `cd toolkit && npm install && npm run build && cd ..`
+> 2. Copy config: `cp config.example.yaml config.yaml`
+> 3. Fill `youmind.api_key` in `config.yaml`
+> 4. In YouMind, connect Hashnode at `https://youmind.com/settings/connector`
 >
-> No Hashnode token yet? You can still write and preview locally -- just skip the Hashnode config step.
->
-> **Need help?** Just ask!
+> **Requirements:**
+> - YouMind paid plan for article dispatch OpenAPI
+> - Hashnode connected in YouMind
 
-## Usage
+## Local Config
 
-Provide a topic, a raw Markdown file, or describe the article you want.
+`config.yaml` only needs:
 
-**Write from a topic:**
-> Write a Hashnode article about WebAssembly for backend developers
-
-**Write with a subtitle:**
-> Write a Hashnode post about container orchestration, subtitle "Beyond Docker Compose"
-
-**Publish existing Markdown:**
-> Publish this markdown to my Hashnode publication
-
-**As part of a series:**
-> Write a Hashnode article about Kubernetes networking, add it to the "K8s Deep Dive" series
-
-## Setup
-
-> Prerequisites: Node.js >= 18, a Hashnode account with a publication.
-
-### Step 1 -- Install Dependencies
-
-```bash
-cd toolkit && npm install && npm run build && cd ..
+```yaml
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
 ```
 
-### Step 2 -- Create Config File
+All commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+
+Do not ask the user to fill local `hashnode.token` or `hashnode.publication_id`. That flow is obsolete.
+
+## Draft Output Rule
+
+All locally generated article files must go under `output/`.
+
+- Correct: `skills/youmind-hashnode-article/output/my-post.hashnode.md`
+- Wrong: `skills/youmind-hashnode-article/article.hashnode.md`
+- Wrong: any generated article directly in the skill root
+
+`output/` is git-ignored.
+
+## Directory Guide
+
+Read files on demand.
+
+| Path | Purpose |
+|------|---------|
+| `toolkit/src/cli.ts` | Real CLI used for validate / publish / list flows |
+| `toolkit/src/hashnode-api.ts` | YouMind OpenAPI client for Hashnode |
+| `toolkit/src/publisher.ts` | High-level publish wrapper |
+| `toolkit/src/content-adapter.ts` | Hashnode title / subtitle / tag / SEO adaptation |
+| `references/pipeline.md` | Step-by-step execution flow |
+| `references/api-reference.md` | Hashnode and YouMind OpenAPI contract summary |
+| `output/` | Local adapted markdown output |
+
+## CLI Commands
+
+Run from `toolkit/`.
 
 ```bash
-cp config.example.yaml config.yaml
+node dist/cli.js validate
+node dist/cli.js publish ../article.md --draft
+node dist/cli.js publish ../article.md --publish
+node dist/cli.js list --page 1 --limit 10
+node dist/cli.js list-drafts --page 1 --limit 10
+node dist/cli.js list-published --page 1 --limit 10
+node dist/cli.js publish-draft <draft_id>
+node dist/cli.js get-draft <draft_id>
+node dist/cli.js get-post <post_id>
+node dist/cli.js preview ../article.md
+node dist/cli.js search-tags typescript
 ```
 
-### Step 3 -- Get YouMind API Key (Recommended)
+## Behavior Rules
 
-YouMind API Key enables knowledge base search, web search, and article archiving.
+1. Default to draft creation unless the user explicitly asks to publish immediately.
+2. If Hashnode is not connected in YouMind, surface the connector URL: `https://youmind.com/settings/connector`
+3. If the paid plan check fails, surface the pricing URL: `https://youmind.com/pricing`
+4. Do not fall back to asking the user for local Hashnode tokens.
+5. Keep tag guidance realistic: Hashnode tag lookup is exact or slug-like, not true fuzzy search.
 
-1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-hashnode-article)
-2. Click **Create API Key**
-3. Copy the `sk-ym-xxxx` key
-4. Fill in `config.yaml` under `youmind.api_key`
+## Publishing Flow
 
-### Step 4 -- Get Hashnode Personal Access Token
+1. Load `youmind.api_key`
+2. If the user supplied a topic, research and draft content
+3. Adapt content with `content-adapter.ts`
+4. Use `publish --draft` by default
+5. If the user wants immediate publication, use `publish --publish`
+6. Report draft vs published state clearly
+7. For drafts, show the Hashnode dashboard URL when available
 
-1. Go to [Hashnode Developer Settings](https://hashnode.com/settings/developer)
-2. Generate a new Personal Access Token
-3. Copy the token and fill in `config.yaml` under `hashnode.token`
+## Failure Handling
 
-### Step 5 -- Get Publication ID
-
-1. Go to your Hashnode publication dashboard
-2. Navigate to Settings > General
-3. Your publication ID is in the URL: `https://hashnode.com/{publication_id}/dashboard`
-4. Fill in `config.yaml` under `hashnode.publication_id`
-
-### Verify Setup
-
-After configuration, try:
-
-> "Write a Hashnode article about Python type hints"
-
-If something is misconfigured, the skill will report what needs fixing at the relevant step.
-
-## Skill Directory
-
-This skill is a folder. Read files on demand -- do NOT load everything upfront.
-
-| Path | Purpose | When to read |
-|------|---------|-------------|
-| `references/pipeline.md` | Full step-by-step execution (Steps 1-7) | When running the writing pipeline |
-| `references/content-adaptation.md` | Hashnode writing rules, SEO, structure | Step 4 (content adaptation) |
-| `references/api-reference.md` | Hashnode GraphQL API documentation | When calling Hashnode API |
-| `config.yaml` | API credentials (Hashnode, YouMind) | Step 1 (config load) |
-| `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
-| `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
-
-## Draft Location Rule (MANDATORY)
-
-**All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
-
-- Correct: `skills/youmind-hashnode-article/output/my-article.md`
-- Wrong: `skills/youmind-hashnode-article/article.md` (pollutes skill root)
-- Wrong: `skills/youmind-hashnode-article/article.hashnode.md` (pollutes skill root)
-- Wrong: any new top-level `drafts/` directory (not git-ignored)
-- Wrong: any path inside `references/`, `toolkit/`, or the skill root
-
-The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
-
----
-
-## Pipeline Overview
-
-Read `references/pipeline.md` for full execution details of each step.
-
-| Step | Action | Key reference |
-|------|--------|--------------|
-| 1 | Load config and validate API keys | -- |
-| 2 | Mine YouMind knowledge base for source material | -- |
-| 3 | Research topic: web search, trending discussions | -- |
-| 4 | Content adaptation: structure for Hashnode/SEO | `content-adaptation.md` |
-| 5 | Write article with SEO optimization, subtitle, series | -- |
-| 6 | Publish to Hashnode publication | `api-reference.md` |
-| 7 | Report results: title, URL, tags, published status | -- |
-
-**Routing shortcuts:**
-
-- User gave a specific topic -> Skip broad research, go to Step 4
-- User gave raw Markdown -> Skip to Step 6 (publish)
-
----
-
-## Critical Quality Rules
-
-Non-negotiable for every Hashnode article:
-
-1. **Title: SEO-optimized, 50-70 characters.** Front-load the keyword.
-2. **Subtitle: compelling hook/teaser.** Hashnode shows this prominently.
-3. **Max 5 tags.** Choose from Hashnode's existing tag list.
-4. **Cover image URL recommended.** 1600x840 for best display.
-5. **Structured with headings.** H2/H3 hierarchy for table of contents.
-6. **No marketing fluff.** Write technical content, not sales copy.
-7. **Every code block has a language tag.** Hashnode renders syntax highlighting.
-8. **Word count: 800-3000.** Enough depth for SEO value.
-9. **Meta description: max 160 characters.** For SEO meta tag.
-10. **Canonical URL for cross-posts.** Always set when republishing from another blog.
-
----
-
-## Resilience: Never Stop on a Single-Step Failure
-
-Every step has a fallback. If a step AND its fallback both fail, skip and note it in the final output.
-
-| Step | Fallback |
-|------|----------|
-| 2 Knowledge mining | Skip, empty knowledge_context |
-| 3 Research | YouMind web-search -> ask user |
-| 5 Writing | Ask user for manual content |
-| 6 Publishing | Save markdown locally |
-| 7 Report | Print what was completed |
-
----
-
-## Gotchas -- Common Failure Patterns
-
-**"The SEO-Stuffed Article":** Repeating keywords unnaturally. Write for humans first, optimize for search second.
-
-**"The Missing Subtitle":** Hashnode prominently displays subtitles. Skipping it wastes valuable real estate.
-
-**"The Broken Cross-Post":** Publishing the same content on Hashnode without setting canonical_url. This creates duplicate content issues.
-
-**"The Tag Mismatch":** Using tags that don't exist on Hashnode. Always verify tags exist in Hashnode's ecosystem.
-
-**"The Cover Image Miss":** Using a low-resolution or poorly sized cover. Hashnode displays covers at 1600x840.
-
-## References
-
-- Hashnode API: see [references/api-reference.md](references/api-reference.md)
-- Content rules: see [references/content-adaptation.md](references/content-adaptation.md)
-- Pipeline: see [references/pipeline.md](references/pipeline.md)
-- YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-hashnode-article
+- Missing YouMind API key: tell the user to set `youmind.api_key`
+- Hashnode not connected in YouMind: tell the user to open `https://youmind.com/settings/connector`
+- Paid plan required: tell the user to open `https://youmind.com/pricing`
+- Publish failure: keep the adapted markdown in `output/` and report the backend error cleanly

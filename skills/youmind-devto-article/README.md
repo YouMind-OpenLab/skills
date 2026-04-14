@@ -35,7 +35,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-You can also use `YOUMIND_API_KEY` instead of putting the key in `config.yaml`.
+Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
 
 ### Publishing prerequisite
 
@@ -102,7 +103,7 @@ Dev.to OpenAPI now requires a paid YouMind plan (Pro / Max). If the current acco
 
 **Q: I get a 401 or auth error**
 
-Check `youmind.api_key` or `YOUMIND_API_KEY`. The skill now authenticates only with YouMind.
+Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind.
 
 **Q: Publishing says Dev.to is not connected**
 

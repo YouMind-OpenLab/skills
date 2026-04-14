@@ -57,7 +57,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadGhostConfig();
 
   if (!config.apiKey) {
-    throw new Error('YouMind API key not set. Configure youmind.api_key or YOUMIND_API_KEY.');
+    throw new Error('YouMind API key not set. Configure youmind.api_key in config.yaml.');
   }
 
   // Read Markdown content

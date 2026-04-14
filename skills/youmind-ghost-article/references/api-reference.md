@@ -17,7 +17,7 @@ Get your YouMind API key from: <https://youmind.com/settings/api-keys>
 
 ## Preconditions
 
-- The skill has `youmind.api_key` configured locally, or `YOUMIND_API_KEY` is set
+- The skill reads `youmind.api_key` and `youmind.base_url` from local `config.yaml`
 - The user has already connected Ghost inside YouMind
 - The current YouMind plan allows article dispatch OpenAPI (`Pro` / `Max`)
 

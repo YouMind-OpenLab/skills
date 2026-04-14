@@ -78,7 +78,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const YOUMIND_OPENAPI_BASE_URLS = ['https://youmind.com/openapi/v1'];
+const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
 
 interface OpenApiErrorDetail {
   connectUrl?: string;
@@ -100,48 +100,22 @@ function normalizeBaseUrl(value: string | undefined): string {
   return `${trimmed}/openapi/v1`;
 }
 
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const path = resolve(home, '.youmind-skill', 'credentials.yaml');
+function loadLocalConfig(): Record<string, unknown> {
+  const path = resolve(PROJECT_DIR, 'config.yaml');
   if (existsSync(path)) {
     return parseYaml(readFileSync(path, 'utf-8')) ?? {};
   }
   return {};
 }
 
-function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const path = resolve(PROJECT_DIR, name);
-    if (existsSync(path)) {
-      return parseYaml(readFileSync(path, 'utf-8')) ?? {};
-    }
-  }
-  return {};
-}
-
 export function loadGhostConfig(): GhostConfig {
-  const central = loadCentralCredentials();
   const local = loadLocalConfig();
-  const ym = {
-    ...(central.youmind as Record<string, unknown> ?? {}),
-    ...(local.youmind as Record<string, unknown> ?? {}),
-  };
-
-  for (const [key, value] of Object.entries(ym)) {
-    if (value === '' && (central.youmind as Record<string, unknown>)?.[key]) {
-      ym[key] = (central.youmind as Record<string, unknown>)[key];
-    }
-  }
-
-  const envApiKey = process.env.YOUMIND_API_KEY || process.env.YM_API_KEY || '';
-  const envBaseUrl = normalizeBaseUrl(
-    process.env.YOUMIND_OPENAPI_BASE_URL || process.env.YOUMIND_BASE_URL,
-  );
+  const ym = local.youmind as Record<string, unknown> ?? {};
   const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
 
   return {
-    apiKey: (ym.api_key as string) || envApiKey || '',
-    baseUrl: envBaseUrl || configuredBaseUrl || YOUMIND_OPENAPI_BASE_URLS[0],
+    apiKey: (ym.api_key as string) || '',
+    baseUrl: configuredBaseUrl || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
   };
 }
 
@@ -152,53 +126,29 @@ async function postJson<T = unknown>(
 ): Promise<T> {
   const cfg = config ?? loadGhostConfig();
   if (!cfg.apiKey) {
+    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
+  }
+
+  const response = await fetch(`${cfg.baseUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': cfg.apiKey,
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const parsed = parseOpenApiError(text);
     throw new Error(
-      'YouMind API key not configured. Set youmind.api_key in config.yaml or YOUMIND_API_KEY.',
+      `YouMind Ghost API ${endpoint} failed (${response.status})` +
+        `: ${formatOpenApiError(parsed, text)}`,
     );
   }
 
-  const shouldFallbackToHosted =
-    !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(cfg.baseUrl);
-  const baseUrls = shouldFallbackToHosted
-    ? [cfg.baseUrl, ...YOUMIND_OPENAPI_BASE_URLS.filter((url) => url !== cfg.baseUrl)]
-    : [cfg.baseUrl];
-  let lastError: Error | null = null;
-
-  for (const baseUrl of baseUrls) {
-    try {
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': cfg.apiKey,
-        },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30_000),
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        const parsed = parseOpenApiError(text);
-        const error = new Error(
-          `YouMind Ghost API ${endpoint} failed via ${baseUrl} (${response.status})` +
-            `: ${formatOpenApiError(parsed, text)}`,
-        );
-
-        if (response.status < 500) {
-          throw error;
-        }
-
-        lastError = error;
-        continue;
-      }
-
-      return response.json() as Promise<T>;
-    } catch (error) {
-      lastError = error as Error;
-    }
-  }
-
-  throw lastError ?? new Error(`YouMind Ghost API ${endpoint} failed`);
+  return response.json() as Promise<T>;
 }
 
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
