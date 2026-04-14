@@ -58,7 +58,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadDevtoConfig();
 
   if (!config.apiKey) {
-    throw new Error('youmind.api_key not set in config.yaml');
+    throw new Error('YouMind API key not set. Configure youmind.api_key or YOUMIND_API_KEY.');
   }
 
   if (!title || !title.trim()) {
@@ -77,12 +77,12 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
 
   const article: DevtoArticle = await createArticle(config, {
     title: title.trim(),
-    body_markdown: markdown,
+    bodyMarkdown: markdown,
     published,
     tags: validatedTags.length > 0 ? validatedTags : undefined,
     description: description?.slice(0, 170),
-    cover_image: coverImageUrl,
-    canonical_url: canonicalUrl,
+    coverImage: coverImageUrl,
+    canonicalUrl: canonicalUrl,
     series,
   });
 

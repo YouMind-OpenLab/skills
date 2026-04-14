@@ -35,6 +35,14 @@ const YOUMIND_OPENAPI_BASE_URLS = [
   'https://youmind.com/openapi/v1',
 ];
 
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
+}
+
 function loadCentralCredentials(): Record<string, unknown> {
   const home = process.env.HOME || process.env.USERPROFILE || '';
   const p = resolve(home, '.youmind-skill', 'credentials.yaml');
@@ -65,9 +73,11 @@ function loadConfig(): YouMindConfig {
     }
   }
   const imgYm = (local as any).image?.providers?.youmind ?? {};
+  const envApiKey = process.env.YOUMIND_API_KEY || process.env.YM_API_KEY || '';
+  const envBaseUrl = normalizeBaseUrl(process.env.YOUMIND_OPENAPI_BASE_URL || process.env.YOUMIND_BASE_URL);
   return {
-    apiKey: (ym.api_key as string) || (imgYm.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    apiKey: (ym.api_key as string) || (imgYm.api_key as string) || envApiKey,
+    baseUrl: normalizeBaseUrl((ym.base_url as string) || envBaseUrl) || YOUMIND_OPENAPI_BASE_URLS[0],
   };
 }
 
@@ -82,7 +92,7 @@ async function post<T = unknown>(
 ): Promise<T> {
   const cfg = config ?? loadConfig();
   if (!cfg.apiKey) {
-    throw new Error('YouMind API key 未配置。请在 config.yaml 的 youmind.api_key 中设置。');
+    throw new Error('YouMind API key 未配置。请在 config.yaml 设置 youmind.api_key，或设置环境变量 YOUMIND_API_KEY。');
   }
 
   // 尝试配置的 baseUrl，失败后尝试备选地址

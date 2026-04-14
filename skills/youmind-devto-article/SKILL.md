@@ -30,10 +30,10 @@ platforms:
 metadata:
   openclaw:
     emoji: "👩‍💻"
-    primaryEnv: DEVTO_API_KEY
+    primaryEnv: YOUMIND_API_KEY
     requires:
       anyBins: ["node", "npm"]
-      env: ["DEVTO_API_KEY"]
+      env: ["YOUMIND_API_KEY"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
@@ -42,9 +42,9 @@ allowed-tools:
 
 # AI Dev.to Article Writer
 
-Write technical Dev.to articles with AI that resonate with developers. Topic research via [YouMind](https://youmind.com?utm_source=youmind-devto-article) knowledge base, developer-audience adapted writing, Markdown with front matter formatting, and one-click publishing to Dev.to.
+Write technical Dev.to articles with AI that resonate with developers. Topic research via [YouMind](https://youmind.com?utm_source=youmind-devto-article) knowledge base, developer-audience adapted writing, Markdown with front matter formatting, and one-click publishing to Dev.to through the user's Dev.to account already connected in YouMind.
 
-> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) | [Get Dev.to API Key](https://dev.to/settings/extensions) | [More Skills](https://youmind.com/skills?utm_source=youmind-devto-article)
+> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) | [More Skills](https://youmind.com/skills?utm_source=youmind-devto-article)
 
 ## Onboarding
 
@@ -61,14 +61,14 @@ Write technical Dev.to articles with AI that resonate with developers. Topic res
 > - Write technical articles with proper code examples and structure
 > - Format with Dev.to front matter (tags, cover image, series)
 > - Validate content for Dev.to best practices
-> - Publish directly to Dev.to (as draft or public)
+> - Publish directly to Dev.to (as draft or public) through the Dev.to account connected in YouMind
 >
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Get [Dev.to API Key](https://dev.to/settings/extensions) and fill `devto.api_key` in `config.yaml`
+> 3. Connect your Dev.to account inside YouMind before publishing. This skill no longer reads `devto.api_key` locally.
 >
-> No Dev.to API yet? You can still write and preview locally — just skip the Dev.to config step.
+> No Dev.to connection yet? You can still write and preview locally — just skip the publish step.
 >
 > **Need help?** Just ask!
 
@@ -90,7 +90,7 @@ Provide a topic, a raw Markdown file, or describe the article you want.
 
 ## Setup
 
-> Prerequisites: Node.js >= 18, a Dev.to account with API access.
+> Prerequisites: Node.js >= 18, a YouMind API key, and a Dev.to account connected in YouMind if you want to publish.
 
 ### Step 1 -- Install Dependencies
 
@@ -104,20 +104,20 @@ cd toolkit && npm install && npm run build && cd ..
 cp config.example.yaml config.yaml
 ```
 
-### Step 3 -- Get YouMind API Key (Recommended)
+### Step 3 -- Get YouMind API Key
 
-YouMind API Key enables knowledge base search, web search, and article archiving.
+YouMind API Key enables knowledge base search, web search, article archiving, and Dev.to publishing.
 
 1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
 4. Fill in `config.yaml` under `youmind.api_key`
 
-### Step 4 -- Get Dev.to API Key
+### Step 4 -- Connect Dev.to in YouMind
 
-1. Go to [Dev.to Settings > Extensions](https://dev.to/settings/extensions)
-2. Under **DEV Community API Keys**, generate a new API key
-3. Copy the key and fill in `config.yaml` under `devto.api_key`
+1. Open YouMind and connect your Dev.to account in the product's publishing / platform settings flow
+2. Save the Dev.to token there once
+3. Keep only `youmind.api_key` in this skill's `config.yaml`
 
 ### Verify Setup
 
@@ -127,6 +127,8 @@ After configuration, try:
 
 If something is misconfigured, the skill will report what needs fixing at the relevant step.
 
+When a post is created as a draft, tell the user it is in the Dev.to dashboard (`https://dev.to/dashboard`). Do not present the public article URL as if it is already accessible, because Dev.to draft URLs can 404 until published. If the user wants immediate publishing, use `published: true` / `--publish`.
+
 ## Skill Directory
 
 This skill is a folder. Read files on demand -- do NOT load everything upfront.
@@ -135,8 +137,8 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution (Steps 1-7) | When running the writing pipeline |
 | `references/content-adaptation.md` | Dev.to writing rules, structure, tone | Step 4 (content adaptation) |
-| `references/api-reference.md` | Dev.to API endpoint documentation | When calling Dev.to API |
-| `config.yaml` | API credentials (Dev.to, YouMind) | Step 1 (config load) |
+| `references/api-reference.md` | YouMind Dev.to OpenAPI endpoint documentation | When calling Dev.to through YouMind |
+| `config.yaml` | API credentials (YouMind only) | Step 1 (config load) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
@@ -159,7 +161,7 @@ Read `references/pipeline.md` for full execution details of each step.
 
 | Step | Action | Key reference |
 |------|--------|--------------|
-| 1 | Load config and validate API keys | -- |
+| 1 | Load config and validate the YouMind API key and Dev.to connection in YouMind | -- |
 | 2 | Mine YouMind knowledge base for source material | -- |
 | 3 | Research topic: web search, trending discussions | -- |
 | 4 | Content adaptation: structure for Dev.to audience | `content-adaptation.md` |
@@ -219,7 +221,7 @@ Every step has a fallback. If a step AND its fallback both fail, skip and note i
 
 ## References
 
-- Dev.to API: see [references/api-reference.md](references/api-reference.md)
+- YouMind Dev.to OpenAPI: see [references/api-reference.md](references/api-reference.md)
 - Content rules: see [references/content-adaptation.md](references/content-adaptation.md)
 - Pipeline: see [references/pipeline.md](references/pipeline.md)
 - YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-devto-article

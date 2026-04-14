@@ -1,56 +1,21 @@
 # YouMind Dev.to Skill
 
-AI-powered Dev.to article writing and publishing. Tell your agent a topic, it handles research, writing, formatting, and publishing.
+AI-powered Dev.to article writing and publishing. Tell your agent a topic, and it can research, write, format, and publish through the Dev.to account you already connected in YouMind.
 
 ---
 
-## What Can It Do
+## What It Does
 
 | You say | Skill does |
 |---------|------------|
-| `Write about Docker best practices for Dev.to` | Full pipeline: research -> write -> adapt -> publish as draft |
+| `Write about Docker best practices for Dev.to` | Research -> write -> adapt -> publish as draft |
 | `Publish this markdown to Dev.to` | Skip writing, format and publish directly |
 | `Validate my article for Dev.to` | Check tags, front matter, code blocks |
-| `List my Dev.to articles` | Fetch and display your published articles |
+| `List my Dev.to articles` | Fetch your Dev.to articles through YouMind |
 
 ---
 
-## Getting Credentials
-
-### Getting a Dev.to API Key
-
-> Dev.to API Key settings page: <https://dev.to/settings/extensions>
-
-**Step 1 -- Log in to Dev.to**
-
-Log in to [Dev.to](https://dev.to) with your account.
-
-**Step 2 -- Go to Settings > Extensions**
-
-Click your avatar (top-right) -> **Settings** -> select **Extensions** from the left menu.
-
-Direct link: <https://dev.to/settings/extensions>
-
-**Step 3 -- Generate an API Key**
-
-At the bottom of the page, find the **"DEV Community API Keys"** section:
-
-1. Enter a description in the "Description" field (e.g., `youmind`)
-2. Click the **"Generate API Key"** button
-3. Copy the generated API Key (shown only once -- save it immediately)
-
-**Step 4 -- Fill in Config**
-
-Paste the API Key into `config.yaml`:
-
-```yaml
-devto:
-  api_key: "your-api-key-here"
-```
-
----
-
-## Installation
+## Setup
 
 > Prerequisites: Node.js >= 18
 
@@ -60,42 +25,25 @@ cd toolkit && npm install && npm run build && cd ..
 
 # 2. Create config (if config.yaml doesn't exist)
 cp config.example.yaml config.yaml
-
-# 3. Fill in API keys in config.yaml
 ```
 
-Required fields in `config.yaml`:
+`config.yaml` only needs the YouMind API key:
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `devto.api_key` | **Yes** | Dev.to API Key, see steps below |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) |
+```yaml
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
+```
 
----
+You can also use `YOUMIND_API_KEY` instead of putting the key in `config.yaml`.
 
-## YouMind Integration
+### Publishing prerequisite
 
-The Dev.to Skill integrates with the [YouMind](https://youmind.com) knowledge base for enhanced content creation.
+Before publishing, connect your Dev.to account inside YouMind. The skill no longer reads `devto.api_key` locally and should never ask the user to paste a Dev.to token into this repo.
 
-### Knowledge Base Search
+### Get a YouMind API Key
 
-Search your YouMind library for related articles, notes, and bookmarks as research material. AI matches content semantically, not just by keywords.
-
-### Web Search
-
-Search the web for real-time information and trending topics. Automatically cite the latest data and trends when writing.
-
-### Article Archiving
-
-After publishing, save the article back to your YouMind knowledge base for future reference and repurposing.
-
-### Material Mining
-
-Browse boards and extract relevant materials from your YouMind workspace for content creation.
-
-### Get API Key
-
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys) to get your API Key, then fill it into the `youmind.api_key` field in `config.yaml`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article), create a key, and place it in `youmind.api_key`.
 
 ---
 
@@ -103,11 +51,11 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys) to get y
 
 ### Dev.to Content Guidelines
 
-- **TL;DR**: Add a TL;DR summary at the beginning of every article -- this is a Dev.to community convention
-- **Code blocks**: Must specify the language (e.g., ` ```typescript `), otherwise no syntax highlighting
-- **Tags**: Up to 4, lowercase, only alphanumeric characters and hyphens (e.g., `typescript`, `web-dev`)
+- **TL;DR**: Add a TL;DR summary at the beginning of every article
+- **Code blocks**: Must specify the language, e.g. ` ```typescript `
+- **Tags**: Up to 4, lowercase, alphanumeric or hyphen
 - **Title**: 60-80 characters, keywords front-loaded for SEO
-- **Description**: Up to 170 characters, used for SEO and social sharing
+- **Description**: Up to 170 characters
 - **Tone**: Developer-to-developer, avoid marketing language
 
 ### CLI Commands
@@ -121,36 +69,56 @@ npx tsx src/cli.ts publish article.md --tags "typescript,webdev"
 # Preview and validate locally
 npx tsx src/cli.ts preview article.md
 
-# Validate API connectivity
+# Validate YouMind + Dev.to connectivity
 npx tsx src/cli.ts validate
 
 # List your articles
 npx tsx src/cli.ts list --page 1
+
+# List only drafts
+npx tsx src/cli.ts list-drafts --page 1
+
+# List only published articles
+npx tsx src/cli.ts list-published --page 1
+
+# Publish an existing article by ID
+npx tsx src/cli.ts publish-article 12345
+
+# Move an article back to draft by ID
+npx tsx src/cli.ts unpublish-article 12345
 ```
 
 ### Publishing Status
 
-The skill publishes as draft by default. You can preview in the Dev.to dashboard before making it public.
+The skill publishes as draft by default. Drafts should be opened from the Dev.to dashboard at `https://dev.to/dashboard`, because the public article URL may 404 until you publish it. If you want immediate publishing, use `--publish`.
+
+### Paid Plan Requirement
+
+Dev.to OpenAPI now requires a paid YouMind plan (Pro / Max). If the current account is not eligible, the API returns `402` and points the user to [YouMind Pricing](https://youmind.com/pricing).
 
 ---
 
 ## FAQ
 
-**Q: API Key invalid or 401 error**
+**Q: I get a 401 or auth error**
 
-Double-check the `devto.api_key` in `config.yaml`. If the key expired or was deleted, regenerate it at <https://dev.to/settings/extensions>.
+Check `youmind.api_key` or `YOUMIND_API_KEY`. The skill now authenticates only with YouMind.
+
+**Q: Publishing says Dev.to is not connected**
+
+Connect Dev.to inside YouMind first. The Dev.to token lives there, not in `config.yaml`.
 
 **Q: Tag doesn't exist**
 
-Dev.to tags are community-created. You can't use non-existent tags. The skill auto-validates and suggests existing ones.
-
-**Q: Article sounds too AI-generated**
-
-Describe your writing style preferences in the prompt, or provide past articles as reference. The skill will adapt to your tone.
+Dev.to tags are community-created. The skill validates and trims tags automatically.
 
 **Q: Can I update published articles?**
 
-Yes. The Dev.to API supports updating article content, tags, and status.
+Yes. The YouMind Dev.to OpenAPI supports create, get, update, and list flows.
+
+**Q: Can I publish a draft or unpublish an article explicitly?**
+
+Yes. The CLI and the YouMind Dev.to OpenAPI now support `publishArticle`, `unpublishArticle`, `listDrafts`, and `listPublished`.
 
 ---
 

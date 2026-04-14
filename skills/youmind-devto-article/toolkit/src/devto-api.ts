@@ -1,40 +1,15 @@
 /**
- * devto-api.ts — MOCK IMPLEMENTATION
+ * Dev.to API client via YouMind OpenAPI.
  *
- * ⚠️ This file is a mock. The skill talks to Dev.to exclusively through
- * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Dev.to
- * namespace on that OpenAPI. This mock lets the rest of the skill
- * (publisher, CLI) be built and smoke-tested end-to-end right now, without
- * a real backend.
- *
- * Swap-in plan when the real YouMind endpoints ship:
- *   1. YouMind will expose endpoints whose request/response shape mirrors
- *      Dev.to's Forem API (same field names like `title`, `body_markdown`,
- *      `published`, `tags`, same /articles, /articles/{id}, /articles/me
- *      endpoints). The only auth difference is that YouMind accepts
- *      `x-api-key: <youmind_api_key>` instead of a Dev.to `api-key` header —
- *      YouMind holds the user's Dev.to token server-side and attaches it.
- *   2. Replace each mock function body below with a `fetch()` POST/GET/PUT
- *      to the corresponding `https://youmind.com/openapi/v1/devto/<op>`
- *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
- *   3. Keep the exported type signatures stable — they ARE the swap-in
- *      contract. Nothing in publisher.ts / cli.ts should need to change.
- *   4. Delete the `mockState` and `initMockState` at that point.
- *
- * loadDevtoConfig is NOT mocked — it reads real config the same way as
- * youmind-api.ts, because users will set their YouMind API key through the
- * normal config flow even before the Dev.to endpoints exist.
+ * The skill only requires a YouMind API key locally. The user's Dev.to token
+ * is configured once inside YouMind, and the YouMind backend attaches it when
+ * proxying Dev.to requests.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-
-// ---------------------------------------------------------------------------
-// Public types — stable contract (do NOT change signatures when swapping to
-// real HTTP; only the function bodies below should change).
-// ---------------------------------------------------------------------------
 
 export interface DevtoConfig {
   apiKey: string;
@@ -69,46 +44,60 @@ export interface DevtoArticle {
 
 export interface CreateArticleOptions {
   title: string;
-  body_markdown: string;
+  bodyMarkdown: string;
   published?: boolean;
   tags?: string[];
   description?: string;
-  canonical_url?: string;
-  cover_image?: string;
+  canonicalUrl?: string;
+  coverImage?: string;
   series?: string;
 }
 
 export interface UpdateArticleOptions extends Partial<CreateArticleOptions> {}
 
-// ---------------------------------------------------------------------------
-// Config loading — real implementation, mirrors youmind-api.ts pattern.
-// ---------------------------------------------------------------------------
+interface OpenApiErrorDetail {
+  connectUrl?: string;
+  upgradeUrl?: string;
+  hint?: string;
+}
+
+interface OpenApiErrorResponse {
+  message?: string;
+  code?: string;
+  detail?: OpenApiErrorDetail;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
+const YOUMIND_OPENAPI_BASE_URLS = ['https://youmind.com/openapi/v1'];
 
 function loadCentralCredentials(): Record<string, unknown> {
   const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  const path = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(path)) {
+    return parseYaml(readFileSync(path, 'utf-8')) ?? {};
   }
   return {};
 }
 
 function loadLocalConfig(): Record<string, unknown> {
   for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+    const path = resolve(PROJECT_DIR, name);
+    if (existsSync(path)) {
+      return parseYaml(readFileSync(path, 'utf-8')) ?? {};
     }
   }
   return {};
+}
+
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
 }
 
 export function loadDevtoConfig(): DevtoConfig {
@@ -118,165 +107,252 @@ export function loadDevtoConfig(): DevtoConfig {
     ...(central.youmind as Record<string, unknown> ?? {}),
     ...(local.youmind as Record<string, unknown> ?? {}),
   };
-  // Filter out local empty strings so central credentials aren't masked.
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
+
+  for (const [key, value] of Object.entries(ym)) {
+    if (value === '' && (central.youmind as Record<string, unknown>)?.[key]) {
+      ym[key] = (central.youmind as Record<string, unknown>)[key];
     }
   }
+
+  const envApiKey =
+    process.env.YOUMIND_API_KEY ||
+    process.env.YM_API_KEY ||
+    '';
+  const envBaseUrl = normalizeBaseUrl(
+    process.env.YOUMIND_OPENAPI_BASE_URL || process.env.YOUMIND_BASE_URL,
+  );
+  const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
+
   return {
-    apiKey: (ym.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    apiKey: (ym.api_key as string) || envApiKey || '',
+    baseUrl: configuredBaseUrl || envBaseUrl || YOUMIND_OPENAPI_BASE_URLS[0],
   };
 }
 
-// ---------------------------------------------------------------------------
-// Mock state — module-scoped, lives for the lifetime of the process. Not
-// exported; swap-in code should delete this whole block.
-// ---------------------------------------------------------------------------
+async function post<T = unknown>(
+  endpoint: string,
+  body: Record<string, unknown> = {},
+  config?: DevtoConfig,
+): Promise<T> {
+  const cfg = config ?? loadDevtoConfig();
+  if (!cfg.apiKey) {
+    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml or YOUMIND_API_KEY.');
+  }
 
-interface MockState {
-  articleCounter: number;
-  publishedArticles: DevtoArticle[];
+  const shouldFallbackToHosted =
+    !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(cfg.baseUrl);
+  const baseUrls = shouldFallbackToHosted
+    ? [cfg.baseUrl, ...YOUMIND_OPENAPI_BASE_URLS.filter((url) => url !== cfg.baseUrl)]
+    : [cfg.baseUrl];
+  let lastError: Error | null = null;
+
+  for (const baseUrl of baseUrls) {
+    try {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': cfg.apiKey,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        const parsed = parseOpenApiError(text);
+        const error = new Error(
+          `YouMind Dev.to API ${endpoint} failed via ${baseUrl} (${response.status})` +
+            `: ${formatOpenApiError(parsed, text)}`,
+        );
+
+        // Surface client-side API errors directly. Falling through to another
+        // base URL hides the real problem, which is especially confusing when
+        // local development points at localhost and the hosted API lags behind.
+        if (response.status < 500) {
+          throw error;
+        }
+
+        lastError = error;
+        continue;
+      }
+
+      return response.json() as Promise<T>;
+    } catch (error) {
+      lastError = error as Error;
+    }
+  }
+
+  throw lastError ?? new Error(`YouMind Dev.to API ${endpoint} failed`);
 }
 
-function initMockState(): MockState {
+function parseOpenApiError(text: string): OpenApiErrorResponse | null {
+  try {
+    return JSON.parse(text) as OpenApiErrorResponse;
+  } catch {
+    return null;
+  }
+}
+
+function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string): string {
+  if (!parsed) {
+    return rawText.slice(0, 300);
+  }
+
+  const parts = [parsed.message, parsed.code, parsed.detail?.hint]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+  if (parsed.detail?.connectUrl) {
+    parts.push(`Connect Dev.to: ${parsed.detail.connectUrl}`);
+  }
+
+  if (parsed.detail?.upgradeUrl) {
+    parts.push(`Upgrade plan: ${parsed.detail.upgradeUrl}`);
+  }
+
+  return parts.join(' | ') || rawText.slice(0, 300);
+}
+
+function normalizeTagList(tagList: unknown, tags: unknown): string[] {
+  if (Array.isArray(tagList)) {
+    return tagList.filter((item): item is string => typeof item === 'string' && item.length > 0);
+  }
+
+  const source = typeof tagList === 'string' ? tagList : typeof tags === 'string' ? tags : '';
+  if (!source) return [];
+
+  return source
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function normalizeArticle(article: Record<string, unknown>): DevtoArticle {
+  const tagList = normalizeTagList(article.tag_list, article.tags);
+  const user = typeof article.user === 'object' && article.user
+    ? article.user as Record<string, unknown>
+    : {};
+
   return {
-    articleCounter: 0,
-    publishedArticles: [],
-  };
-}
-
-const mockState: MockState = initMockState();
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
-function buildMockArticle(
-  id: number,
-  options: CreateArticleOptions,
-): DevtoArticle {
-  const slugBase = slugify(options.title) || `mock-article-${id}`;
-  const slug = `${slugBase}-${id}`;
-  const now = new Date().toISOString();
-  const description = options.description?.slice(0, 170) ?? '';
-  const tagList = (options.tags ?? []).slice(0, 4);
-
-  return {
-    id,
-    title: options.title,
-    description,
-    slug,
-    url: `https://dev.to/mock_user/${slug}`,
-    canonical_url: options.canonical_url ?? null,
-    cover_image: options.cover_image ?? null,
-    published: options.published ?? false,
-    published_at: options.published ? now : null,
+    ...article,
+    id: Number(article.id ?? 0),
+    title: String(article.title ?? ''),
+    description: String(article.description ?? ''),
+    slug: String(article.slug ?? ''),
+    url: String(article.url ?? ''),
+    canonical_url: (article.canonical_url as string | null | undefined) ?? null,
+    cover_image: (article.cover_image as string | null | undefined) ?? null,
+    published: Boolean(article.published),
+    published_at: (article.published_at as string | null | undefined) ?? null,
     tag_list: tagList,
-    tags: tagList.join(', '),
-    body_markdown: options.body_markdown,
-    body_html: `<p>${options.body_markdown.slice(0, 200)}</p>`,
-    comments_count: 0,
-    positive_reactions_count: 0,
-    public_reactions_count: 0,
-    page_views_count: 0,
-    reading_time_minutes: Math.max(1, Math.round(options.body_markdown.split(/\s+/).length / 200)),
+    tags: typeof article.tags === 'string' ? article.tags : tagList.join(', '),
+    body_markdown: String(article.body_markdown ?? article.bodyMarkdown ?? ''),
+    body_html: String(article.body_html ?? article.bodyHtml ?? ''),
+    comments_count: Number(article.comments_count ?? 0),
+    positive_reactions_count: Number(article.positive_reactions_count ?? 0),
+    public_reactions_count: Number(article.public_reactions_count ?? 0),
+    page_views_count: Number(article.page_views_count ?? 0),
+    reading_time_minutes: Number(article.reading_time_minutes ?? 0),
     user: {
-      username: 'mock_user',
-      name: 'Mock User',
+      username: String(user.username ?? ''),
+      name: String(user.name ?? ''),
     },
   };
 }
 
-// ---------------------------------------------------------------------------
-// Exported mock functions
-// ---------------------------------------------------------------------------
-
-/**
- * Create a new Dev.to article.
- */
 export async function createArticle(
-  _config: DevtoConfig,
+  config: DevtoConfig,
   options: CreateArticleOptions,
 ): Promise<DevtoArticle> {
-  mockState.articleCounter += 1;
-  const id = parseInt(`${Date.now()}${mockState.articleCounter}`.slice(-10), 10);
-  const article = buildMockArticle(id, options);
-  mockState.publishedArticles.unshift(article);
-  return article;
+  const article = await post<Record<string, unknown>>('/devto/createArticle', {
+    title: options.title,
+    bodyMarkdown: options.bodyMarkdown,
+    published: options.published ?? false,
+    tags: options.tags,
+    description: options.description,
+    canonicalUrl: options.canonicalUrl,
+    coverImage: options.coverImage,
+    series: options.series,
+  }, config);
+
+  return normalizeArticle(article);
 }
 
-/**
- * Update an existing Dev.to article.
- */
 export async function updateArticle(
-  _config: DevtoConfig,
+  config: DevtoConfig,
   id: number,
   options: UpdateArticleOptions,
 ): Promise<DevtoArticle> {
-  const existing = mockState.publishedArticles.find((a) => a.id === id);
-  if (existing) {
-    if (options.title !== undefined) existing.title = options.title;
-    if (options.body_markdown !== undefined) existing.body_markdown = options.body_markdown;
-    if (options.published !== undefined) {
-      existing.published = options.published;
-      existing.published_at = options.published ? new Date().toISOString() : null;
-    }
-    if (options.tags?.length) {
-      const tagList = options.tags.slice(0, 4);
-      existing.tag_list = tagList;
-      existing.tags = tagList.join(', ');
-    }
-    if (options.description !== undefined) {
-      existing.description = options.description?.slice(0, 170) ?? '';
-    }
-    if (options.canonical_url !== undefined) existing.canonical_url = options.canonical_url ?? null;
-    if (options.cover_image !== undefined) existing.cover_image = options.cover_image ?? null;
-    return existing;
-  }
+  const article = await post<Record<string, unknown>>('/devto/updateArticle', {
+    id,
+    ...options,
+  }, config);
 
-  // Fabricate a plausible article if we've never seen this id.
-  return buildMockArticle(id, {
-    title: options.title ?? `Mock Article ${id}`,
-    body_markdown: options.body_markdown ?? '',
-    published: options.published,
-    tags: options.tags,
-    description: options.description,
-    canonical_url: options.canonical_url,
-    cover_image: options.cover_image,
-    series: options.series,
-  });
+  return normalizeArticle(article);
 }
 
-/**
- * Get a single Dev.to article by ID.
- */
 export async function getArticle(
-  _config: DevtoConfig,
+  config: DevtoConfig,
   id: number,
 ): Promise<DevtoArticle> {
-  const found = mockState.publishedArticles.find((a) => a.id === id);
-  if (found) return found;
-  return buildMockArticle(id, {
-    title: `Mock Article ${id}`,
-    body_markdown: '# Mock content\n\nThis is a mock Dev.to article.',
-    published: true,
-  });
+  const article = await post<Record<string, unknown>>('/devto/getArticle', { id }, config);
+  return normalizeArticle(article);
 }
 
-/**
- * List the authenticated user's articles.
- */
 export async function listMyArticles(
-  _config: DevtoConfig,
+  config: DevtoConfig,
   page = 1,
   perPage = 30,
 ): Promise<DevtoArticle[]> {
-  const start = (page - 1) * perPage;
-  return mockState.publishedArticles.slice(start, start + perPage);
+  const articles = await post<Record<string, unknown>[]>(
+    '/devto/listMyArticles',
+    { page, per_page: perPage },
+    config,
+  );
+
+  return articles.map((article) => normalizeArticle(article));
+}
+
+export async function listDraftArticles(
+  config: DevtoConfig,
+  page = 1,
+  perPage = 30,
+): Promise<DevtoArticle[]> {
+  const articles = await post<Record<string, unknown>[]>(
+    '/devto/listDrafts',
+    { page, per_page: perPage },
+    config,
+  );
+
+  return articles.map((article) => normalizeArticle(article));
+}
+
+export async function listPublishedArticles(
+  config: DevtoConfig,
+  page = 1,
+  perPage = 30,
+): Promise<DevtoArticle[]> {
+  const articles = await post<Record<string, unknown>[]>(
+    '/devto/listPublished',
+    { page, per_page: perPage },
+    config,
+  );
+
+  return articles.map((article) => normalizeArticle(article));
+}
+
+export async function publishArticle(
+  config: DevtoConfig,
+  id: number,
+): Promise<DevtoArticle> {
+  const article = await post<Record<string, unknown>>('/devto/publishArticle', { id }, config);
+  return normalizeArticle(article);
+}
+
+export async function unpublishArticle(
+  config: DevtoConfig,
+  id: number,
+): Promise<DevtoArticle> {
+  const article = await post<Record<string, unknown>>('/devto/unpublishArticle', { id }, config);
+  return normalizeArticle(article);
 }

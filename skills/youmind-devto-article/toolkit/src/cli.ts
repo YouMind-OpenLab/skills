@@ -13,7 +13,15 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 
-import { loadDevtoConfig, listMyArticles } from './devto-api.js';
+import {
+  loadDevtoConfig,
+  listDraftArticles,
+  listMyArticles,
+  listPublishedArticles,
+  publishArticle,
+  type DevtoArticle,
+  unpublishArticle,
+} from './devto-api.js';
 import { publish } from './publisher.js';
 import { adaptForDevto } from './content-adapter.js';
 
@@ -53,15 +61,60 @@ function parseFrontMatter(raw: string): { data: Record<string, unknown>; content
   return { data, content: match[2] };
 }
 
+function printArticle(article: DevtoArticle): void {
+  const status = article.published ? 'public' : 'draft';
+  console.log(`  ID: ${article.id}`);
+  console.log(`  Title: ${article.title}`);
+  console.log(`  Status: ${status}`);
+  console.log(`  Slug: ${article.slug}`);
+  if (article.published) {
+    console.log(`  URL: ${article.url}`);
+  } else {
+    console.log(`  Drafts dashboard: ${DEVTO_DASHBOARD_URL}`);
+    console.log(`  Note: public URL may 404 until published: ${article.url}`);
+  }
+}
+
+function printArticleList(label: string, articles: DevtoArticle[], page: number): void {
+  if (articles.length === 0) {
+    console.log(`No ${label.toLowerCase()} found.`);
+    return;
+  }
+
+  console.log(`${label} (page ${page}):\n`);
+  for (const article of articles) {
+    const status = article.published ? 'published' : 'draft';
+    const reactions = article.public_reactions_count ?? 0;
+    const views = article.page_views_count ?? 0;
+    console.log(`  [${status}] ${article.title}`);
+    console.log(
+      `    ID: ${article.id}  |  URL: ${article.url}  |  Reactions: ${reactions}  |  Views: ${views}  |  ${article.reading_time_minutes}min read`,
+    );
+    console.log('');
+  }
+}
+
+function getConfigOrExit() {
+  const config = loadDevtoConfig();
+
+  if (!config.apiKey) {
+    console.error('Error: YouMind API key not set. Configure youmind.api_key or YOUMIND_API_KEY.');
+    process.exit(1);
+  }
+
+  return config;
+}
+
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
 
 const program = new Command();
+const DEVTO_DASHBOARD_URL = 'https://dev.to/dashboard';
 
 program
   .name('youmind-devto')
-  .description('YouMind Dev.to: AI-powered article writing and publishing')
+  .description('YouMind Dev.to: AI-powered article writing and publishing via your connected Dev.to account')
   .version('1.0.0');
 
 // --- publish ---
@@ -78,12 +131,7 @@ program
   .option('--canonical <url>', 'Canonical URL for cross-posting')
   .option('--description <text>', 'Article description (max 170 chars)')
   .action(async (input: string, opts) => {
-    const config = loadDevtoConfig();
-
-    if (!config.apiKey) {
-      console.error('Error: youmind.api_key not set in config.yaml');
-      process.exit(1);
-    }
+    const config = getConfigOrExit();
 
     const filePath = resolve(input);
     if (!existsSync(filePath)) {
@@ -147,11 +195,21 @@ program
         published,
       });
 
-      console.log('Article published successfully!');
-      console.log(`  ID: ${result.id}`);
-      console.log(`  URL: ${result.url}`);
-      console.log(`  Slug: ${result.slug}`);
-      console.log(`  Status: ${result.published ? 'public' : 'draft'}`);
+      if (result.published) {
+        console.log('Article published successfully!');
+        console.log(`  ID: ${result.id}`);
+        console.log(`  URL: ${result.url}`);
+        console.log(`  Slug: ${result.slug}`);
+        console.log('  Status: public');
+      } else {
+        console.log('Draft created successfully!');
+        console.log(`  ID: ${result.id}`);
+        console.log(`  Drafts dashboard: ${DEVTO_DASHBOARD_URL}`);
+        console.log(`  Slug: ${result.slug}`);
+        console.log('  Status: draft');
+        console.log(`  Note: the public article URL may 404 until you publish it: ${result.url}`);
+        console.log('  Tip: use --publish if you want to publish immediately.');
+      }
     } catch (err) {
       console.error(`Publish failed: ${(err as Error).message}`);
 
@@ -233,20 +291,15 @@ program
 
 program
   .command('validate')
-  .description('Check API key and Dev.to connectivity via YouMind proxy')
+  .description('Check the YouMind API key and Dev.to connectivity through YouMind')
   .action(async () => {
-    const config = loadDevtoConfig();
+    const config = getConfigOrExit();
 
-    if (!config.apiKey) {
-      console.error('Error: youmind.api_key not set in config.yaml');
-      process.exit(1);
-    }
-
-    console.log('Checking Dev.to API connectivity via YouMind proxy...');
+    console.log('Checking Dev.to connection through your YouMind account...');
     try {
       const articles = await listMyArticles(config, 1, 1);
-      console.log('Dev.to API connection successful!');
-      console.log(`Your account has articles. Latest: ${articles[0]?.title || '(no articles yet)'}`);
+      console.log('Dev.to connection successful!');
+      console.log(`Latest article: ${articles[0]?.title || '(no articles yet)'}`);
     } catch (err) {
       console.error(`Dev.to API check failed: ${(err as Error).message}`);
       process.exit(1);
@@ -261,39 +314,88 @@ program
   .option('--page <n>', 'Page number', '1')
   .option('--per-page <n>', 'Articles per page', '10')
   .action(async (opts) => {
-    const config = loadDevtoConfig();
-
-    if (!config.apiKey) {
-      console.error('Error: youmind.api_key not set in config.yaml');
-      process.exit(1);
-    }
+    const config = getConfigOrExit();
 
     const page = parseInt(opts.page, 10);
     const perPage = parseInt(opts.perPage, 10);
 
     try {
       const articles = await listMyArticles(config, page, perPage);
-
-      if (articles.length === 0) {
-        console.log('No articles found.');
-        return;
-      }
-
-      console.log(`Your Dev.to articles (page ${page}):\n`);
-      for (const a of articles) {
-        const status = a.published ? 'published' : 'draft';
-        const reactions = a.public_reactions_count ?? 0;
-        const views = a.page_views_count ?? 0;
-        console.log(
-          `  [${status}] ${a.title}`,
-        );
-        console.log(
-          `    URL: ${a.url}  |  Reactions: ${reactions}  |  Views: ${views}  |  ${a.reading_time_minutes}min read`,
-        );
-        console.log('');
-      }
+      printArticleList('Your Dev.to articles', articles, page);
     } catch (err) {
       console.error(`Failed to list articles: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list-drafts')
+  .description('List your Dev.to drafts')
+  .option('--page <n>', 'Page number', '1')
+  .option('--per-page <n>', 'Articles per page', '10')
+  .action(async (opts) => {
+    const config = getConfigOrExit();
+    const page = parseInt(opts.page, 10);
+    const perPage = parseInt(opts.perPage, 10);
+
+    try {
+      const articles = await listDraftArticles(config, page, perPage);
+      printArticleList('Your Dev.to drafts', articles, page);
+    } catch (err) {
+      console.error(`Failed to list drafts: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list-published')
+  .description('List your published Dev.to articles')
+  .option('--page <n>', 'Page number', '1')
+  .option('--per-page <n>', 'Articles per page', '10')
+  .action(async (opts) => {
+    const config = getConfigOrExit();
+    const page = parseInt(opts.page, 10);
+    const perPage = parseInt(opts.perPage, 10);
+
+    try {
+      const articles = await listPublishedArticles(config, page, perPage);
+      printArticleList('Your published Dev.to articles', articles, page);
+    } catch (err) {
+      console.error(`Failed to list published articles: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('publish-article')
+  .description('Publish an existing Dev.to article by ID')
+  .argument('<id>', 'Dev.to article ID')
+  .action(async (id: string) => {
+    const config = getConfigOrExit();
+
+    try {
+      const article = await publishArticle(config, parseInt(id, 10));
+      console.log('Article published successfully!');
+      printArticle(article);
+    } catch (err) {
+      console.error(`Failed to publish article: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('unpublish-article')
+  .description('Move an existing Dev.to article back to draft by ID')
+  .argument('<id>', 'Dev.to article ID')
+  .action(async (id: string) => {
+    const config = getConfigOrExit();
+
+    try {
+      const article = await unpublishArticle(config, parseInt(id, 10));
+      console.log('Article moved back to draft successfully!');
+      printArticle(article);
+    } catch (err) {
+      console.error(`Failed to unpublish article: ${(err as Error).message}`);
       process.exit(1);
     }
   });

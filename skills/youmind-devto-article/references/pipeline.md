@@ -4,16 +4,16 @@
 
 ## Step 1: Config Load
 
-1. Read `config.yaml` for API keys
-2. Validate Dev.to API key (call `validate` command or attempt list)
-3. Check YouMind API key availability (optional)
+1. Read `config.yaml` for the YouMind API key
+2. Validate the YouMind API key (call `validate` command or attempt list)
+3. Check that the user's Dev.to account is already connected in YouMind
 4. Report config status
 
-**Fallback:** If config.yaml missing, check environment variables (`DEVTO_API_KEY`, `YOUMIND_API_KEY`).
+**Fallback:** If `config.yaml` is missing, check environment variable `YOUMIND_API_KEY`.
 
 ## Step 2: YouMind Knowledge Mining
 
-1. If YouMind API key is configured, search user's knowledge base for relevant materials
+1. If the YouMind API key is configured, search the user's knowledge base for relevant materials
 2. Use `youmind-api.ts mine-topics` with the user's topic keywords
 3. Collect relevant articles, notes, and documents as source material
 4. Build a knowledge context summary
@@ -64,7 +64,7 @@ Read `content-adaptation.md` before this step.
 3. Include tags, description, cover image URL, canonical URL, and series if provided
 4. Report article ID, URL, and status
 
-**Fallback:** If Dev.to API fails, save the adapted markdown locally with front matter. User can copy-paste into Dev.to editor.
+**Fallback:** If Dev.to publishing through YouMind fails, save the adapted markdown locally with front matter. User can paste it into the Dev.to editor.
 
 ## Step 7: Report
 
