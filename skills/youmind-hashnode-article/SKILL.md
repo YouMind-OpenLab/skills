@@ -100,15 +100,15 @@ Run from `toolkit/`.
 
 ```bash
 node dist/cli.js validate
-node dist/cli.js publish ../article.md --draft
-node dist/cli.js publish ../article.md --publish
+node dist/cli.js publish ../output/article.md --draft
+node dist/cli.js publish ../output/article.md --publish
 node dist/cli.js list --page 1 --limit 10
 node dist/cli.js list-drafts --page 1 --limit 10
 node dist/cli.js list-published --page 1 --limit 10
 node dist/cli.js publish-draft <draft_id>
 node dist/cli.js get-draft <draft_id>
 node dist/cli.js get-post <post_id>
-node dist/cli.js preview ../article.md
+node dist/cli.js preview ../output/article.md
 node dist/cli.js search-tags typescript
 ```
 

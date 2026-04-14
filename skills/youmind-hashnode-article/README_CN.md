@@ -49,10 +49,10 @@ cd toolkit
 node dist/cli.js validate
 
 # 创建 Hashnode 草稿
-node dist/cli.js publish ../article.md --draft
+node dist/cli.js publish ../output/article.md --draft
 
 # 直接发布
-node dist/cli.js publish ../article.md --publish
+node dist/cli.js publish ../output/article.md --publish
 
 # 查看草稿
 node dist/cli.js list-drafts --page 1 --limit 10
@@ -68,7 +68,7 @@ node dist/cli.js get-draft <draft_id>
 node dist/cli.js get-post <post_id>
 
 # 本地预览 / 标签查询
-node dist/cli.js preview ../article.md
+node dist/cli.js preview ../output/article.md
 node dist/cli.js search-tags typescript
 ```
 

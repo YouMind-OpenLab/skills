@@ -4,3 +4,5 @@ config.yaml
 output/
 .env
 toolkit/package-lock.json
+toolkit/article.md
+toolkit/article.devto.md

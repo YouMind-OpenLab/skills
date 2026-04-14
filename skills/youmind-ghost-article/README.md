@@ -52,17 +52,19 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_sourc
 
 ### CLI Commands
 
+Put local source Markdown under the skill's `output/` directory so it stays out of git status.
+
 ```bash
 cd toolkit
 
 # Publish a markdown file as draft
-npx tsx src/cli.ts publish article.md --draft
+npx tsx src/cli.ts publish ../output/article.md --draft
 
 # Publish immediately
-npx tsx src/cli.ts publish article.md --publish
+npx tsx src/cli.ts publish ../output/article.md --publish
 
 # Preview HTML conversion locally
-npx tsx src/cli.ts preview article.md
+npx tsx src/cli.ts preview ../output/article.md
 
 # Validate YouMind + Ghost connectivity
 npx tsx src/cli.ts validate

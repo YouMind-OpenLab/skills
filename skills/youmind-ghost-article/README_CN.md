@@ -52,17 +52,19 @@ youmind:
 
 ### CLI 命令
 
+本地 Markdown 源文件建议统一放在 skill 的 `output/` 目录下，这样不会进入 git 提交列表。
+
 ```bash
 cd toolkit
 
 # 以草稿发布 Markdown
-npx tsx src/cli.ts publish article.md --draft
+npx tsx src/cli.ts publish ../output/article.md --draft
 
 # 直接发布
-npx tsx src/cli.ts publish article.md --publish
+npx tsx src/cli.ts publish ../output/article.md --publish
 
 # 本地预览 HTML
-npx tsx src/cli.ts preview article.md
+npx tsx src/cli.ts preview ../output/article.md
 
 # 校验 YouMind + Ghost 连通性
 npx tsx src/cli.ts validate

@@ -42,13 +42,13 @@ Examples:
 Default behavior:
 
 ```bash
-node dist/cli.js publish ../article.md --draft
+node dist/cli.js publish ../output/article.md --draft
 ```
 
 Immediate publish only when the user explicitly asks:
 
 ```bash
-node dist/cli.js publish ../article.md --publish
+node dist/cli.js publish ../output/article.md --publish
 ```
 
 Useful management commands:

@@ -61,14 +61,16 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_sourc
 
 ### CLI Commands
 
+Put local source Markdown under the skill's `output/` directory so it stays out of git status.
+
 ```bash
 cd toolkit
 
 # Publish a markdown file
-npx tsx src/cli.ts publish article.md --tags "typescript,webdev"
+npx tsx src/cli.ts publish ../output/article.md --tags "typescript,webdev"
 
 # Preview and validate locally
-npx tsx src/cli.ts preview article.md
+npx tsx src/cli.ts preview ../output/article.md
 
 # Validate YouMind + Dev.to connectivity
 npx tsx src/cli.ts validate
@@ -92,6 +94,8 @@ npx tsx src/cli.ts unpublish-article 12345
 ### Publishing Status
 
 The skill publishes as draft by default. Drafts should be opened from the Dev.to dashboard at `https://dev.to/dashboard`, because the public article URL may 404 until you publish it. If you want immediate publishing, use `--publish`.
+
+All local article drafts should live under `output/`, which is already git-ignored.
 
 ### Paid Plan Requirement
 

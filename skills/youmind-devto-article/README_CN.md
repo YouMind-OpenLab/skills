@@ -61,14 +61,16 @@ youmind:
 
 ### CLI 命令
 
+本地 Markdown 源文件建议统一放在 skill 的 `output/` 目录下，这样不会进入 git 提交列表。
+
 ```bash
 cd toolkit
 
 # 发布 Markdown 文件
-npx tsx src/cli.ts publish article.md --tags "typescript,webdev"
+npx tsx src/cli.ts publish ../output/article.md --tags "typescript,webdev"
 
 # 本地预览和校验
-npx tsx src/cli.ts preview article.md
+npx tsx src/cli.ts preview ../output/article.md
 
 # 校验 YouMind / Dev.to 连通性
 npx tsx src/cli.ts validate
@@ -92,6 +94,8 @@ npx tsx src/cli.ts unpublish-article 12345
 ### 发布状态
 
 Skill 默认以草稿模式发布。草稿应该从 Dev.to 的 dashboard 打开：`https://dev.to/dashboard`，因为公开文章链接在真正发布前可能会 404。若要直接公开，使用 `--publish`。
+
+所有本地文章草稿都应该放在 `output/` 下，这个目录已经加入 gitignore。
 
 ### 付费要求
 

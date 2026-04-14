@@ -49,10 +49,10 @@ cd toolkit
 node dist/cli.js validate
 
 # Create a draft on Hashnode
-node dist/cli.js publish ../article.md --draft
+node dist/cli.js publish ../output/article.md --draft
 
 # Publish immediately
-node dist/cli.js publish ../article.md --publish
+node dist/cli.js publish ../output/article.md --publish
 
 # List drafts
 node dist/cli.js list-drafts --page 1 --limit 10
@@ -68,7 +68,7 @@ node dist/cli.js get-draft <draft_id>
 node dist/cli.js get-post <post_id>
 
 # Validate tags / adapted markdown locally
-node dist/cli.js preview ../article.md
+node dist/cli.js preview ../output/article.md
 node dist/cli.js search-tags typescript
 ```
 
