@@ -1,40 +1,15 @@
 /**
- * ghost-api.ts — MOCK IMPLEMENTATION
+ * Ghost API client via YouMind OpenAPI.
  *
- * ⚠️ This file is a mock. The skill talks to Ghost exclusively through
- * YouMind's OpenAPI proxy, but YouMind has not yet shipped the Ghost
- * namespace on that OpenAPI. This mock lets the rest of the skill
- * (publisher, CLI) be built and smoke-tested end-to-end right now, without
- * a real backend.
- *
- * Swap-in plan when the real YouMind endpoints ship:
- *   1. YouMind will expose endpoints whose request/response shape mirrors
- *      Ghost's Admin API (same field names like `title`, `html`,
- *      `custom_excerpt`, `status`, `tags`, same /posts, /posts/{id},
- *      /images/upload endpoints). The only auth difference is that YouMind
- *      accepts `x-api-key: <youmind_api_key>` instead of a Ghost Admin JWT —
- *      YouMind holds the user's Ghost admin key server-side and attaches it.
- *   2. Replace each mock function body below with a `fetch()` POST/GET/PUT
- *      to the corresponding `https://youmind.com/openapi/v1/ghost/<op>`
- *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
- *   3. Keep the exported type signatures stable — they ARE the swap-in
- *      contract. Nothing in publisher.ts / cli.ts should need to change.
- *   4. Delete the `mockState` and `initMockState` at that point.
- *
- * loadGhostConfig is NOT mocked — it reads real config the same way as
- * youmind-api.ts, because users will set their YouMind API key through the
- * normal config flow even before the Ghost endpoints exist.
+ * The skill only requires a YouMind API key locally. The user's Ghost
+ * site URL and Ghost Admin API key are configured once inside YouMind, and
+ * the YouMind backend attaches them when proxying Ghost requests.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { basename, dirname, extname, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-
-// ---------------------------------------------------------------------------
-// Public types — stable contract (do NOT change signatures when swapping to
-// real HTTP; only the function bodies below should change).
-// ---------------------------------------------------------------------------
 
 export interface GhostConfig {
   apiKey: string;
@@ -67,6 +42,7 @@ export interface GhostPost {
   updated_at: string;
   published_at: string | null;
   url: string;
+  adminUrl?: string | null;
   tags: GhostTag[];
   primary_tag: GhostTag | null;
   [key: string]: unknown;
@@ -90,32 +66,54 @@ export interface GhostImage {
   ref: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Config loading — real implementation, mirrors youmind-api.ts pattern.
-// ---------------------------------------------------------------------------
+export interface GhostConnectionResult {
+  ok: boolean;
+  message: string;
+  siteTitle?: string | null;
+  siteUrl?: string | null;
+  total?: number;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
+const YOUMIND_OPENAPI_BASE_URLS = ['https://youmind.com/openapi/v1'];
+
+interface OpenApiErrorDetail {
+  connectUrl?: string;
+  upgradeUrl?: string;
+  hint?: string;
+}
+
+interface OpenApiErrorResponse {
+  message?: string;
+  code?: string;
+  detail?: OpenApiErrorDetail;
+}
+
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
+}
 
 function loadCentralCredentials(): Record<string, unknown> {
   const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+  const path = resolve(home, '.youmind-skill', 'credentials.yaml');
+  if (existsSync(path)) {
+    return parseYaml(readFileSync(path, 'utf-8')) ?? {};
   }
   return {};
 }
 
 function loadLocalConfig(): Record<string, unknown> {
   for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
+    const path = resolve(PROJECT_DIR, name);
+    if (existsSync(path)) {
+      return parseYaml(readFileSync(path, 'utf-8')) ?? {};
     }
   }
   return {};
@@ -128,268 +126,307 @@ export function loadGhostConfig(): GhostConfig {
     ...(central.youmind as Record<string, unknown> ?? {}),
     ...(local.youmind as Record<string, unknown> ?? {}),
   };
-  // Filter out local empty strings so central credentials aren't masked.
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
+
+  for (const [key, value] of Object.entries(ym)) {
+    if (value === '' && (central.youmind as Record<string, unknown>)?.[key]) {
+      ym[key] = (central.youmind as Record<string, unknown>)[key];
     }
   }
+
+  const envApiKey = process.env.YOUMIND_API_KEY || process.env.YM_API_KEY || '';
+  const envBaseUrl = normalizeBaseUrl(
+    process.env.YOUMIND_OPENAPI_BASE_URL || process.env.YOUMIND_BASE_URL,
+  );
+  const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
+
   return {
-    apiKey: (ym.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    apiKey: (ym.api_key as string) || envApiKey || '',
+    baseUrl: envBaseUrl || configuredBaseUrl || YOUMIND_OPENAPI_BASE_URLS[0],
   };
 }
 
-// ---------------------------------------------------------------------------
-// Mock state — module-scoped, lives for the lifetime of the process. Not
-// exported; swap-in code should delete this whole block.
-// ---------------------------------------------------------------------------
-
-interface MockState {
-  postCounter: number;
-  imageCounter: number;
-  publishedPosts: GhostPost[];
-}
-
-function initMockState(): MockState {
-  return {
-    postCounter: 0,
-    imageCounter: 0,
-    publishedPosts: [],
-  };
-}
-
-const mockState: MockState = initMockState();
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
-function mockUuid(seed: string): string {
-  // Deterministic-ish 36-char UUID-like string derived from seed.
-  const base = `${seed}${Date.now()}`.padEnd(32, '0');
-  const hex = Buffer.from(base).toString('hex').slice(0, 32);
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-}
-
-function buildMockTag(name: string): GhostTag {
-  return {
-    id: `mock_ghost_tag_${slugify(name) || 'tag'}`,
-    name,
-    slug: slugify(name) || 'tag',
-    description: null,
-    feature_image: null,
-    visibility: 'public',
-  };
-}
-
-function resolveTags(
-  input: CreatePostOptions['tags'],
-): { tags: GhostTag[]; primary: GhostTag | null } {
-  if (!input || input.length === 0) {
-    return { tags: [], primary: null };
+async function postJson<T = unknown>(
+  endpoint: string,
+  body: Record<string, unknown> = {},
+  config?: GhostConfig,
+): Promise<T> {
+  const cfg = config ?? loadGhostConfig();
+  if (!cfg.apiKey) {
+    throw new Error(
+      'YouMind API key not configured. Set youmind.api_key in config.yaml or YOUMIND_API_KEY.',
+    );
   }
-  const tags: GhostTag[] = input.map((t) => {
-    if ('name' in t && typeof t.name === 'string') {
-      return buildMockTag(t.name);
-    }
-    if ('id' in t && typeof t.id === 'string') {
-      return {
-        id: t.id,
-        name: t.id,
-        slug: slugify(t.id) || t.id,
-        description: null,
-        feature_image: null,
-        visibility: 'public',
-      };
-    }
-    return buildMockTag('untitled');
-  });
-  return { tags, primary: tags[0] ?? null };
-}
 
-function buildMockPost(
-  id: string,
-  options: CreatePostOptions,
-): GhostPost {
-  const now = new Date().toISOString();
-  const status = options.status ?? 'draft';
-  const { tags, primary } = resolveTags(options.tags);
-  const slugBase = options.slug || slugify(options.title) || `mock-post-${id}`;
-  const url = `https://mock.ghost.io/posts/${id}`;
-  const excerpt =
-    options.custom_excerpt ??
-    (options.html ? options.html.replace(/<[^>]+>/g, '').slice(0, 300) : '');
+  const shouldFallbackToHosted =
+    !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/|$)/i.test(cfg.baseUrl);
+  const baseUrls = shouldFallbackToHosted
+    ? [cfg.baseUrl, ...YOUMIND_OPENAPI_BASE_URLS.filter((url) => url !== cfg.baseUrl)]
+    : [cfg.baseUrl];
+  let lastError: Error | null = null;
 
-  return {
-    id,
-    uuid: mockUuid(id),
-    title: options.title,
-    slug: slugBase,
-    html: options.html ?? null,
-    excerpt,
-    custom_excerpt: options.custom_excerpt ?? null,
-    feature_image: options.feature_image ?? null,
-    featured: options.featured ?? false,
-    status,
-    visibility: options.visibility ?? 'public',
-    created_at: now,
-    updated_at: now,
-    published_at: status === 'published' ? (options.published_at ?? now) : null,
-    url,
-    tags,
-    primary_tag: primary,
-  };
-}
+  for (const baseUrl of baseUrls) {
+    try {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': cfg.apiKey,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30_000),
+      });
 
-// ---------------------------------------------------------------------------
-// Exported mock functions — Posts
-// ---------------------------------------------------------------------------
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        const parsed = parseOpenApiError(text);
+        const error = new Error(
+          `YouMind Ghost API ${endpoint} failed via ${baseUrl} (${response.status})` +
+            `: ${formatOpenApiError(parsed, text)}`,
+        );
 
-/**
- * Create a new Ghost post.
- */
-export async function createPost(
-  _config: GhostConfig,
-  options: CreatePostOptions,
-): Promise<GhostPost> {
-  mockState.postCounter += 1;
-  const id = `mock_ghost_post_${Date.now()}_${mockState.postCounter}`;
-  const post = buildMockPost(id, options);
-  mockState.publishedPosts.unshift(post);
-  return post;
-}
+        if (response.status < 500) {
+          throw error;
+        }
 
-/**
- * Update an existing Ghost post.
- */
-export async function updatePost(
-  _config: GhostConfig,
-  postId: string,
-  options: Partial<CreatePostOptions> & { updated_at: string },
-): Promise<GhostPost> {
-  const existing = mockState.publishedPosts.find((p) => p.id === postId);
-  if (existing) {
-    if (options.title !== undefined) existing.title = options.title;
-    if (options.html !== undefined) {
-      existing.html = options.html ?? null;
-      if (options.custom_excerpt === undefined && options.html) {
-        existing.excerpt = options.html.replace(/<[^>]+>/g, '').slice(0, 300);
+        lastError = error;
+        continue;
       }
+
+      return response.json() as Promise<T>;
+    } catch (error) {
+      lastError = error as Error;
     }
-    if (options.custom_excerpt !== undefined) {
-      existing.custom_excerpt = options.custom_excerpt ?? null;
-      existing.excerpt = options.custom_excerpt ?? existing.excerpt;
-    }
-    if (options.status !== undefined) {
-      existing.status = options.status;
-      existing.published_at =
-        options.status === 'published'
-          ? (options.published_at ?? new Date().toISOString())
-          : null;
-    }
-    if (options.tags !== undefined) {
-      const { tags, primary } = resolveTags(options.tags);
-      existing.tags = tags;
-      existing.primary_tag = primary;
-    }
-    if (options.feature_image !== undefined) existing.feature_image = options.feature_image ?? null;
-    if (options.featured !== undefined) existing.featured = options.featured;
-    if (options.visibility !== undefined) existing.visibility = options.visibility;
-    if (options.slug !== undefined) existing.slug = options.slug;
-    existing.updated_at = new Date().toISOString();
-    return existing;
   }
 
-  // Fabricate a plausible post if we've never seen this id.
-  return buildMockPost(postId, {
-    title: options.title ?? `Mock Post ${postId}`,
-    html: options.html ?? '',
-    custom_excerpt: options.custom_excerpt,
-    status: options.status,
-    tags: options.tags,
-    feature_image: options.feature_image,
-    featured: options.featured,
-    visibility: options.visibility,
-    slug: options.slug,
-    published_at: options.published_at,
-  });
+  throw lastError ?? new Error(`YouMind Ghost API ${endpoint} failed`);
 }
 
-/**
- * Get a single Ghost post by ID.
- */
-export async function getPost(
-  _config: GhostConfig,
-  postId: string,
+function parseOpenApiError(text: string): OpenApiErrorResponse | null {
+  try {
+    return JSON.parse(text) as OpenApiErrorResponse;
+  } catch {
+    return null;
+  }
+}
+
+function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string): string {
+  if (!parsed) {
+    return rawText.slice(0, 300);
+  }
+
+  const parts = [parsed.message, parsed.code, parsed.detail?.hint].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
+
+  if (parsed.detail?.connectUrl) {
+    parts.push(`Connect Ghost: ${parsed.detail.connectUrl}`);
+  }
+
+  if (parsed.detail?.upgradeUrl) {
+    parts.push(`Upgrade plan: ${parsed.detail.upgradeUrl}`);
+  }
+
+  return parts.join(' | ') || rawText.slice(0, 300);
+}
+
+function normalizeTag(tag: Record<string, unknown>): GhostTag {
+  return {
+    ...tag,
+    id: String(tag.id ?? ''),
+    name: String(tag.name ?? ''),
+    slug: String(tag.slug ?? ''),
+    description: (tag.description as string | null | undefined) ?? null,
+    feature_image: (tag.feature_image as string | null | undefined) ?? null,
+    visibility: String(tag.visibility ?? 'public'),
+  };
+}
+
+function normalizePost(post: Record<string, unknown>): GhostPost {
+  return {
+    ...post,
+    id: String(post.id ?? ''),
+    uuid: String(post.uuid ?? ''),
+    title: String(post.title ?? ''),
+    slug: String(post.slug ?? ''),
+    html: (post.html as string | null | undefined) ?? null,
+    excerpt: (post.excerpt as string | null | undefined) ?? null,
+    custom_excerpt: (post.custom_excerpt as string | null | undefined) ?? null,
+    feature_image: (post.feature_image as string | null | undefined) ?? null,
+    featured: Boolean(post.featured),
+    status: (post.status as GhostPost['status']) ?? 'draft',
+    visibility: (post.visibility as GhostPost['visibility']) ?? 'public',
+    created_at: String(post.created_at ?? ''),
+    updated_at: String(post.updated_at ?? ''),
+    published_at: (post.published_at as string | null | undefined) ?? null,
+    url: String(post.url ?? ''),
+    adminUrl:
+      (post.adminUrl as string | null | undefined) ??
+      (post.admin_url as string | null | undefined) ??
+      null,
+    tags: Array.isArray(post.tags) ? post.tags.map((tag) => normalizeTag(tag as Record<string, unknown>)) : [],
+    primary_tag:
+      post.primary_tag && typeof post.primary_tag === 'object'
+        ? normalizeTag(post.primary_tag as Record<string, unknown>)
+        : null,
+  };
+}
+
+function normalizeTagNames(tags?: Array<{ name: string } | { id: string }>): string[] | undefined {
+  if (!tags?.length) return undefined;
+  return tags
+    .map((tag) => ('name' in tag ? tag.name : tag.id))
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function detectMimeType(filename: string): string | undefined {
+  switch (extname(filename).toLowerCase()) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.png':
+      return 'image/png';
+    case '.gif':
+      return 'image/gif';
+    case '.webp':
+      return 'image/webp';
+    case '.svg':
+      return 'image/svg+xml';
+    default:
+      return undefined;
+  }
+}
+
+export async function createPost(
+  config: GhostConfig,
+  options: CreatePostOptions,
 ): Promise<GhostPost> {
-  const found = mockState.publishedPosts.find((p) => p.id === postId);
-  if (found) return found;
-  return buildMockPost(postId, {
-    title: `Mock Post ${postId}`,
-    html: '<p>Mock Ghost post content.</p>',
-    status: 'published',
-  });
+  const post = await postJson<Record<string, unknown>>(
+    '/ghost/createPost',
+    {
+      title: options.title,
+      html: options.html,
+      customExcerpt: options.custom_excerpt,
+      status: options.status ?? 'draft',
+      tags: normalizeTagNames(options.tags),
+      featureImage: options.feature_image,
+      featured: options.featured,
+      visibility: options.visibility,
+      slug: options.slug,
+      publishedAt: options.published_at,
+    },
+    config,
+  );
+
+  return normalizePost(post);
 }
 
-/**
- * List Ghost posts with pagination metadata.
- */
+export async function updatePost(
+  config: GhostConfig,
+  postId: string,
+  options: Partial<CreatePostOptions> & { updated_at?: string },
+): Promise<GhostPost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/ghost/updatePost',
+    {
+      id: postId,
+      title: options.title,
+      html: options.html,
+      customExcerpt: options.custom_excerpt,
+      status: options.status,
+      tags: normalizeTagNames(options.tags),
+      featureImage: options.feature_image,
+      featured: options.featured,
+      visibility: options.visibility,
+      slug: options.slug,
+      publishedAt: options.published_at,
+    },
+    config,
+  );
+
+  return normalizePost(post);
+}
+
+export async function getPost(config: GhostConfig, postId: string): Promise<GhostPost> {
+  const post = await postJson<Record<string, unknown>>('/ghost/getPost', { id: postId }, config);
+  return normalizePost(post);
+}
+
+export async function publishPost(config: GhostConfig, postId: string): Promise<GhostPost> {
+  const post = await postJson<Record<string, unknown>>('/ghost/publishPost', { id: postId }, config);
+  return normalizePost(post);
+}
+
+export async function unpublishPost(config: GhostConfig, postId: string): Promise<GhostPost> {
+  const post = await postJson<Record<string, unknown>>('/ghost/unpublishPost', { id: postId }, config);
+  return normalizePost(post);
+}
+
 export async function listPosts(
-  _config: GhostConfig,
+  config: GhostConfig,
+  page = 1,
+  limit = 15,
+  status?: GhostPost['status'],
+): Promise<{ posts: GhostPost[]; total: number }> {
+  const response = await postJson<{ posts?: Record<string, unknown>[]; total?: number }>(
+    '/ghost/listPosts',
+    { page, limit, status },
+    config,
+  );
+
+  return {
+    posts: (response.posts ?? []).map((entry) => normalizePost(entry)),
+    total: Number(response.total ?? 0),
+  };
+}
+
+export async function listDraftPosts(
+  config: GhostConfig,
   page = 1,
   limit = 15,
 ): Promise<{ posts: GhostPost[]; total: number }> {
-  const start = (page - 1) * limit;
-  const slice = mockState.publishedPosts.slice(start, start + limit);
-  return { posts: slice, total: mockState.publishedPosts.length };
+  return listPosts(config, page, limit, 'draft');
 }
 
-// ---------------------------------------------------------------------------
-// Exported mock functions — Images
-// ---------------------------------------------------------------------------
+export async function listPublishedPosts(
+  config: GhostConfig,
+  page = 1,
+  limit = 15,
+): Promise<{ posts: GhostPost[]; total: number }> {
+  return listPosts(config, page, limit, 'published');
+}
 
-/**
- * Upload an image to Ghost. Mocked: returns a fake hosted URL without
- * touching the filesystem beyond what the caller already passed in.
- */
-export async function uploadImage(
-  _config: GhostConfig,
-  filePath: string,
-): Promise<GhostImage> {
-  mockState.imageCounter += 1;
-  const name = filePath.split(/[\\/]/).pop() || `image_${mockState.imageCounter}`;
-  const safeName = slugify(name.replace(/\.[^.]+$/, '')) || `image-${mockState.imageCounter}`;
+export async function uploadImage(config: GhostConfig, filePath: string): Promise<GhostImage> {
+  const resolvedPath = resolve(filePath);
+  if (!existsSync(resolvedPath)) {
+    throw new Error(`Feature image file not found: ${resolvedPath}`);
+  }
+
+  const filename = basename(resolvedPath);
+  const content = readFileSync(resolvedPath);
+  const response = await postJson<Record<string, unknown>>(
+    '/ghost/uploadImage',
+    {
+      filename,
+      contentBase64: content.toString('base64'),
+      contentType: detectMimeType(filename),
+    },
+    config,
+  );
+
   return {
-    url: `https://mock.ghost.io/content/images/${safeName}.jpg`,
-    ref: null,
+    url: String(response.url ?? ''),
+    ref: (response.ref as string | null | undefined) ?? null,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Exported mock functions — Validation
-// ---------------------------------------------------------------------------
-
-/**
- * Validate connectivity to Ghost via the YouMind proxy.
- */
-export async function validateConnection(
-  config: GhostConfig,
-): Promise<{ ok: boolean; message: string }> {
-  try {
-    const result = await listPosts(config, 1, 1);
-    return {
-      ok: true,
-      message: `Connected via YouMind proxy (${config.baseUrl}). Found ${result.total} total post(s). API is working.`,
-    };
-  } catch (e) {
-    return {
-      ok: false,
-      message: `Connection failed: ${(e as Error).message}`,
-    };
-  }
+export async function validateConnection(config: GhostConfig): Promise<GhostConnectionResult> {
+  const response = await postJson<Record<string, unknown>>('/ghost/validateConnection', {}, config);
+  return {
+    ok: Boolean(response.ok),
+    message: String(response.message ?? ''),
+    siteTitle: (response.siteTitle as string | null | undefined) ?? null,
+    siteUrl: (response.siteUrl as string | null | undefined) ?? null,
+    total: typeof response.total === 'number' ? response.total : undefined,
+  };
 }

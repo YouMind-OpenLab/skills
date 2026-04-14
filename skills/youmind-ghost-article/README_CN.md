@@ -1,66 +1,21 @@
 # YouMind Ghost Skill
 
-Ghost AI 写作发布 Skill。对 Agent 说一句话，自动完成选题、写作、HTML 转换、发布到 Ghost 博客。
+AI 驱动的 Ghost 文章写作与发布 Skill。告诉 Agent 一个主题，它就能完成调研、写作、Markdown 转 HTML、上传图片，并通过你已经在 YouMind 里连接好的 Ghost 账号发文。
 
 ---
 
-## 一句话能干嘛
+## 它能做什么
 
-| 你说 | Skill 做 |
-|------|----------|
-| `发布一篇关于 Web3 的 Ghost 文章` | 选题 -> 写作 -> Markdown->HTML -> 发布草稿 |
+| 你说 | Skill 会做 |
+|------|------------|
+| `写一篇关于 AI Agent 的 Ghost 文章` | 调研 -> 写作 -> 适配 -> 发布草稿 |
 | `把这篇 Markdown 发到 Ghost` | 跳过写作，直接转换并发布 |
-| `列出我最近的 Ghost 文章` | 获取并展示最近的文章列表 |
-| `检查我的 Ghost 配置` | 检查 API 凭证和连接状态 |
+| `检查我的 Ghost 配置` | 检查 YouMind API Key、付费权限和 Ghost 连通性 |
+| `列出我的 Ghost 草稿` | 通过 YouMind 拉取 Ghost 草稿列表 |
 
 ---
 
-## 获取凭证
-
-### 获取 Ghost Admin API Key
-
-> Ghost Admin 面板：`yourdomain.com/ghost`
-
-**第 1 步 -- 登录 Ghost Admin 面板**
-
-打开浏览器访问 `https://yourdomain.com/ghost`（或 `https://yourdomain.ghost.io/ghost`），使用管理员账号登录。
-
-> **提示：** 登录后浏览器地址栏顶部显示的域名就是你的 Ghost 站点地址，格式如 `https://{your-name}.ghost.io`。去掉后面的 `/ghost/...` 部分，就是需要填入的 `site_url`。
-
-**第 2 步 -- 进入集成设置**
-
-点击左下角齿轮图标进入 **Settings**（设置），然后找到 **Integrations**（集成）。
-
-**第 3 步 -- 添加自定义集成**
-
-点击 **"Add custom integration"**（添加自定义集成）按钮。
-
-**第 4 步 -- 命名并创建**
-
-输入集成名称（如 `YouMind Publisher`），然后点击 **Create**。
-
-**第 5 步 -- 复制 Admin API Key**
-
-在创建的集成详情页中，找到 **"Admin API Key"** 字段。复制该 Key，填入 `config.yaml` 的 `ghost.admin_api_key` 字段。
-
-> **注意：**
-> - Admin API Key 格式必须是 `id:secret`，冒号分隔
-> - `id` 是 24 位十六进制字符串，`secret` 是 64 位十六进制字符串
-> - API URL 显示在集成页面底部，确保与 `ghost.site_url` 一致
-
-**第 6 步 -- 填写站点地址**
-
-将你的 Ghost 站点地址填入 `config.yaml` 的 `ghost.site_url`（如 `https://{your-name}.ghost.io`）。这就是登录后浏览器地址栏中的域名，去掉 `/ghost/...` 路径部分。
-
-### 验证配置
-
-```bash
-cd toolkit && npx tsx src/cli.ts validate
-```
-
----
-
-## 安装
+## 配置
 
 > 环境要求：Node.js >= 18
 
@@ -68,79 +23,101 @@ cd toolkit && npx tsx src/cli.ts validate
 # 1. 安装依赖
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. 生成配置文件
+# 2. 生成配置文件（如果 config.yaml 不存在）
 cp config.example.yaml config.yaml
 ```
 
-`config.yaml` 需要填写以下凭证：
+`config.yaml` 现在只需要配置 YouMind API Key：
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `ghost.site_url` | **是** | 你的 Ghost 站点地址（如 `https://myblog.ghost.io`） |
-| `ghost.admin_api_key` | **是** | Admin API Key，格式为 `{id}:{secret}` |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 -> [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) |
+```yaml
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
+```
 
----
+也可以直接使用环境变量 `YOUMIND_API_KEY`，不一定非要写进 `config.yaml`。
 
-## YouMind 集成
+### 发布前提
 
-本 Skill 深度集成 [YouMind](https://youmind.com) 知识库，提升内容质量和效率。
+发布前，请先在 YouMind 里连接你的 Ghost 账号。这个 skill 不再读取本地的 `ghost.site_url` 或 `ghost.admin_api_key`，也不应该再要求用户把 Ghost Admin 凭证粘贴到这个仓库里。
 
-| 功能 | 说明 |
-|------|------|
-| 知识库语义搜索 | 从你的 YouMind 资料库中搜索相关文章、笔记、书签作为写作素材 |
-| 联网搜索 | 搜索互联网获取实时信息和热门话题 |
-| 文章归档 | 发布后自动将文章保存回 YouMind 知识库，便于未来引用 |
-| 素材挖掘 | 浏览 Board、提取相关素材用于内容创作 |
-| Board 管理 | 列出、查看你的 YouMind Board 和素材 |
+### 获取 YouMind API Key
 
-> **获取 YouMind API Key：** [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch)
+打开 [YouMind API Key 设置页](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article)，创建一个 key，然后填到 `youmind.api_key`。
 
 ---
 
-## 使用技巧
+## 使用建议
 
 ### CLI 命令
 
 ```bash
-# 以草稿发布 Markdown 文件
+cd toolkit
+
+# 以草稿发布 Markdown
 npx tsx src/cli.ts publish article.md --draft
 
-# 立即发布
+# 直接发布
 npx tsx src/cli.ts publish article.md --publish
-
-# 带标签发布
-npx tsx src/cli.ts publish article.md --tags "AI,tech"
 
 # 本地预览 HTML
 npx tsx src/cli.ts preview article.md
 
-# 列出最近文章
-npx tsx src/cli.ts list --limit 10
-
-# 验证凭证
+# 校验 YouMind + Ghost 连通性
 npx tsx src/cli.ts validate
+
+# 列出文章
+npx tsx src/cli.ts list --page 1 --limit 10
+
+# 只列草稿
+npx tsx src/cli.ts list-drafts --page 1 --limit 10
+
+# 只列已发布文章
+npx tsx src/cli.ts list-published --page 1 --limit 10
+
+# 查询单篇文章
+npx tsx src/cli.ts get-post 69de04770c17b300017b5650
+
+# 按 ID 发布已有草稿
+npx tsx src/cli.ts publish-post 69de04770c17b300017b5650
+
+# 按 ID 撤回成草稿
+npx tsx src/cli.ts unpublish-post 69de04770c17b300017b5650
 ```
 
-### Ghost 特色功能
+### 草稿工作流
 
-- **Newsletter 友好内容** -- Ghost 文章同时作为 Newsletter 邮件发送。Skill 会优化内容，确保在网页和邮件客户端中都有良好渲染
-- **标签系统** -- Ghost 使用扁平标签系统，列表中第一个标签为主标签（用于 URL 路由和模板选择），其余为辅助标签
-- **特色图片** -- Ghost 支持每篇文章设置一张特色图片，展示在文章顶部和卡片预览中
+这个 skill 默认发草稿。对于草稿和定时文章，CLI 会把 Ghost Admin 链接直接打印出来，方便用户立刻去后台检查。如果用户想直接公开发布，用 `--publish` 或 `publish-post <id>`。
+
+本地 preview 文件现在默认写到 skill 的 `output/` 目录，这个目录已经在 `.gitignore` 里，生成的文章和预览文件不会污染仓库。
+
+### 付费计划要求
+
+Ghost OpenAPI 现在要求 YouMind 付费计划（`Pro` / `Max`）。如果当前账号没有权限，API 会返回 `402`，并提示前往 [YouMind Pricing](https://youmind.com/pricing) 升级。
 
 ---
 
 ## 常见问题
 
-**发布报 401 错误** -- 检查 Admin API Key 是否正确，必须是 `{id}:{secret}` 格式，确保集成处于激活状态。
+**Q: 我遇到 401 / 鉴权错误**
 
-**JWT Token 错误** -- Skill 使用 Node.js crypto 模块生成 JWT Token，无需额外 JWT 库。Token 有效期 5 分钟，自动重新生成。
+检查 `youmind.api_key` 或 `YOUMIND_API_KEY`。这个 skill 现在只通过 YouMind 鉴权。
 
-**图片上传失败** -- 确保 Ghost 实例允许图片上传，且文件大小在限制范围内（Ghost Pro 默认 5MB）。
+**Q: 发布时提示 Ghost 没有连接**
 
-**文章显示为草稿** -- 默认所有文章以草稿形式创建。使用 `--publish` 参数可直接发布。
+先去 YouMind 里连接 Ghost。Ghost 的站点地址和 Admin API Key 现在保存在 YouMind，不在本地 `config.yaml`。
 
-**API Key 格式错误** -- Admin API Key 必须包含冒号分隔的 id 和 secret。如果复制时遗漏了冒号或只复制了一半，请回到 Ghost Admin -> Settings -> Integrations 重新复制完整 Key。
+**Q: 不连接 Ghost 还能本地预览吗？**
+
+可以。`preview` 只依赖本地 Markdown 转 HTML，不依赖 Ghost。
+
+**Q: 能不能显式发布 / 撤回文章？**
+
+可以。CLI 和 YouMind Ghost OpenAPI 现在都支持 `publish-post`、`unpublish-post`、`list-drafts`、`list-published`。
+
+**Q: 特色图片怎么处理？**
+
+如果你传的是本地图片，skill 会先通过 YouMind Ghost OpenAPI 上传到 Ghost，再创建或更新文章。
 
 ---
 

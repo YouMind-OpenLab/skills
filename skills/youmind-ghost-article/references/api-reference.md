@@ -1,128 +1,199 @@
-# Ghost Admin API Reference
+# YouMind Ghost OpenAPI Reference
 
-## Base URL
+Base URL: `https://youmind.com/openapi/v1`
 
-```
-{site_url}/ghost/api/admin/
-```
+These endpoints publish to Ghost through YouMind. The caller only sends a YouMind API key in `x-api-key`. The user's Ghost site URL and Ghost Admin API key are stored inside YouMind and never placed in the skill config.
 
 ## Authentication
 
-Ghost uses JWT (JSON Web Token) authentication for the Admin API.
+All requests require:
 
-### API Key Format
-Admin API keys are provided as `{id}:{secret}`:
-- `id`: 24-character hex string (used as JWT `kid` header)
-- `secret`: 64-character hex string (used as HMAC-SHA256 signing key, hex-decoded)
-
-### JWT Token Spec
-```
-Header:  { "alg": "HS256", "typ": "JWT", "kid": "{id}" }
-Payload: { "iat": {now}, "exp": {now+300}, "aud": "/admin/" }
-Signature: HMAC-SHA256(header.payload, hex_decode(secret))
+```text
+x-api-key: sk-ym-xxxxxxxxxxxxxxxxxxxx
+Content-Type: application/json
 ```
 
-### Authorization Header
+Get your YouMind API key from: <https://youmind.com/settings/api-keys>
+
+## Preconditions
+
+- The skill has `youmind.api_key` configured locally, or `YOUMIND_API_KEY` is set
+- The user has already connected Ghost inside YouMind
+- The current YouMind plan allows article dispatch OpenAPI (`Pro` / `Max`)
+
+## Endpoints Used
+
+### Validate Ghost Connection
+
+```text
+POST /ghost/validateConnection
 ```
-Authorization: Ghost {jwt_token}
-```
 
-## Endpoints
+Response:
 
-### Posts
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/posts/` | List posts |
-| GET | `/posts/{id}/` | Get a single post |
-| POST | `/posts/?source=html` | Create a post from HTML |
-| PUT | `/posts/{id}/?source=html` | Update a post |
-| DELETE | `/posts/{id}/` | Delete a post |
-
-#### Create Post Body
 ```json
 {
-  "posts": [{
-    "title": "Post Title",
-    "html": "<p>Post content...</p>",
-    "custom_excerpt": "Preview text for cards and newsletters",
-    "status": "draft",
-    "tags": [{"name": "Tag Name"}],
-    "feature_image": "https://example.com/image.jpg",
-    "visibility": "public"
-  }]
+  "ok": true,
+  "message": "Connected to Ghost site \"dongdong\". Found 3 total post(s).",
+  "siteTitle": "dongdong",
+  "siteUrl": "https://dongdong.ghost.io",
+  "total": 3
 }
 ```
 
-#### Post Fields
-| Field | Type | Description |
-|-------|------|-------------|
-| `title` | string | Post title |
-| `html` | string | Post content (HTML) |
-| `custom_excerpt` | string | Custom excerpt for previews |
-| `status` | string | `draft`, `published`, `scheduled` |
-| `tags` | array | `[{"name": "Tag"}]` or `[{"id": "abc123"}]` |
-| `feature_image` | string | URL of feature image |
-| `featured` | boolean | Pin post as featured |
-| `visibility` | string | `public`, `members`, `paid`, `tiers` |
-| `slug` | string | URL slug |
-| `published_at` | string | ISO 8601 date (for scheduling) |
+### Create Post
 
-#### Update Post
-Updates require `updated_at` field from the current post (optimistic locking):
+```text
+POST /ghost/createPost
+```
+
+Request body:
+
 ```json
 {
-  "posts": [{
-    "title": "Updated Title",
-    "updated_at": "2024-01-01T00:00:00.000Z"
-  }]
+  "title": "Ghost Article Title",
+  "html": "<p>Hello Ghost</p>",
+  "customExcerpt": "Short summary for cards and newsletters",
+  "status": "draft",
+  "tags": ["ai", "coding"],
+  "featureImage": "https://example.com/cover.jpg",
+  "featured": false,
+  "visibility": "public",
+  "slug": "ghost-article-title"
 }
 ```
 
-### Images
+### Update Post
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/images/upload/` | Upload an image |
+```text
+POST /ghost/updatePost
+```
 
-#### Upload Image
-- Content-Type: `multipart/form-data`
-- Fields: `file` (image binary), `purpose` ("image")
-- Response: `{ "images": [{ "url": "...", "ref": null }] }`
+Request body: same fields as create, plus `id`. Only send the fields you want to update.
 
-### Tags
+### Get Post
 
-Tags are managed implicitly through posts. When creating/updating a post, include tags by name and Ghost will create them if they don't exist.
+```text
+POST /ghost/getPost
+```
 
-## Common Query Parameters
+Request body:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 15, max: varies) |
-| `order` | string | Sort: `published_at desc`, `created_at asc` |
-| `include` | string | Related data: `tags`, `authors`, `tags,authors` |
-| `filter` | string | NQL filter: `status:published`, `tag:news` |
-| `fields` | string | Specific fields: `title,slug,published_at` |
+```json
+{
+  "id": "69de04770c17b300017b5650"
+}
+```
+
+### List Posts
+
+```text
+POST /ghost/listPosts
+POST /ghost/listDrafts
+POST /ghost/listPublished
+```
+
+Request body:
+
+```json
+{
+  "page": 1,
+  "limit": 15
+}
+```
+
+`/ghost/listPosts` also accepts optional `status` with one of:
+
+- `draft`
+- `published`
+- `scheduled`
+- `sent`
+
+### Publish / Unpublish
+
+```text
+POST /ghost/publishPost
+POST /ghost/unpublishPost
+```
+
+Request body:
+
+```json
+{
+  "id": "69de04770c17b300017b5650"
+}
+```
+
+### Upload Image
+
+```text
+POST /ghost/uploadImage
+```
+
+Request body:
+
+```json
+{
+  "filename": "cover.jpg",
+  "contentBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "contentType": "image/jpeg",
+  "ref": "feature-image"
+}
+```
+
+## Response Shape
+
+Ghost post responses are normalized by YouMind and include both the public URL and the Ghost Admin editor URL:
+
+```json
+{
+  "id": "69de04770c17b300017b5650",
+  "title": "Ghost CLI Smoke Test",
+  "slug": "ghost-cli-smoke-test",
+  "status": "draft",
+  "url": "https://dongdong.ghost.io/p/a841453d-c8fc-41d5-a635-e25a61d9a7d5/",
+  "adminUrl": "https://dongdong.ghost.io/ghost/#/editor/post/69de04770c17b300017b5650",
+  "excerpt": "This is a temporary draft created to verify the YouMind Ghost skill...",
+  "published_at": null,
+  "tags": []
+}
+```
+
+Notes:
+
+- `status: draft` is the default
+- Drafts return a Ghost Admin URL so the user can review the post immediately
+- `publishPost` changes the public URL from Ghost's draft permalink to the final published path
 
 ## Error Responses
 
+| Status | Meaning |
+|--------|---------|
+| 400 | Ghost account not connected in YouMind, or Ghost rejected the request |
+| 401 | Invalid or missing YouMind API key |
+| 402 | Current YouMind plan is not eligible for article dispatch OpenAPI |
+| 404 | Ghost post not found |
+
+Typical not-connected error:
+
 ```json
 {
-  "errors": [{
-    "message": "Resource not found.",
-    "type": "NotFoundError",
-    "details": null
-  }]
+  "message": "Ghost account is not connected in YouMind. Go to https://youmind.com/settings/connector and connect your Ghost account first.",
+  "code": "GHOST_ACCOUNT_NOT_CONNECTED",
+  "detail": {
+    "connectUrl": "https://youmind.com/settings/connector"
+  }
 }
 ```
 
-Common error codes:
-- `401` — Invalid or expired JWT token
-- `403` — Insufficient permissions
-- `404` — Resource not found
-- `422` — Validation error (e.g., duplicate slug)
+Typical paid-plan error:
 
-## Rate Limiting
-
-Ghost does not enforce strict rate limits on self-hosted instances. Ghost Pro has soft limits — typically 100 requests/minute for the Admin API.
+```json
+{
+  "message": "Publishing articles through YouMind OpenAPI requires a paid plan (pro or max). Upgrade at https://youmind.com/pricing.",
+  "code": "FEATURE_ACCESS_DENIED",
+  "detail": {
+    "upgradeUrl": "https://youmind.com/pricing"
+  }
+}
+```

@@ -2,11 +2,9 @@
 name: youmind-ghost-article
 version: 1.0.0
 description: |
-  Write and publish Ghost articles end-to-end with AI — topic mining via YouMind knowledge base,
-  de-AI voice writing, Markdown-to-HTML conversion, feature image upload, and one-click publishing.
-  Use when user wants to "ghost article", "publish to ghost", "ghost post",
-  "Ghost 文章", "发布到 Ghost".
-  Do NOT trigger for: WeChat articles, WordPress posts, emails/newsletters, PPT, short video scripts.
+  Write and publish Ghost articles with AI — topic research via YouMind knowledge base,
+  Ghost-oriented writing, Markdown-to-HTML conversion, feature image upload, and one-click publishing.
+  Use when user wants to "write Ghost article", "publish to Ghost", "Ghost 文章", "发布到 Ghost".
 triggers:
   - "ghost article"
   - "publish to ghost"
@@ -33,22 +31,21 @@ platforms:
 metadata:
   openclaw:
     emoji: "👻"
-    primaryEnv: GHOST_ADMIN_API_KEY
+    primaryEnv: YOUMIND_API_KEY
     requires:
       anyBins: ["node", "npm"]
-      env: ["GHOST_ADMIN_API_KEY"]
+      env: ["YOUMIND_API_KEY"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
   - Bash(npm run build)
-  - Bash([ -n "$GHOST_ADMIN_API_KEY" ] *)
 ---
 
-# AI Ghost Article Writer — From Topic to Published Post in One Prompt
+# AI Ghost Article Writer
 
-Write professional Ghost articles with AI that doesn't sound like AI. Topic mining via [YouMind](https://youmind.com?utm_source=youmind-ghost-article) knowledge base → deep research → structured writing → Markdown-to-HTML conversion → feature image upload → one-click publishing to Ghost. Newsletter-friendly formatting out of the box.
+Write professional Ghost articles with AI. Topic research via [YouMind](https://youmind.com?utm_source=youmind-ghost-article) knowledge base, Ghost-oriented writing, Markdown-to-HTML conversion, feature image upload, and one-click publishing to Ghost through the user's Ghost account already connected in YouMind.
 
-> [Get YouMind API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) · [More Skills →](https://youmind.com/skills?utm_source=youmind-ghost-article)
+> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) | [More Skills](https://youmind.com/skills?utm_source=youmind-ghost-article)
 
 ## Onboarding
 
@@ -58,76 +55,69 @@ Write professional Ghost articles with AI that doesn't sound like AI. Topic mini
 >
 > Tell me your topic and I'll write and publish a Ghost article for you.
 >
-> **Try it now:** "Help me write a Ghost article about AI programming trends"
+> **Try it now:** "Write a Ghost article about AI programming trends"
 >
 > **What it does:**
-> - Mine topics from YouMind knowledge base and web search
-> - Write professional articles with de-AI voice
-> - Convert Markdown to clean HTML optimized for Ghost
+> - Research topics from YouMind knowledge base and the web
+> - Write clean Ghost-style articles in Markdown
+> - Convert Markdown to HTML optimized for Ghost
 > - Upload feature images
-> - Publish directly to your Ghost site (as draft or published)
+> - Publish directly to Ghost as draft or public through the Ghost account connected in YouMind
 >
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) → fill `youmind.api_key` in `config.yaml`
-> 3. Get Ghost Admin API key from Ghost Admin > Settings > Integrations → fill `ghost.admin_api_key` and `ghost.site_url` in `config.yaml`
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article) and fill `youmind.api_key` in `config.yaml`
+> 3. Connect your Ghost account inside YouMind before publishing. This skill no longer reads `ghost.admin_api_key` or `ghost.site_url` locally.
 >
-> No Ghost API yet? You can still write and preview locally — just skip the Ghost config steps.
->
-> See the **Setup** section below for detailed instructions.
+> No Ghost connection yet? You can still write and preview locally — just skip the publish step.
 >
 > **Need help?** Just ask!
 
 ## Usage
 
-Provide a topic or raw Markdown for publishing.
+Provide a topic, a raw Markdown file, or describe the Ghost article you want.
 
 **Write from a topic:**
-> Help me write a Ghost article about AI programming trends
+> Write a Ghost article about the workflow changes AI coding agents introduced
 
-**Publish raw Markdown:**
-> Publish this Markdown file to Ghost as a draft
+**Publish existing Markdown:**
+> Publish this markdown to Ghost as a draft
 
-**List recent posts:**
-> Show my recent Ghost posts
+**Manage existing posts:**
+> List my Ghost drafts
+> Publish Ghost post 69de04770c17b300017b5650
+> Move Ghost post 69de04770c17b300017b5650 back to draft
 
 ## Setup
 
-> Prerequisites: Node.js >= 18
+> Prerequisites: Node.js >= 18, a YouMind API key, and a Ghost account connected in YouMind if you want to publish.
 
-### Step 1 — Install Dependencies
+### Step 1 -- Install Dependencies
 
 ```bash
 cd toolkit && npm install && npm run build && cd ..
 ```
 
-### Step 2 — Create Config File
+### Step 2 -- Create Config File
 
 ```bash
 cp config.example.yaml config.yaml
 ```
 
-### Step 3 — Get YouMind API Key (Recommended)
+### Step 3 -- Get YouMind API Key
 
-1. Open [YouMind API Keys page](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article)
+YouMind API Key enables knowledge base search, web search, article archiving, and Ghost publishing.
+
+1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-ghost-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
-4. Fill into `config.yaml` under `youmind.api_key`
+4. Fill in `config.yaml` under `youmind.api_key`
 
-### Step 4 — Get Ghost Admin API Key
+### Step 4 -- Connect Ghost in YouMind
 
-1. Log into your Ghost Admin panel (the site URL is in the browser address bar after login, e.g. `https://{your-name}.ghost.io`)
-2. Go to **Settings > Integrations**
-3. Click **Add custom integration**
-4. Name it (e.g., "YouMind Skill")
-5. Copy the **Admin API Key** (format: `{id}:{secret}`)
-6. Fill into `config.yaml`
-
-```yaml
-ghost:
-  site_url: "https://{your-name}.ghost.io"  # from the browser address bar after login
-  admin_api_key: "your-id:your-secret"
-```
+1. Open YouMind and connect your Ghost account in the product's publishing / connector settings flow
+2. Save the Ghost site URL and Admin API key there once
+3. Keep only `youmind.api_key` in this skill's `config.yaml`
 
 ### Verify Setup
 
@@ -135,53 +125,82 @@ ghost:
 cd toolkit && npx tsx src/cli.ts validate
 ```
 
-## Pipeline Overview
+If the account is not connected, the OpenAPI returns a connector URL pointing to `https://youmind.com/settings/connector`.
 
-Read `references/pipeline.md` for full execution details.
-
-| Step | Action | Key reference |
-|------|--------|--------------|
-| 1 | Load config and validate credentials | — |
-| 2 | Mine YouMind knowledge base for source material | `api-reference.md` |
-| 3 | Research topic via web search | — |
-| 4 | Adapt content structure for Ghost | `content-adaptation.md` |
-| 5 | Write article in Markdown | — |
-| 6 | Convert to HTML and publish | `pipeline.md` |
-| 7 | Report results: title, URL, post ID, status | — |
-
-## Resilience: Never Stop on a Single-Step Failure
-
-Every step has a fallback. If a step AND its fallback both fail, skip that step and note it in the final output.
-
-| Step | Fallback |
-|------|----------|
-| 2 Knowledge mining | Skip, empty knowledge_context |
-| 3 Web research | Ask user for manual input |
-| 6 Publishing | Generate local HTML preview |
+If the current plan is not eligible, the OpenAPI returns `402` and points the user to `https://youmind.com/pricing`.
 
 ## Skill Directory
+
+This skill is a folder. Read files on demand -- do NOT load everything upfront.
 
 | Path | Purpose | When to read |
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution | When running the writing pipeline |
-| `references/content-adaptation.md` | Ghost-specific writing rules | When adapting content |
-| `references/api-reference.md` | Ghost Admin API endpoints | When calling Ghost API |
-| `config.yaml` | API credentials | Step 1 (first-run check) |
+| `references/content-adaptation.md` | Ghost writing rules, structure, tone | Step 4 |
+| `references/api-reference.md` | YouMind Ghost OpenAPI endpoint documentation | When calling Ghost through YouMind |
+| `config.yaml` | API credentials (YouMind only) | Step 1 |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
-| `toolkit/dist/*.js` | Executable scripts | Various steps |
+| `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
 ## Draft Location Rule (MANDATORY)
 
 **All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
 
 - Correct: `skills/youmind-ghost-article/output/my-article.md`
-- Wrong: `skills/youmind-ghost-article/my-article.md` (pollutes skill root)
-- Wrong: any new top-level `drafts/` directory (not git-ignored)
+- Wrong: `skills/youmind-ghost-article/my-article.md`
+- Wrong: any new top-level `drafts/` directory
 - Wrong: any path inside `references/`, `toolkit/`, or the skill root
 
-The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
+The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`).
+
+The CLI preview command should also default to `output/` unless the user explicitly asks for another path.
+
+## Pipeline Overview
+
+Read `references/pipeline.md` for full execution details.
+
+| Step | Action | Key reference |
+|------|--------|--------------|
+| 1 | Load config and validate the YouMind API key, paid-plan access, and Ghost connection in YouMind | -- |
+| 2 | Mine YouMind knowledge base for source material | -- |
+| 3 | Research topic via web search | -- |
+| 4 | Adapt content for Ghost audience and HTML rendering | `content-adaptation.md` |
+| 5 | Write article in Markdown | -- |
+| 6 | Publish to Ghost via YouMind Ghost OpenAPI | `api-reference.md` |
+| 7 | Report results: post ID, status, public URL, Ghost Admin URL | -- |
+
+**Routing shortcuts:**
+
+- User gave a specific topic -> Skip broad research, go to Step 4
+- User gave raw Markdown -> Skip to Step 6 (publish)
+- User wants preview only -> Run local conversion, skip publishing
+
+## Critical Quality Rules
+
+Non-negotiable for every Ghost article:
+
+1. **Write for real readers, not SEO sludge.** Ghost audiences expect an editorial tone.
+2. **Keep paragraphs short.** The same content may be read on web and in email newsletters.
+3. **Use meaningful section headings.** Ghost posts need strong structure.
+4. **Custom excerpt matters.** It drives cards, previews, and newsletter subject/context.
+5. **Tags should be intentional.** The first tag becomes primary routing context.
+6. **Avoid raw Markdown assumptions.** Ghost publishing goes through HTML conversion, so check code blocks and embeds carefully.
+7. **Default to draft.** Do not surprise the user by publishing publicly unless asked.
+
+## Resilience: Never Stop on a Single-Step Failure
+
+Every step has a fallback. If a step AND its fallback both fail, skip and note it in the final output.
+
+| Step | Fallback |
+|------|----------|
+| 2 Knowledge mining | Skip, empty knowledge context |
+| 3 Research | Ask user for manual input |
+| 6 Publishing | Generate local HTML preview |
+| 7 Archiving | Warn, continue |
 
 ## References
 
-- YouMind API: see `references/api-reference.md`
+- YouMind Ghost OpenAPI: see [references/api-reference.md](references/api-reference.md)
+- Content rules: see [references/content-adaptation.md](references/content-adaptation.md)
+- Pipeline: see [references/pipeline.md](references/pipeline.md)
 - YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-ghost-article

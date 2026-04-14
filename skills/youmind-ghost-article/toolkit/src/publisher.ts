@@ -42,6 +42,7 @@ export interface PublishOptions {
 export interface PublishResult {
   id: string;
   url: string;
+  adminUrl?: string | null;
   slug: string;
   status: string;
   title: string;
@@ -56,7 +57,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadGhostConfig();
 
   if (!config.apiKey) {
-    throw new Error('youmind.api_key not set in config.yaml');
+    throw new Error('YouMind API key not set. Configure youmind.api_key or YOUMIND_API_KEY.');
   }
 
   // Read Markdown content
@@ -104,6 +105,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   return {
     id: post.id,
     url: post.url,
+    adminUrl: post.adminUrl ?? null,
     slug: post.slug,
     status: post.status,
     title: adapted.title,

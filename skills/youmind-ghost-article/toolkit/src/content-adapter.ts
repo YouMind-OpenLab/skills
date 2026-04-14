@@ -49,9 +49,9 @@ const md = new MarkdownIt({
  * Falls back to the provided title or first line.
  */
 function extractTitle(markdown: string, fallbackTitle?: string): string {
+  if (fallbackTitle) return fallbackTitle;
   const h1Match = markdown.match(/^#\s+(.+)$/m);
   if (h1Match) return h1Match[1].trim();
-  if (fallbackTitle) return fallbackTitle;
   const firstLine = markdown.split('\n').find(l => l.trim().length > 0);
   return firstLine?.replace(/^#+\s*/, '').trim() || 'Untitled';
 }
