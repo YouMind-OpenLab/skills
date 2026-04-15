@@ -83,9 +83,9 @@ npx tsx src/cli.ts validate
 
 每条推文最多 4 张图片，通过 `--image <url>...` 传入。URL 必须是 `https://cdn.gooo.ai/...` —— YouMind 后端有白名单防 SSRF。本地文件请先上传到 YouMind（通过 YouMind 产品 UI 或 AI 生图），用返回的 CDN URL。
 
-### 付费计划
+### 付费计划 & Credit
 
-通过 YouMind 发推**不需要**付费计划。（其他文章 dispatch 端点如 `createTokenPlatformPost` 需要 Pro/Max —— 那是给 Ghost / WordPress / Dev.to 等用的。）
+通过 YouMind 发推**需要** Pro/Max 付费计划。每条推文还会消耗 YouMind credit——按推文扣一次 base cost，附图会按图片数量再扣 per-image cost。计划不符会返回 `402` 并附升级链接；credit 不足时在发推前就会 fail-fast，不会产生空扣费。
 
 ---
 

@@ -73,38 +73,19 @@ function normalizeBaseUrl(value: string | undefined): string {
   return `${trimmed}/openapi/v1`;
 }
 
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
 function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-    }
+  const path = resolve(PROJECT_DIR, 'config.yaml');
+  if (existsSync(path)) {
+    return parseYaml(readFileSync(path, 'utf-8')) ?? {};
   }
   return {};
 }
 
 export function loadXConfig(): XConfig {
-  const central = loadCentralCredentials();
   const local = loadLocalConfig();
-  const ym: Record<string, unknown> = {
-    ...(central.youmind as Record<string, unknown> ?? {}),
-    ...(local.youmind as Record<string, unknown> ?? {}),
-  };
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
+  const ym = local.youmind as Record<string, unknown> ?? {};
   const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
+
   return {
     apiKey: (ym.api_key as string) || '',
     baseUrl: configuredBaseUrl || DEFAULT_YOUMIND_OPENAPI_BASE_URL,

@@ -68,8 +68,9 @@ Write viral tweets with AI. Topic research via [YouMind](https://youmind.com?utm
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-x-article) and fill `youmind.api_key` in `config.yaml`
 > 3. Connect your X account inside YouMind before publishing. This skill no longer reads X developer keys locally.
+> 4. Publishing requires a paid YouMind plan (Pro / Max) and consumes YouMind credits per tweet.
 >
-> No X connection yet? You can still write and preview locally — just skip the publish step.
+> No X connection yet, or on a free plan? You can still write and preview locally — just skip the publish step.
 >
 > **Need help?** Just ask!
 
@@ -88,7 +89,7 @@ Provide a topic, talking points, or raw text for publishing.
 
 ## Setup
 
-> Prerequisites: Node.js >= 18, a YouMind API key, and an X account connected in YouMind if you want to publish.
+> Prerequisites: Node.js >= 18, a YouMind API key, a Pro/Max YouMind plan, and an X account connected in YouMind if you want to publish.
 
 ### Step 1 -- Install Dependencies
 
@@ -124,7 +125,9 @@ YouMind API Key enables knowledge base search, web search, article archiving, an
 cd toolkit && npx tsx src/cli.ts validate
 ```
 
-Validation checks only the local API key. X connectivity is validated on the first publish call; if the X account is not connected, the OpenAPI returns a `400` with a `connectUrl` pointing to `https://youmind.com/settings/connector`.
+Validation checks only the local API key. X connectivity and plan eligibility are validated on the first publish call:
+- If the current plan is not eligible, the OpenAPI returns `402` with an upgrade link to `https://youmind.com/pricing`.
+- If the X account is not connected, the OpenAPI returns `404 X_ACCOUNT_NOT_CONNECTED`. Connect the X account in the YouMind connector settings.
 
 ## Skill Directory
 

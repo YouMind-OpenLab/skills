@@ -20,7 +20,8 @@ Get your YouMind API key from: <https://youmind.com/settings/api-keys>
 
 - The skill reads `youmind.api_key` and `youmind.base_url` from local `config.yaml`
 - The user has already connected their X account inside YouMind (one-click OAuth)
-- No paid plan is required for `createXPost` — unlike `createTokenPlatformPost`, X publishing is free to call
+- The current YouMind plan allows dispatch OpenAPI (`Pro` / `Max`) — same gating as `createTokenPlatformPost`
+- The user's credit balance covers the tweet cost (base + per-image). The handler pre-checks credits before calling X and refuses with `InsufficientCreditsException` if the balance is too low
 
 ## Endpoints Used
 
@@ -75,20 +76,33 @@ Threads are fully supported now via `replyToPostId` — the skill publishes the 
 
 | Status | Meaning |
 |--------|---------|
-| 400 | X account not connected in YouMind, or X rejected the request (e.g., duplicate tweet, media URL not under cdn.gooo.ai) |
-| 401 | Invalid or missing YouMind API key |
+| 400 | X rejected the request (e.g., duplicate tweet, media URL not under cdn.gooo.ai, invalid `replyToPostId`) |
+| 401 | Invalid or missing YouMind API key, or X access token revoked (YouMind clears the stored credentials in this case) |
+| 402 | Current YouMind plan is not eligible for dispatch OpenAPI — upgrade link is in the response |
+| 402 (credits) | `InsufficientCreditsException` — YouMind credit balance is below the tweet cost |
 | 403 | X forbids this action (account suspended, app quota exceeded) |
+| 404 | `X_ACCOUNT_NOT_CONNECTED` — the user has not connected an X account in YouMind yet |
 | 429 | X rate limit exceeded — includes `retryAfterSeconds` detail |
 | 502 | X API unavailable or media upload failed |
 
-Typical not-connected error:
+Typical not-connected error (HTTP 404):
 
 ```json
 {
-  "message": "X account is not connected in YouMind. Go to https://youmind.com/settings/connector and connect your X account first.",
-  "code": "X_ACCOUNT_NOT_CONNECTED",
+  "message": "X_ACCOUNT_NOT_CONNECTED"
+}
+```
+
+Connect the X account at <https://youmind.com/settings/connector> (the exact URL is surfaced by the YouMind product flow).
+
+Typical paid-plan error (HTTP 402):
+
+```json
+{
+  "message": "Publishing articles through YouMind OpenAPI requires a paid plan (pro or max). Upgrade at https://youmind.com/pricing.",
+  "code": "FEATURE_ACCESS_DENIED",
   "detail": {
-    "connectUrl": "https://youmind.com/settings/connector"
+    "upgradeUrl": "https://youmind.com/pricing"
   }
 }
 ```

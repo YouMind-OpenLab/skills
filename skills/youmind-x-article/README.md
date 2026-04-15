@@ -83,9 +83,9 @@ Short content goes out as a single tweet. Long content is split into numbered tw
 
 Attach up to 4 images per tweet via `--image <url>...`. URLs must be under `https://cdn.gooo.ai/...` — YouMind enforces this allowlist server-side to avoid SSRF. Upload local files to YouMind first (via the YouMind product or AI image generation) and reference the resulting CDN URL here.
 
-### Paid Plan
+### Paid Plan & Credits
 
-X publishing through YouMind does **not** require a paid plan today. (Other article-dispatch endpoints like `createTokenPlatformPost` do — those are for Ghost / WordPress / Dev.to / etc.)
+X publishing through YouMind requires a paid plan (Pro or Max). Each published tweet also consumes YouMind credits — the base cost is charged per tweet, with an additional per-image surcharge when attaching images. If your plan is not eligible the OpenAPI returns `402` with an upgrade link; if your credit balance is insufficient, the call fails before the tweet is posted.
 
 ---
 
