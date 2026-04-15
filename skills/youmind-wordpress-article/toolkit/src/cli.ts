@@ -13,9 +13,15 @@ import { basename, resolve } from 'node:path';
 import { adaptForWordPress, convertToHtml } from './content-adapter.js';
 import { publish } from './publisher.js';
 import {
+  createCategory,
+  createComment,
+  deleteCategory,
+  deleteComment,
   deletePost,
+  getComment,
   getPost,
   listCategories,
+  listComments,
   listDraftPosts,
   listPosts,
   listPublishedPosts,
@@ -23,10 +29,14 @@ import {
   loadWordPressConfig,
   publishPost,
   unpublishPost,
+  updateCategory,
+  updateComment,
   updatePost,
   uploadMedia,
   validateConnection,
   type WordPressConfig,
+  type WPCommentListStatus,
+  type WPCommentStatus,
   type WPListStatus,
   type WPPost,
   type WPPostStatus,
@@ -513,6 +523,207 @@ program
     console.log(`Tags (${r.tags.length}/${r.total} total):\n`);
     for (const t of r.tags) {
       console.log(`  [${t.id}] ${t.name}  (slug: ${t.slug}, posts: ${t.count})`);
+    }
+  });
+
+// --- Category mutations ---
+
+program
+  .command('create-category <name>')
+  .description('Create a new WordPress category')
+  .option('--description <text>')
+  .option('--slug <slug>')
+  .option('--parent <id>', 'Parent category ID', (v) => Number.parseInt(v, 10))
+  .action(async (name: string, opts: Record<string, string | number | undefined>) => {
+    const config = ensureConfig();
+    try {
+      const cat = await createCategory(config, {
+        name,
+        description: typeof opts.description === 'string' ? opts.description : undefined,
+        slug: typeof opts.slug === 'string' ? opts.slug : undefined,
+        parent: typeof opts.parent === 'number' ? opts.parent : undefined,
+      });
+      console.log(`Created category [${cat.id}] ${cat.name} (slug: ${cat.slug})`);
+    } catch (e) {
+      console.error(`Failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('update-category <id>')
+  .description('Update an existing category')
+  .option('--name <name>')
+  .option('--description <text>')
+  .option('--slug <slug>')
+  .option('--parent <id>', 'Parent category ID', (v) => Number.parseInt(v, 10))
+  .action(async (id: string, opts: Record<string, string | number | undefined>) => {
+    const config = ensureConfig();
+    const updates: Partial<{ name: string; description: string; slug: string; parent: number }> = {};
+    if (typeof opts.name === 'string') updates.name = opts.name;
+    if (typeof opts.description === 'string') updates.description = opts.description;
+    if (typeof opts.slug === 'string') updates.slug = opts.slug;
+    if (typeof opts.parent === 'number') updates.parent = opts.parent;
+    if (Object.keys(updates).length === 0) {
+      console.error('Nothing to update. Pass at least one of --name / --description / --slug / --parent.');
+      process.exit(1);
+    }
+    try {
+      const cat = await updateCategory(config, Number.parseInt(id, 10), updates);
+      console.log(`Updated category [${cat.id}] ${cat.name} (slug: ${cat.slug})`);
+    } catch (e) {
+      console.error(`Failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete-category <id>')
+  .description('Delete a category (always permanent — WP does not trash terms)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (id: string, opts: { yes?: boolean }) => {
+    if (!opts.yes) {
+      console.error(`Refusing to delete category ${id} without --yes.`);
+      process.exit(1);
+    }
+    const config = ensureConfig();
+    try {
+      const r = await deleteCategory(config, Number.parseInt(id, 10));
+      console.log(`Deleted category ${r.id} (permanent).`);
+    } catch (e) {
+      console.error(`Failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+// --- Comments ---
+
+function printComment(c: { id: number; post: number; author: number; authorName: string; status: string; content: string; date: string; link: string }): void {
+  console.log(`  [${c.id}] post=${c.post} | ${c.status} | ${c.authorName}`);
+  console.log(`         ${c.date}`);
+  console.log(`         ${c.content.replace(/<[^>]+>/g, '').slice(0, 120)}`);
+  console.log(`         ${c.link}`);
+}
+
+program
+  .command('list-comments')
+  .description('List comments (optionally filter by post / status)')
+  .option('--post <id>', 'Filter by post ID', (v) => Number.parseInt(v, 10))
+  .option('--status <status>', 'approve | hold | spam | trash | any (default: approve)')
+  .option('--page <n>', 'Page number', '1')
+  .option('--per-page <n>', 'Per page', '30')
+  .action(async (opts: { post?: number; status?: string; page: string; perPage: string }) => {
+    const config = ensureConfig();
+    const r = await listComments(config, {
+      postId: opts.post,
+      status: opts.status as WPCommentListStatus | undefined,
+      page: Number.parseInt(opts.page, 10),
+      perPage: Number.parseInt(opts.perPage, 10),
+    });
+    if (!r.comments.length) {
+      console.log('No comments found.');
+      return;
+    }
+    console.log(`Comments (page ${r.page}/${r.totalPages}, ${r.comments.length}/${r.total} total):\n`);
+    for (const c of r.comments) {
+      printComment(c);
+      console.log('');
+    }
+  });
+
+program
+  .command('get-comment <id>')
+  .description('Fetch a single comment by ID')
+  .action(async (id: string) => {
+    const config = ensureConfig();
+    try {
+      const c = await getComment(config, Number.parseInt(id, 10));
+      printComment(c);
+      if (c.authorEmail) console.log(`         Author email: ${c.authorEmail}`);
+      if (c.authorUrl) console.log(`         Author URL:   ${c.authorUrl}`);
+    } catch (e) {
+      console.error(`Failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('create-comment <postId>')
+  .description('Add a comment on a post')
+  .requiredOption('--content <text>', 'Comment body (HTML or plain text)')
+  .option('--parent <id>', 'Parent comment ID for threaded replies', (v) => Number.parseInt(v, 10))
+  .option('--author-name <name>', 'Override display name')
+  .option('--author-email <email>', 'Override email (admin)')
+  .option('--author-url <url>', 'Override URL')
+  .action(
+    async (
+      postId: string,
+      opts: Record<string, string | number | undefined>,
+    ) => {
+      const config = ensureConfig();
+      try {
+        const c = await createComment(config, {
+          postId: Number.parseInt(postId, 10),
+          content: opts.content as string,
+          parent: typeof opts.parent === 'number' ? opts.parent : undefined,
+          authorName: typeof opts.authorName === 'string' ? opts.authorName : undefined,
+          authorEmail: typeof opts.authorEmail === 'string' ? opts.authorEmail : undefined,
+          authorUrl: typeof opts.authorUrl === 'string' ? opts.authorUrl : undefined,
+        });
+        console.log(`Created comment [${c.id}] on post ${c.post} (status: ${c.status})`);
+        printComment(c);
+      } catch (e) {
+        console.error(`Failed: ${(e as Error).message}`);
+        process.exit(1);
+      }
+    },
+  );
+
+program
+  .command('update-comment <id>')
+  .description('Edit a comment or change its status')
+  .option('--content <text>', 'New content')
+  .option('--status <status>', 'approved | hold | spam | trash')
+  .action(async (id: string, opts: { content?: string; status?: string }) => {
+    if (!opts.content && !opts.status) {
+      console.error('Pass --content or --status.');
+      process.exit(1);
+    }
+    const config = ensureConfig();
+    try {
+      const c = await updateComment(config, Number.parseInt(id, 10), {
+        content: opts.content,
+        status: opts.status as WPCommentStatus | undefined,
+      });
+      console.log(`Updated comment [${c.id}] status=${c.status}`);
+      printComment(c);
+    } catch (e) {
+      console.error(`Failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete-comment <id>')
+  .description('Delete a comment (default: trash; --force for permanent)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .option('--force', 'Permanently delete (bypasses trash)')
+  .action(async (id: string, opts: { yes?: boolean; force?: boolean }) => {
+    if (!opts.yes) {
+      console.error(`Refusing to delete comment ${id} without --yes.`);
+      process.exit(1);
+    }
+    const config = ensureConfig();
+    try {
+      const r = await deleteComment(config, Number.parseInt(id, 10), opts.force === true);
+      console.log(
+        r.deletedPermanently
+          ? `Permanently deleted comment ${r.id}.`
+          : `Moved comment ${r.id} to trash. Run with --force to delete permanently.`,
+      );
+    } catch (e) {
+      console.error(`Failed: ${(e as Error).message}`);
+      process.exit(1);
     }
   });
 

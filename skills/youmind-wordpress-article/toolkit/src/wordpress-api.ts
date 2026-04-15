@@ -134,6 +134,65 @@ export interface UploadMediaInput {
   caption?: string;
 }
 
+// Comment / category types
+export type WPCommentStatus = 'approved' | 'hold' | 'spam' | 'trash';
+export type WPCommentListStatus = 'approve' | 'hold' | 'spam' | 'trash' | 'any';
+
+export interface WPComment {
+  id: number;
+  post: number;
+  parent: number;
+  author: number;
+  authorName: string;
+  authorEmail?: string;
+  authorUrl?: string;
+  content: string;
+  status: string;
+  date: string;
+  link: string;
+}
+
+export interface WPCommentListResponse {
+  comments: WPComment[];
+  total: number;
+  totalPages: number;
+  page: number;
+  perPage: number;
+}
+
+export interface WPCommentDeleteResult {
+  ok: boolean;
+  id: number;
+  deletedPermanently: boolean;
+}
+
+export interface WPCategoryDeleteResult {
+  ok: boolean;
+  id: number;
+  deletedPermanently: boolean;
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  description?: string;
+  slug?: string;
+  parent?: number;
+}
+
+export interface CreateCommentInput {
+  postId: number;
+  content: string;
+  parent?: number;
+  authorName?: string;
+  authorEmail?: string;
+  authorUrl?: string;
+}
+
+export interface UpdateCommentInput {
+  content?: string;
+  status?: WPCommentStatus;
+}
+
 // ---------------------------------------------------------------------------
 // Config loading — YouMind apikey only; WP creds live in YouMind backend.
 // ---------------------------------------------------------------------------
@@ -206,6 +265,7 @@ async function postJson<T = unknown>(
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': cfg.apiKey,
+      'x-use-camel-case': 'true',
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(120_000),
@@ -523,6 +583,129 @@ export async function listCategories(
       : [],
     total: Number(r.total ?? 0),
     totalPages: Number(r.totalPages ?? 0),
+  };
+}
+
+function normalizeComment(c: Record<string, unknown>): WPComment {
+  return {
+    id: Number(c.id ?? 0),
+    post: Number(c.post ?? 0),
+    parent: Number(c.parent ?? 0),
+    author: Number(c.author ?? 0),
+    authorName: String(c.authorName ?? ''),
+    authorEmail: (c.authorEmail as string | undefined) ?? undefined,
+    authorUrl: (c.authorUrl as string | undefined) ?? undefined,
+    content: String(c.content ?? ''),
+    status: String(c.status ?? ''),
+    date: String(c.date ?? ''),
+    link: String(c.link ?? ''),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Categories CRUD
+// ---------------------------------------------------------------------------
+
+export async function createCategory(
+  config: WordPressConfig | undefined,
+  input: CreateCategoryInput,
+): Promise<WPCategory> {
+  const cat = await postJson<Record<string, unknown>>('/wordpress/createCategory', { ...input }, config);
+  return normalizeCategory(cat);
+}
+
+export async function updateCategory(
+  config: WordPressConfig | undefined,
+  id: number,
+  input: Partial<CreateCategoryInput>,
+): Promise<WPCategory> {
+  const cat = await postJson<Record<string, unknown>>(
+    '/wordpress/updateCategory',
+    { id, ...input } as Record<string, unknown>,
+    config,
+  );
+  return normalizeCategory(cat);
+}
+
+export async function deleteCategory(
+  config: WordPressConfig | undefined,
+  id: number,
+): Promise<WPCategoryDeleteResult> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/deleteCategory',
+    { id },
+    config,
+  );
+  return {
+    ok: Boolean(r.ok),
+    id: Number(r.id ?? id),
+    deletedPermanently: Boolean(r.deletedPermanently),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Comments
+// ---------------------------------------------------------------------------
+
+export async function listComments(
+  config: WordPressConfig | undefined,
+  opts: { postId?: number; status?: WPCommentListStatus; page?: number; perPage?: number } = {},
+): Promise<WPCommentListResponse> {
+  const r = await postJson<Record<string, unknown>>('/wordpress/listComments', opts as Record<string, unknown>, config);
+  return {
+    comments: Array.isArray(r.comments)
+      ? r.comments.map((c) => normalizeComment(c as Record<string, unknown>))
+      : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
+    page: Number(r.page ?? opts.page ?? 1),
+    perPage: Number(r.perPage ?? opts.perPage ?? 30),
+  };
+}
+
+export async function getComment(
+  config: WordPressConfig | undefined,
+  id: number,
+): Promise<WPComment> {
+  const c = await postJson<Record<string, unknown>>('/wordpress/getComment', { id }, config);
+  return normalizeComment(c);
+}
+
+export async function createComment(
+  config: WordPressConfig | undefined,
+  input: CreateCommentInput,
+): Promise<WPComment> {
+  const c = await postJson<Record<string, unknown>>('/wordpress/createComment', { ...input }, config);
+  return normalizeComment(c);
+}
+
+export async function updateComment(
+  config: WordPressConfig | undefined,
+  id: number,
+  input: UpdateCommentInput,
+): Promise<WPComment> {
+  const c = await postJson<Record<string, unknown>>(
+    '/wordpress/updateComment',
+    { id, ...input } as Record<string, unknown>,
+    config,
+  );
+  return normalizeComment(c);
+}
+
+export async function deleteComment(
+  config: WordPressConfig | undefined,
+  id: number,
+  force = false,
+): Promise<WPCommentDeleteResult> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/deleteComment',
+    { id, force },
+    config,
+  );
+  return {
+    ok: Boolean(r.ok),
+    id: Number(r.id ?? id),
+    deletedPermanently: Boolean(r.deletedPermanently),
   };
 }
 
