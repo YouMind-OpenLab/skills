@@ -2,21 +2,22 @@
  * Qiita article publisher — high-level wrapper around qiita-api.
  */
 
-import { createItem, type QiitaConfig, type QiitaItem, type QiitaTag } from './qiita-api.js';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import {
+  createItem,
+  type QiitaConfig,
+  type QiitaItem,
+  type QiitaTag,
+  type QiitaTagInput,
+} from './qiita-api.js';
 
 export interface PublishOptions {
   config: QiitaConfig;
   title: string;
   markdown: string;
-  tags: QiitaTag[];
+  tags: Array<QiitaTag | QiitaTagInput>;
   private?: boolean;
   tweet?: boolean;
   slide?: boolean;
-  organizationUrlName?: string | null;
 }
 
 export interface PublishResult {
@@ -26,15 +27,10 @@ export interface PublishResult {
   private: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Publish
-// ---------------------------------------------------------------------------
-
 /**
- * Publish an article to Qiita.
+ * Publish an article to Qiita via YouMind OpenAPI.
  *
- * By default publishes as private (limited sharing).
- * Pass `private: false` to publish publicly.
+ * Defaults to public publication. Pass `private: true` for limited sharing.
  */
 export async function publish(options: PublishOptions): Promise<PublishResult> {
   const {
@@ -42,24 +38,20 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     title,
     markdown,
     tags,
-    private: isPrivate = true,
+    private: isPrivate = false,
     tweet = false,
     slide = false,
-    organizationUrlName,
   } = options;
 
   if (!config.apiKey) {
     throw new Error('youmind.api_key not set in config.yaml');
   }
-
   if (!title || !title.trim()) {
     throw new Error('Article title is required.');
   }
-
   if (!markdown || !markdown.trim()) {
     throw new Error('Article markdown content is required.');
   }
-
   if (tags.length === 0) {
     throw new Error('At least one tag is required for Qiita articles.');
   }
@@ -71,7 +63,6 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     private: isPrivate,
     tweet,
     slide,
-    organization_url_name: organizationUrlName ?? null,
   });
 
   return {

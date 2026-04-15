@@ -1,150 +1,186 @@
-# Qiita API v2 Reference
+# YouMind Qiita OpenAPI Reference
 
-Base URL: `https://qiita.com/api/v2`
+This skill talks to Qiita exclusively through YouMind's OpenAPI proxy. The
+end user only ever supplies a YouMind API key; the Qiita personal access
+token is held server-side after the user connects Qiita inside YouMind.
 
-Full API docs: https://qiita.com/api/v2/docs
+Base URL: `https://youmind.com/openapi/v1` (override via `youmind.base_url`
+in `config.yaml` for local dev, e.g. `http://localhost:4000/openapi/v1`).
 
 ## Authentication
 
-All requests require the `Authorization` header with a Bearer token:
+Every request must carry the YouMind API key in the `x-api-key` header:
 
 ```
-Authorization: Bearer YOUR_QIITA_ACCESS_TOKEN
-```
-
-Get your access token from: https://qiita.com/settings/applications
-
-**Required scope:** `write_qiita` (for creating/updating articles)
-
-## Endpoints Used
-
-### Create Item (Article)
-
-```
-POST /api/v2/items
+x-api-key: sk-ym-...
 Content-Type: application/json
-Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
+
+If the user has not yet linked Qiita inside YouMind, every endpoint returns
+`400 QIITA_ACCOUNT_NOT_CONNECTED` with a `detail.connectUrl` pointing to
+the YouMind connector settings page. Surface that URL to the user.
+
+## Pre-conditions
+
+1. The user has a paid YouMind plan (Pro / Max). Otherwise the proxy returns
+   `402` with an `upgradeUrl` in `detail`.
+2. The user has connected Qiita in YouMind ↑.
+
+## Endpoints
+
+All endpoints are `POST` with a JSON body. Empty body uses `{}`.
+
+### `POST /qiita/validateConnection`
+
+Smoke-test the linked Qiita account.
+
+**Request body:** `{}`
+
+**Response:**
+```json
+{
+  "ok": true,
+  "message": "Connected to Qiita as yourusername",
+  "accountId": "yourusername",
+  "accountName": "Your Name",
+  "profileImageUrl": "https://...",
+  "imageMonthlyUploadLimit": 1048576,
+  "imageMonthlyUploadRemaining": 1048576
+}
+```
+
+### `POST /qiita/createItem`
+
+Create a new Qiita item. Items are published immediately; pass
+`private: true` for limited sharing.
 
 **Request body:**
 ```json
 {
-  "title": "Article Title",
-  "body": "# Content\n\nMarkdown body here...",
+  "title": "My Awesome Article",
+  "body": "# Hello\n\nMarkdown body.",
   "tags": [
-    {"name": "Python", "versions": []},
-    {"name": "API", "versions": []}
+    {"name": "TypeScript", "versions": []},
+    {"name": "Qiita", "versions": []}
   ],
   "private": false,
   "tweet": false,
-  "slide": false,
-  "organization_url_name": null
+  "slide": false
 }
 ```
 
-**Response (201 Created):**
+`tags` accepts plain strings as well: `["typescript", "qiita"]`. Max 5 tags,
+extras are dropped server-side. If `tags` is omitted the proxy injects
+`[{"name": "programming", "versions": []}]` so the upstream call doesn't
+fail Qiita's tag-required validation.
+
+**Response (`QiitaItemDto`):**
 ```json
 {
-  "id": "abcdef1234567890abcd",
-  "title": "Article Title",
-  "body": "# Content\n\nMarkdown body here...",
-  "rendered_body": "<h1>Content</h1>\n<p>Markdown body here...</p>",
-  "url": "https://qiita.com/username/items/abcdef1234567890abcd",
+  "id": "c686397e4a0f4f11683d",
+  "title": "My Awesome Article",
+  "body": "# Hello\n\nMarkdown body.",
+  "renderedBody": "<h1>Hello</h1>...",
+  "url": "https://qiita.com/yourusername/items/c686397e4a0f4f11683d",
   "private": false,
-  "tags": [
-    {"name": "Python", "versions": []},
-    {"name": "API", "versions": []}
-  ],
-  "likes_count": 0,
-  "stocks_count": 0,
-  "comments_count": 0,
-  "page_views_count": null,
-  "slide": false,
-  "created_at": "2026-04-01T12:00:00+09:00",
-  "updated_at": "2026-04-01T12:00:00+09:00",
+  "tags": [{"name": "TypeScript", "versions": []}],
+  "createdAt": "2026-04-15T01:02:03+09:00",
+  "updatedAt": "2026-04-15T01:02:03+09:00",
+  "likesCount": 0,
+  "stocksCount": 0,
+  "commentsCount": 0,
+  "reactionsCount": 0,
   "user": {
-    "id": "username",
-    "permanent_id": 12345,
-    "name": "Display Name",
-    "items_count": 42,
-    "followers_count": 100
+    "id": "yourusername",
+    "name": "Your Name",
+    "profileImageUrl": "https://..."
   }
 }
 ```
 
-**Notes:**
-- `tags` is required — at least 1 tag, array of `{name, versions}` objects
-- `versions` is for specifying version ranges (e.g., `["3.9"]`); pass `[]` if not applicable
-- `private: true` creates a limited-sharing article (only accessible via direct URL)
-- `private: false` publishes publicly
-- `tweet: true` posts to Twitter/X if the user has integration enabled
-- `slide: true` enables slide/presentation mode
-- `organization_url_name` publishes under an organization (null for personal)
-- Tags are free-form — you can use any tag name, new tags are auto-created
+### `POST /qiita/updateItem`
 
-### Update Item
+Update an existing item. Pass only the fields to change. Toggle
+visibility by setting `private` (Qiita has no separate publish/unpublish).
 
-```
-PATCH /api/v2/items/{item_id}
-Content-Type: application/json
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-**Request body:** Same fields as Create, only include fields to update.
-
-**Response (200 OK):** Same as Create response.
-
-### Get Item
-
-```
-GET /api/v2/items/{item_id}
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-**Response (200 OK):** Full item object.
-
-### List My Items
-
-```
-GET /api/v2/authenticated_user/items?page=1&per_page=20
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-**Query params:**
-- `page` (default: 1)
-- `per_page` (default: 20, max: 100)
-
-**Response (200 OK):** Array of item objects.
-
-## Error Responses
-
-| Status | Meaning |
-|--------|---------|
-| 400 | Bad request (malformed JSON, missing required fields) |
-| 401 | Invalid or missing access token |
-| 403 | Forbidden (insufficient scope or permissions) |
-| 404 | Item not found |
-| 429 | Rate limit exceeded |
-
-**Error body:**
+**Request body:**
 ```json
 {
-  "type": "bad_request",
-  "message": "title is missing"
+  "id": "c686397e4a0f4f11683d",
+  "title": "Updated Title",
+  "private": true
 }
 ```
 
-## Rate Limits
+**Response:** `QiitaItemDto`
 
-- **Authenticated:** 1,000 requests per hour
-- **Unauthenticated:** 60 requests per hour per IP
-- Rate limit headers: `Rate-Limit`, `Rate-Remaining`, `Rate-Reset`
+### `POST /qiita/getItem`
 
-## Markdown Extensions
+**Request body:** `{ "id": "<item_id>" }`
+**Response:** `QiitaItemDto`
 
-Qiita supports GitHub Flavored Markdown plus:
+### `POST /qiita/listMyItems`
 
-```markdown
+List the connected user's items.
+
+**Request body:** `{ "page": 1, "per_page": 20 }` (both 1-100, defaults 1/20)
+
+**Response:**
+```json
+{
+  "items": [/* QiitaItemDto[] */],
+  "total": 42,
+  "page": 1,
+  "perPage": 20
+}
+```
+
+### `POST /qiita/deleteItem`
+
+**Request body:** `{ "id": "<item_id>" }`
+**Response:** `{ "ok": true, "id": "<item_id>" }`
+
+## Error model
+
+All errors use this body shape:
+
+```json
+{
+  "message": "human-readable description",
+  "code": "QIITA_TOKEN_INVALID",
+  "detail": {
+    "platform": "qiita",
+    "connectUrl": "https://youmind.com/settings/connector",
+    "upgradeUrl": "https://youmind.com/billing",
+    "upstreamMessage": "...",
+    "retryAfter": "60",
+    "status": 401
+  }
+}
+```
+
+| HTTP | `code` | Meaning |
+| --- | --- | --- |
+| 400 | `QIITA_ACCOUNT_NOT_CONNECTED` | User hasn't linked Qiita yet — surface `detail.connectUrl` |
+| 400 | `QIITA_TOKEN_INVALID` | Stored Qiita token rejected (401 upstream) — user should reconnect |
+| 400 | `QIITA_RATE_LIMITED` | Qiita returned 429 — wait `detail.retryAfter` seconds |
+| 400 | `QIITA_UPSTREAM_ERROR` | Generic Qiita-side failure — see `detail.upstreamMessage` |
+| 402 | (no code) | Paid YouMind plan required — surface `upgradeUrl` |
+| 403 | `QIITA_FORBIDDEN` | Caller is not the item owner |
+| 404 | `QIITA_NOT_FOUND` | Item ID doesn't exist |
+
+## Quotas
+
+Qiita API v2 enforces 1,000 requests/hour per authenticated user. YouMind
+does not add its own per-call quota. If the proxy returns
+`QIITA_RATE_LIMITED`, back off using `detail.retryAfter`.
+
+## Qiita Markdown extensions (for content authors)
+
+Qiita supports GitHub Flavored Markdown plus the following — write your
+`body` field using these directly, the platform renders them:
+
+````markdown
 # Code blocks with syntax highlighting
 ```python
 print("hello")
@@ -175,7 +211,7 @@ Alert/danger note
 Hidden content here
 </details>
 
-# Diagrams (Mermaid)
+# Mermaid diagrams
 ```mermaid
 graph TD
     A --> B
@@ -184,4 +220,4 @@ graph TD
 # Task lists
 - [x] Done
 - [ ] Todo
-```
+````
