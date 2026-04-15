@@ -1,95 +1,54 @@
 # YouMind WordPress Skill
 
-WordPress AI Skill. Tell the Agent what to write, and it automatically runs through research, writing, HTML conversion, image upload, and publishing to your WordPress site.
+AI-powered WordPress article writing and publishing. Tell your agent a topic, and it can research, write, convert Markdown to HTML, upload featured images, and publish through the WordPress site you already connected in YouMind.
 
 ---
 
-## What Can It Do
+## What It Does
 
 | You say | Skill does |
 |---------|------------|
 | `Write a blog post about AI tools for WordPress` | Research -> write -> convert to HTML -> publish as draft |
 | `List my WordPress posts` | Fetch and display recent posts |
-| `Upload this image to WordPress` | Upload media file to WordPress media library |
-| `Validate my WordPress setup` | Check API credentials and connectivity |
+| `Upload this image to WordPress` | Upload media file to the WordPress media library |
+| `Validate my WordPress setup` | Check YouMind API key and WordPress connectivity |
 
 ---
 
-## Getting Credentials
+## Setup
 
-### Getting a WordPress Application Password
+> Prerequisites: Node.js >= 18
 
-> Application Passwords is a built-in REST API authentication method in WordPress 5.6+. No extra plugins needed.
->
-> Prerequisites: WordPress 5.6+, HTTPS enabled (or workaround below), REST API not blocked by security plugins.
+```bash
+# 1. Install dependencies
+cd toolkit && npm install && npm run build && cd ..
 
-**Step 1 -- Open the WordPress Login Page**
-
-Visit your WordPress login page in a browser:
-
-```
-https://<your-domain>/wp-login.php
+# 2. Create config (if config.yaml doesn't exist)
+cp config.example.yaml config.yaml
 ```
 
-Replace `<your-domain>` with your actual domain. Log in with an **admin** or **editor** account.
-
-**Step 2 -- Go to User Profile**
-
-In the **left sidebar**, click **Users** -> **Profile**.
-
-Or go directly to:
-
-```
-https://<your-domain>/wp-admin/profile.php
-```
-
-**Step 3 -- Find Application Passwords**
-
-**Scroll to the bottom** of the profile page to find the **"Application Passwords"** section.
-
-> **Can't find it?** Possible causes:
-> - **Site uses `http://` instead of `https://`** -- WordPress only shows this feature over HTTPS. Workaround: edit `wp-config.php` in your WordPress root directory and add this line **before** `/* That's all, stop editing! */`:
->   ```php
->   define( 'WP_ENVIRONMENT_TYPE', 'local' );
->   ```
->   Save and refresh the profile page.
-> - WordPress version below 5.6 -- check your version under **Dashboard -> Updates**
-> - Security plugins (e.g. Wordfence, iThemes Security) disabled it -- check plugin settings
-> - Hosting restriction -- contact your hosting provider
-
-**Step 4 -- Create a New Password**
-
-1. Enter a name in the **"New Application Password Name"** field (e.g., `youmind`)
-2. Click **"Add New Application Password"**
-
-**Step 5 -- Copy the Password**
-
-A password will be generated (format like `abcd EFGH 1234 ijkl MNOP 5678`), shown in a blue box.
-
-- **This password is shown only once** -- copy it immediately
-- Spaces in the password can be kept or removed; WordPress handles both
-
-**Step 6 -- Note Your Username**
-
-At the **top** of the profile page, find the **"Username"** field (greyed out, not editable).
-
-> **Important:** You need the WordPress **username** (e.g., `admin`), not the display name or email address.
-
-**Step 7 -- Fill in Config**
-
-Add these three values to `config.yaml`:
+`config.yaml` only needs the YouMind API key:
 
 ```yaml
-wordpress:
-  site_url: "https://<your-domain>"     # Your site URL (no trailing /)
-  username: "admin"                       # Username from Step 6
-  app_password: "abcd EFGH 1234 ijkl"    # Password from Step 5
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
 ```
 
-> **Common mistakes:**
-> - `site_url` should not have a trailing slash: `https://myblog.com` not `https://myblog.com/`
-> - 401 error after filling in password -- check if you used an email instead of username, or if the password has extra newlines
-> - Forgot to copy the password -- go back to the profile page, revoke the old one, and create a new one
+Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+
+### Publishing prerequisite
+
+All WordPress credentials (site URL + username + Application Password) are configured once inside YouMind -> Connector Settings for WordPress. This skill only needs `youmind.api_key`.
+
+Before publishing, open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article), pick **WordPress**, paste your site URL, username, and an Application Password generated in WP Admin -> Users -> Profile -> Application Passwords. YouMind stores them encrypted and validates against `/wp-json/wp/v2/users/me` on save.
+
+The skill no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpress.app_password` locally and should never ask the user to paste WordPress credentials into this repo. To rotate a password: revoke it in WP Admin, then disconnect and reconnect WordPress in YouMind.
+
+### Get a YouMind API Key
+
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article), create a key, and place it in `youmind.api_key`.
 
 ### Verify Setup
 
@@ -97,28 +56,7 @@ wordpress:
 cd toolkit && npx tsx src/cli.ts validate
 ```
 
----
-
-## Installation
-
-> Requirements: Node.js >= 18, WordPress 5.6+ (REST API must be enabled)
-
-```bash
-# 1. Install dependencies
-cd toolkit && npm install && npm run build && cd ..
-
-# 2. Create config file
-cp config.example.yaml config.yaml
-```
-
-Fill in the following credentials in `config.yaml`:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `wordpress.site_url` | **Yes** | Your WordPress site URL (e.g. `https://myblog.com`) |
-| `wordpress.username` | **Yes** | WordPress username |
-| `wordpress.app_password` | **Yes** | Application Password (see below) |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) |
+You should see `OK: Connected to WordPress site as <username>`.
 
 ---
 
@@ -134,7 +72,7 @@ This skill integrates with [YouMind](https://youmind.com) knowledge base to enha
 | Material Mining | Browse boards and extract materials for content creation |
 | Board Management | List and view your boards and materials |
 
-> **Get YouMind API Key:** [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch)
+> **Get YouMind API Key:** [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article)
 
 ---
 
@@ -176,60 +114,49 @@ npx tsx src/cli.ts validate
 
 ## FAQ
 
-### What Is WordPress? What Do I Need?
+**Q: What is WordPress? What do I need?**
 
-WordPress is not a desktop application -- it's a **server-side web application** (PHP + MySQL). You need a **running WordPress site** accessible via `https://<your-domain>`, not just the downloaded source code directory.
+WordPress is a **server-side web application** (PHP + MySQL), not a desktop app. You need a **running WordPress site** accessible at `https://<your-domain>` — managed hosting (SiteGround, Bluehost, DigitalOcean, etc.) is the easiest path; self-hosted LAMP/LEMP also works. Version 5.6+ with the REST API enabled is required.
 
-How to get one:
-- **Managed hosting** (easiest): Buy WordPress hosting from SiteGround, Bluehost, DigitalOcean, etc. -- one-click setup
-- **Self-hosted**: Set up a LAMP/LEMP stack on your own server and deploy WordPress
+**Q: I get a 401 or auth error**
 
-### Application Passwords Section Missing
+Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind. If YouMind itself returns "WordPress not connected" or a proxy auth failure, reopen [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article), re-enter your WP site URL / username / Application Password, and save. YouMind validates against `/wp-json/wp/v2/users/me` on save.
 
-| Cause | Solution |
-|-------|----------|
-| Site uses `http://` instead of `https://` | Add `define( 'WP_ENVIRONMENT_TYPE', 'local' );` to `wp-config.php`, then refresh |
-| WordPress version below 5.6 | Upgrade WordPress, or install the "Application Passwords" plugin |
+**Q: I don't see the Application Passwords section in WP Admin**
+
+Application Passwords requires WordPress 5.6+ over HTTPS, with the REST API not blocked by a security plugin.
+
+| Cause | Fix |
+|-------|-----|
+| Site runs on `http://` | Add `define( 'WP_ENVIRONMENT_TYPE', 'local' );` to `wp-config.php`, then reload the profile page |
+| WordPress below 5.6 | Upgrade, or install the "Application Passwords" plugin |
 | Security plugin blocking it | Check Wordfence / iThemes Security settings |
-| Hosting restriction | Contact your hosting provider |
+| Hosting restriction | Contact your host |
 
-### Publishing Fails with 401 Error
+**Q: YouMind connected fine, but publishing times out**
 
-- Make sure `username` is your WordPress **username** (e.g., `admin`), not your email or display name
-- Check `app_password` for extra spaces or newline characters
-- Verify the application password hasn't been revoked (check the profile page)
+Usually means the site's Nginx or firewall is blocking POST requests from outside. Verify POST works locally on the server:
 
-### `validate` Passes but `publish` Times Out
+```bash
+curl -s -X POST "https://<your-domain>/wp-json/wp/v2/posts" \
+  -u "<username>:<app_password>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"test","content":"hello","status":"draft"}'
+```
 
-This is the most common deployment blocker. `validate` (GET request) works fine, but `publish` (POST request) hangs indefinitely.
+If local POST works but the YouMind proxy still hangs, check Nginx (`client_max_body_size 10m;`, allow POST) and cloud security group rules (AWS / GCP / Tencent / Ali) so inbound POST traffic is not filtered.
 
-**Root cause:** The server's Nginx or firewall is blocking POST requests.
+**Q: Images won't upload**
 
-**Troubleshooting:**
+Make sure the WP user you linked has the `upload_files` capability. Admin and Editor roles have it by default.
 
-1. Test POST locally on the server:
-   ```bash
-   curl -s -X POST "http://localhost:8080/wp-json/wp/v2/posts" \
-     -u "username:app_password" \
-     -H "Content-Type: application/json" \
-     -d '{"title":"test","content":"hello","status":"draft"}'
-   ```
-   If this works but external POST fails, it's a firewall/Nginx issue.
+**Q: REST API not accessible**
 
-2. Check Nginx config -- ensure POST method is allowed and request body size is sufficient:
-   ```nginx
-   client_max_body_size 10m;
-   ```
+Some security plugins disable `/wp-json/`. Visit `https://<your-domain>/wp-json/wp/v2/posts` in a browser — if it 403s, adjust the plugin's REST API allowlist.
 
-3. Check cloud provider security group rules (AWS, GCP, Tencent Cloud, etc.) -- ensure inbound rules allow POST requests on the relevant port.
+**Q: Can I still preview locally without a WordPress connection?**
 
-### Images Not Uploading
-
-Ensure the WordPress user has `upload_files` capability. Admin and Editor roles have this by default.
-
-### REST API Not Accessible
-
-Some security plugins may disable the REST API. Check your security plugin settings and ensure the `/wp-json/wp/v2/` endpoint is reachable. Test by visiting `https://<your-domain>/wp-json/wp/v2/posts` in a browser.
+Yes. `preview` only depends on the local Markdown-to-HTML conversion.
 
 ---
 

@@ -67,8 +67,8 @@ Write professional WordPress articles with AI that doesn't sound like AI. Topic 
 >
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) → fill `youmind.api_key` in `config.yaml`
-> 3. Connect your WordPress site at [YouMind Connector Settings](https://youmind.com/settings/connector) — paste your site URL, username, and an Application Password generated in WP Admin → Users → Profile → Application Passwords. YouMind stores them encrypted; the skill never sees them.
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) → fill `youmind.api_key` in `config.yaml`. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs; only override locally if you need to hit a dev `youapi`.
+> 3. Connect your WordPress site at [YouMind Connector Settings](https://youmind.com/settings/connector) — paste your site URL, username, and an Application Password generated in WP Admin → Users → Profile → Application Passwords. YouMind stores them encrypted; this skill no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpress.app_password` locally.
 >
 > Want to write locally first? The `preview` command works without any WordPress connection.
 >
@@ -105,17 +105,19 @@ cd toolkit && npm install && npm run build && cd ..
 cp config.example.yaml config.yaml
 ```
 
-### Step 3 — Get YouMind API Key (Recommended)
+### Step 3 — Get YouMind API Key (Required)
+
+YouMind API Key drives knowledge base search, web search, article archiving, and WordPress publishing through the `/wordpress/*` OpenAPI proxy.
 
 1. Open [YouMind API Keys page](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
 4. Fill into `config.yaml` under `youmind.api_key`
+5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override your local `config.yaml`.
 
 ### Step 4 — Connect WordPress in YouMind (one-time, in the YouMind UI)
 
-The skill never holds your WordPress credentials. They live encrypted in
-YouMind and are attached automatically when the proxy talks to your site.
+This skill never holds your WordPress credentials. It no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpress.app_password` from `config.yaml`. The credentials live encrypted in YouMind and are attached automatically when the proxy talks to your site.
 
 1. In your WordPress admin: **Users → Profile → Application Passwords**, add a new password named "YouMind" and copy the generated string (shown only once).
 2. Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article).
@@ -138,12 +140,12 @@ Read `references/pipeline.md` for full execution details.
 
 | Step | Action | Key reference |
 |------|--------|--------------|
-| 1 | Load config and validate credentials | — |
+| 1 | Load config, validate `youmind.api_key`, and confirm WordPress is connected in YouMind | — |
 | 2 | Mine YouMind knowledge base for source material | `api-reference.md` |
 | 3 | Research topic via web search | — |
 | 4 | Adapt content structure for WordPress | `content-adaptation.md` |
 | 5 | Write article in Markdown | — |
-| 6 | Convert to HTML and publish | `pipeline.md` |
+| 6 | Convert to HTML and publish through YouMind `/wordpress/*` OpenAPI | `pipeline.md` |
 | 7 | Report results: title, URL, post ID, status | — |
 
 ## Resilience: Never Stop on a Single-Step Failure
@@ -163,7 +165,7 @@ Every step has a fallback. If a step AND its fallback both fail, skip that step 
 | `references/pipeline.md` | Full step-by-step execution | When running the writing pipeline |
 | `references/content-adaptation.md` | WordPress-specific writing rules | When adapting content |
 | `references/api-reference.md` | YouMind /wordpress/* OpenAPI contract | When calling the proxy from the toolkit |
-| `config.yaml` | API credentials | Step 1 (first-run check) |
+| `config.yaml` | API credentials (YouMind only) | Step 1 (first-run check) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
 

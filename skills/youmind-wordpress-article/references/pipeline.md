@@ -3,9 +3,12 @@
 ## 7-Step Execution Flow
 
 ### Step 1: Load Config
-- Read `config.yaml` for WordPress credentials and YouMind API key.
-- Validate that `wordpress.site_url`, `wordpress.username`, and `wordpress.app_password` are set.
-- If credentials are missing, prompt the user to configure them.
+- Read `config.yaml` for the YouMind API key (`youmind.api_key`) and `youmind.base_url`.
+- Validate the YouMind API key (call `validate` command or attempt a list).
+- Check that the user's WordPress site is already connected inside YouMind. The skill no longer reads `wordpress.site_url` / `wordpress.username` / `wordpress.app_password` locally — those live encrypted in YouMind after the user links their site at [YouMind Connector Settings](https://youmind.com/settings/connector).
+- If the YouMind API key is missing, prompt the user to fill `youmind.api_key`. If WordPress is not connected in YouMind, point them to the connector page.
+
+**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change the local config file.
 
 ### Step 2: YouMind Knowledge Mining
 - If YouMind API key is configured, mine the user's knowledge base for source material.
@@ -34,11 +37,13 @@
 
 ### Step 6: Publish
 - Convert Markdown to HTML via `content-adapter.ts`.
-- Resolve tag names to WordPress tag IDs (create new tags if needed).
-- Resolve category names to existing WordPress category IDs.
+- Resolve tag names to WordPress tag IDs (create new tags if needed) through the YouMind `/wordpress/*` OpenAPI proxy.
+- Resolve category names to existing WordPress category IDs through the same proxy.
 - Upload featured image if provided.
-- Create the post via WordPress REST API.
+- Create the post through the YouMind WordPress OpenAPI (YouMind attaches the stored credentials when proxying to the user's site).
 - Default status: `draft` (user can specify `--publish` for immediate publication).
+
+**Fallback:** If YouMind proxy publishing fails, save the adapted Markdown/HTML locally so the user can paste it into WordPress Admin.
 
 ### Step 7: Report
 - Display the published post details:

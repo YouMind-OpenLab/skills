@@ -1,109 +1,23 @@
 # YouMind WordPress Skill
 
-WordPress AI 写作发布 Skill。对 Agent 说一句话，自动完成选题、写作、Markdown 转 HTML、上传配图、发布到 WordPress。
+WordPress AI 写作发布 Skill。对 Agent 说一句话，它就可以调研、写作、Markdown 转 HTML、上传特色图片，并通过你已经在 YouMind 中连接好的 WordPress 站点发布。
 
 ---
 
-## 一句话能干嘛
+## 能做什么
 
 | 你说 | Skill 做 |
 |------|----------|
-| `发布一篇关于远程办公的 WordPress 文章` | 选题 -> 写作 -> Markdown->HTML -> 上传配图 -> 发布草稿 |
+| `发布一篇关于远程办公的 WordPress 文章` | 调研 -> 写作 -> Markdown->HTML -> 上传配图 -> 发布草稿 |
 | `列出我的 WordPress 文章` | 获取并展示最近的文章列表 |
 | `上传这张图片到 WordPress` | 上传媒体文件到 WordPress 媒体库 |
-| `检查我的 WordPress 配置` | 检查 API 凭证和连接状态 |
+| `检查我的 WordPress 配置` | 检查 YouMind API Key 和 WordPress 连通性 |
 
 ---
 
-## 获取凭证
+## 安装与配置
 
-### 获取 WordPress 应用程序密码
-
-> 应用程序密码（Application Passwords）是 WordPress 5.6+ 内置的 REST API 认证方式，无需安装额外插件。
->
-> 前提条件：WordPress 5.6+、站点启用 HTTPS、REST API 未被安全插件禁用。
-
-**第 1 步 -- 打开 WordPress 登录页**
-
-在浏览器中访问你的 WordPress 登录页面：
-
-```
-https://<your-domain>/wp-login.php
-```
-
-将 `<your-domain>` 替换为你的实际域名（如 `https://myblog.com/wp-login.php`）。
-
-输入用户名和密码，点击 **"登录"** 进入 WordPress 管理后台（仪表盘）。
-
-**第 2 步 -- 进入个人资料页**
-
-登录后进入管理后台，在 **左侧菜单栏** 中找到 **"用户"**，点击展开后选择 **"个人资料"**。
-
-或者直接在浏览器地址栏输入：
-
-```
-https://<your-domain>/wp-admin/profile.php
-```
-
-**第 3 步 -- 找到应用程序密码区域**
-
-在个人资料页中 **向下滚动到底部**，找到 **"Application Passwords"**（应用程序密码）区域。
-
-> **找不到这个区域？** 可能的原因：
-> - **站点使用 `http://` 而非 `https://`** —— WordPress 仅在 HTTPS 下显示此功能。解决办法：在服务器上编辑 WordPress 根目录下的 `wp-config.php`，在 `/* That's all, stop editing! */` 这行 **之前** 添加：
->   ```php
->   define( 'WP_ENVIRONMENT_TYPE', 'local' );
->   ```
->   保存后刷新个人资料页即可看到应用程序密码区域。
-> - WordPress 版本低于 5.6 —— 在 **仪表盘 -> 更新** 中查看当前版本
-> - 安全插件（如 Wordfence、iThemes Security）禁用了此功能 —— 检查插件设置
-> - 主机商限制 —— 联系主机商确认
-
-**第 4 步 -- 创建新的应用程序密码**
-
-1. 在 **"New Application Password Name"** 输入框中输入一个名称，如 `youmind`（仅用于标识，不影响功能）
-2. 点击 **"Add New Application Password"** 按钮
-
-**第 5 步 -- 复制生成的密码**
-
-系统会生成一组密码（格式类似 `abcd EFGH 1234 ijkl MNOP 5678`），显示在蓝色背景框中。
-
-- **此密码只显示一次**，关闭页面后无法再次查看，请立即复制
-- 密码中的空格可以保留也可以去掉，WordPress 会自动处理
-
-**第 6 步 -- 记下你的用户名**
-
-在当前个人资料页 **顶部** 可以看到 **"用户名"** 字段（不可修改的灰色文字），记下这个值。
-
-> **注意：** 这里需要的是 WordPress **用户名**（如 `admin`），不是昵称，也不是邮箱地址。
-
-**第 7 步 -- 填写配置文件**
-
-将以下三项信息填入 `config.yaml`：
-
-```yaml
-wordpress:
-  site_url: "https://<your-domain>"     # 你的站点地址（不带末尾 /）
-  username: "admin"                       # 第 6 步看到的用户名
-  app_password: "abcd EFGH 1234 ijkl"    # 第 5 步复制的应用程序密码
-```
-
-> **常见问题：**
-> - `site_url` 不要加末尾斜杠，如 `https://myblog.com` 而非 `https://myblog.com/`
-> - 填入密码后报 401 错误 —— 检查用户名是否用了邮箱、密码是否有多余换行符
-> - 如果忘记复制密码 —— 回到个人资料页，删除旧的应用程序密码，重新创建一个即可
-
-### 验证配置
-
-```bash
-cd toolkit && npx tsx src/cli.ts validate
-```
-
----
-
-## 安装
-
-> 环境要求：Node.js >= 18、WordPress 5.6+（需启用 REST API）
+> 环境要求：Node.js >= 18
 
 ```bash
 # 1. 安装依赖
@@ -113,14 +27,36 @@ cd toolkit && npm install && npm run build && cd ..
 cp config.example.yaml config.yaml
 ```
 
-`config.yaml` 需要填写以下凭证：
+`config.yaml` 现在只需要 YouMind API Key：
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `wordpress.site_url` | **是** | 你的 WordPress 站点地址（如 `https://myblog.com`） |
-| `wordpress.username` | **是** | WordPress 用户名 |
-| `wordpress.app_password` | **是** | 应用程序密码（详见下方获取步骤） |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档 -> [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) |
+```yaml
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
+```
+
+命令会统一从本地 `config.yaml` 读取 `youmind.api_key` 和 `youmind.base_url`。
+文档里的域名固定写 `https://youmind.com/openapi/v1`。如果你要联调本地 `youapi`，只改你本地的 `config.yaml`，不要改文档或命令示例。
+
+### 发布前置条件
+
+所有 WordPress 凭证（站点 URL + 用户名 + Application Password）都在 YouMind -> Connector Settings 里一次性配置完成。本 skill 只需要 `youmind.api_key`。
+
+发布前，请先打开 [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article)，选择 **WordPress**，粘贴你的站点 URL、用户名，以及在 WP 后台 **用户 -> 个人资料 -> Application Passwords** 里生成的应用程序密码。YouMind 加密保存，并在保存时调用 `/wp-json/wp/v2/users/me` 校验连通性。
+
+本 skill 不再读取本地的 `wordpress.site_url` / `wordpress.username` / `wordpress.app_password`，也不应该再要求用户把 WordPress 凭证填到这个仓库里。换密码时：先在 WP 后台吊销旧密码，再去 YouMind 断开并重新连接 WordPress，粘贴新生成的密码。
+
+### 获取 YouMind API Key
+
+访问 [YouMind API Key 设置页](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article)，创建并填入 `youmind.api_key`。
+
+### 验证配置
+
+```bash
+cd toolkit && npx tsx src/cli.ts validate
+```
+
+看到 `OK: Connected to WordPress site as <username>` 即表示配置成功。
 
 ---
 
@@ -136,7 +72,7 @@ cp config.example.yaml config.yaml
 | 素材挖掘 | 浏览 Board、提取相关素材用于内容创作 |
 | Board 管理 | 列出、查看你的 YouMind Board 和素材 |
 
-> **获取 YouMind API Key：** [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch)
+> **获取 YouMind API Key：** [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article)
 
 ---
 
@@ -178,64 +114,49 @@ npx tsx src/cli.ts validate
 
 ## 常见问题
 
-### 什么是 WordPress？我需要什么？
+**Q: 什么是 WordPress？我需要什么？**
 
-WordPress 不是一个桌面应用，它是运行在服务器上的 **Web 应用程序**（PHP + MySQL）。你需要一个 **已经在线运行的 WordPress 站点**（能通过 `https://<your-domain>` 访问的那种），而不是下载的源码目录。
+WordPress 是运行在服务器上的 **Web 应用程序**（PHP + MySQL），不是桌面应用。你需要一个 **在线可访问的 WordPress 站点**（能通过 `https://<your-domain>` 打开的那种）——最快路径是在 SiteGround / Bluehost / DigitalOcean / 阿里云 等主机商买 WordPress 托管主机；也可以自己搭 LAMP/LNMP 部署。版本需要 5.6+ 且 REST API 没被禁用。
 
-获取方式：
-- **托管主机**（最简单）：在 SiteGround、Bluehost、阿里云等主机商购买 WordPress 主机，一键安装
-- **自行部署**：在自己的服务器上搭建 LAMP/LNMP 环境，部署 WordPress
+**Q: 出现 401 或鉴权错误**
 
-### 看不到 Application Passwords 区域
+先检查 `config.yaml` 里的 `youmind.api_key`。现在 skill 只用 YouMind API Key 做鉴权。如果 YouMind 返回 "WordPress 未连接" 或代理鉴权失败，打开 [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article)，重新填写 WP 站点 URL / 用户名 / Application Password 并保存。YouMind 会在保存时调用 `/wp-json/wp/v2/users/me` 做连通性校验。
 
-可能原因及解决办法：
+**Q: WP 后台看不到 Application Passwords 区域**
+
+应用程序密码要求 WordPress 5.6+、HTTPS、且 REST API 没被安全插件屏蔽。
 
 | 原因 | 解决办法 |
 |------|----------|
-| 站点使用 `http://` 而非 `https://` | 在 `wp-config.php` 中添加 `define( 'WP_ENVIRONMENT_TYPE', 'local' );`，保存后刷新页面 |
-| WordPress 版本低于 5.6 | 升级 WordPress，或安装 "Application Passwords" 插件 |
-| 安全插件禁用 | 检查 Wordfence / iThemes Security 等插件设置 |
-| 主机商限制 | 联系主机商确认 |
+| 站点使用 `http://` 而非 `https://` | 在 `wp-config.php` 中加入 `define( 'WP_ENVIRONMENT_TYPE', 'local' );`，保存后刷新个人资料页 |
+| WordPress 版本低于 5.6 | 升级，或安装 "Application Passwords" 插件 |
+| 安全插件禁用 | 检查 Wordfence / iThemes Security 设置 |
+| 主机商限制 | 联系主机商 |
 
-### 发布报 401 错误
+**Q: YouMind 已连接，但发布超时**
 
-- 检查 `username` 是否填的是 WordPress **用户名**（如 `admin`），而不是邮箱或昵称
-- 检查 `app_password` 是否有多余空格或换行符
-- 确认应用程序密码未被撤销（回到个人资料页查看）
+一般是站点 Nginx 或防火墙拦截了外部 POST。先在服务器上确认 POST 通：
 
-### `validate` 通过但 `publish` 超时
+```bash
+curl -s -X POST "https://<your-domain>/wp-json/wp/v2/posts" \
+  -u "<用户名>:<应用程序密码>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"test","content":"hello","status":"draft"}'
+```
 
-这是最常见的部署卡点。表现为 `validate`（GET 请求）能通过，但 `publish`（POST 请求）一直超时无响应。
+本地通但 YouMind 代理仍超时，就检查 Nginx（`client_max_body_size 10m;`、允许 POST）和云服务器安全组规则（阿里云 / 腾讯云 / AWS / GCP），确保入站 POST 没被过滤。
 
-**根因：** 服务器的 Nginx 或防火墙配置拦截了 POST 请求。
+**Q: 图片上传失败**
 
-**排查步骤：**
+确认你在 YouMind 连接的 WP 用户具备 `upload_files` 权限。管理员和编辑角色默认都有。
 
-1. 在服务器上本地测试 POST 是否正常：
-   ```bash
-   curl -s -X POST "http://localhost:8080/wp-json/wp/v2/posts" \
-     -u "用户名:应用程序密码" \
-     -H "Content-Type: application/json" \
-     -d '{"title":"test","content":"hello","status":"draft"}'
-   ```
-   如果本地能通但外部不行，说明是防火墙/Nginx 规则问题。
+**Q: REST API 不可用**
 
-2. 检查 Nginx 配置，确保没有限制 POST 方法或请求体大小：
-   ```nginx
-   # 确保允许 POST 方法
-   # 适当增大请求体限制
-   client_max_body_size 10m;
-   ```
+某些安全插件会屏蔽 `/wp-json/`。在浏览器里访问 `https://<your-domain>/wp-json/wp/v2/posts`——如果 403，就去安全插件里把 REST API 加进允许列表。
 
-3. 检查云服务器安全组规则（如腾讯云、阿里云、AWS），确保入站规则允许对应端口的 POST 请求。
+**Q: 没有连接 WordPress 能先本地预览吗？**
 
-### 图片上传失败
-
-确保 WordPress 用户拥有 `upload_files` 权限。管理员和编辑角色默认拥有此权限。
-
-### REST API 不可用
-
-某些安全插件可能禁用了 REST API。检查安全插件设置，确保 `/wp-json/wp/v2/` 端点可访问。可以在浏览器中直接访问 `https://<your-domain>/wp-json/wp/v2/posts` 测试。
+可以。`preview` 只依赖本地的 Markdown -> HTML 转换。
 
 ---
 
