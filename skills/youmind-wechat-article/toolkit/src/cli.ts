@@ -27,7 +27,16 @@ import {
   listPresetColors,
   listThemes,
 } from './theme-engine.js';
-import { getAccessToken, uploadImage, uploadThumb } from './wechat-api.js';
+import {
+  countDrafts,
+  deleteDraft,
+  getAccessToken,
+  listDrafts,
+  listPublished,
+  uploadImage,
+  uploadThumb,
+  validateConnection,
+} from './wechat-api.js';
 import { createDraft } from './publisher.js';
 
 // --- Config Loading ---
@@ -225,6 +234,102 @@ program
     });
 
     console.log(`\nDraft created! media_id: ${draft.mediaId}`);
+  });
+
+program
+  .command('validate')
+  .description('Check WeChat connectivity via YouMind proxy')
+  .action(async () => {
+    try {
+      const r = await validateConnection();
+      console.log(`OK: ${r.message}`);
+      console.log(`  AppID:           ${r.appid}`);
+      console.log(`  Token expires:   ${r.tokenExpiresIn}s`);
+    } catch (e) {
+      console.error(`Validation failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list-drafts')
+  .description('List WeChat drafts (paginated, max 20/page)')
+  .option('--offset <n>', 'Skip first N drafts', '0')
+  .option('--count <n>', 'Items per page', '20')
+  .option('--no-content', 'Omit content body in list (smaller payload)')
+  .action(async (opts: { offset: string; count: string; content?: boolean }) => {
+    try {
+      const r = await listDrafts(
+        Number.parseInt(opts.offset, 10),
+        Number.parseInt(opts.count, 10),
+        opts.content === false,
+      );
+      console.log(`Drafts (${r.items.length}/${r.totalCount} total):\n`);
+      for (const d of r.items) {
+        const titles = d.articles.map((a) => a.title).join(' / ');
+        console.log(`  [${d.mediaId}] ${titles || '(no title)'}`);
+      }
+    } catch (e) {
+      console.error(`list-drafts failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list-published')
+  .description('List published WeChat articles (paginated)')
+  .option('--offset <n>', 'Skip first N items', '0')
+  .option('--count <n>', 'Items per page', '20')
+  .option('--no-content', 'Omit content body')
+  .action(async (opts: { offset: string; count: string; content?: boolean }) => {
+    try {
+      const r = await listPublished(
+        Number.parseInt(opts.offset, 10),
+        Number.parseInt(opts.count, 10),
+        opts.content === false,
+      );
+      console.log(`Published (${r.items.length}/${r.totalCount} total):\n`);
+      for (const item of r.items) {
+        const titles = item.articles.map((a) => a.title).join(' / ');
+        const url = item.articles[0]?.url ?? '';
+        console.log(`  [${item.articleId}] ${titles || '(no title)'}`);
+        if (url) console.log(`         ${url}`);
+      }
+    } catch (e) {
+      console.error(`list-published failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('count-drafts')
+  .description('Total draft count')
+  .action(async () => {
+    try {
+      const r = await countDrafts();
+      console.log(`Total drafts: ${r.totalCount}`);
+    } catch (e) {
+      console.error(`count-drafts failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete-draft <mediaId>')
+  .description('Delete a draft by media_id (permanent — WeChat does not trash drafts)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (mediaId: string, opts: { yes?: boolean }) => {
+    if (!opts.yes) {
+      console.error(`Refusing to delete draft ${mediaId} without --yes.`);
+      process.exit(1);
+    }
+    try {
+      const r = await deleteDraft(mediaId);
+      console.log(r.ok ? `Deleted draft ${r.id}.` : `Delete returned ok=false for ${r.id}.`);
+    } catch (e) {
+      console.error(`delete-draft failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
   });
 
 program
