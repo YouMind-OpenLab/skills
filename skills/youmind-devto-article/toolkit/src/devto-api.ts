@@ -115,6 +115,7 @@ async function post<T = unknown>(
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': cfg.apiKey,
+      'x-use-camel-case': 'true',
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30_000),

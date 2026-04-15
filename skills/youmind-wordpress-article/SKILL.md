@@ -34,15 +34,12 @@ platforms:
 metadata:
   openclaw:
     emoji: "📰"
-    primaryEnv: WORDPRESS_APP_PASSWORD
     requires:
       anyBins: ["node", "npm"]
-      env: ["WORDPRESS_APP_PASSWORD"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
   - Bash(npm run build)
-  - Bash([ -n "$WORDPRESS_APP_PASSWORD" ] *)
 ---
 
 # AI WordPress Article Writer — From Topic to Published Post in One Prompt
@@ -71,9 +68,9 @@ Write professional WordPress articles with AI that doesn't sound like AI. Topic 
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) → fill `youmind.api_key` in `config.yaml`
-> 3. Get WordPress Application Password from Users > Profile > Application Passwords → fill `wordpress.app_password`, `wordpress.username`, and `wordpress.site_url` in `config.yaml`
+> 3. Connect your WordPress site at [YouMind Connector Settings](https://youmind.com/settings/connector) — paste your site URL, username, and an Application Password generated in WP Admin → Users → Profile → Application Passwords. YouMind stores them encrypted; the skill never sees them.
 >
-> No WordPress API yet? You can still write and preview locally — just skip the WordPress config steps.
+> Want to write locally first? The `preview` command works without any WordPress connection.
 >
 > See the **Setup** section below for detailed instructions.
 >
@@ -115,27 +112,25 @@ cp config.example.yaml config.yaml
 3. Copy the `sk-ym-xxxx` key
 4. Fill into `config.yaml` under `youmind.api_key`
 
-### Step 4 — Get WordPress Application Password
+### Step 4 — Connect WordPress in YouMind (one-time, in the YouMind UI)
 
-1. Log into your WordPress admin dashboard
-2. Go to **Users > Profile**
-3. Scroll to **Application Passwords**
-4. Enter a name (e.g., "YouMind Skill") and click **Add New Application Password**
-5. Copy the generated password (shown only once)
-6. Fill into `config.yaml`
+The skill never holds your WordPress credentials. They live encrypted in
+YouMind and are attached automatically when the proxy talks to your site.
 
-```yaml
-wordpress:
-  site_url: "https://myblog.com"
-  username: "your-username"
-  app_password: "xxxx xxxx xxxx xxxx xxxx xxxx"
-```
+1. In your WordPress admin: **Users → Profile → Application Passwords**, add a new password named "YouMind" and copy the generated string (shown only once).
+2. Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article).
+3. Pick **WordPress**. Paste your site URL (e.g. `https://myblog.com`), username, and the Application Password.
+4. Save. YouMind validates against `/wp-json/wp/v2/users/me` immediately — a green check means the link is healthy.
+
+To rotate or revoke: revoke the password in WP Admin, then disconnect WordPress in YouMind and reconnect with a fresh one.
 
 ### Verify Setup
 
 ```bash
-cd toolkit && npx tsx src/cli.ts validate
+cd toolkit && node dist/cli.js validate
 ```
+
+You should see `OK: Connected to WordPress site as <username>`.
 
 ## Pipeline Overview
 
@@ -167,7 +162,7 @@ Every step has a fallback. If a step AND its fallback both fail, skip that step 
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution | When running the writing pipeline |
 | `references/content-adaptation.md` | WordPress-specific writing rules | When adapting content |
-| `references/api-reference.md` | WordPress REST API endpoints | When calling WordPress API |
+| `references/api-reference.md` | YouMind /wordpress/* OpenAPI contract | When calling the proxy from the toolkit |
 | `config.yaml` | API credentials | Step 1 (first-run check) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |

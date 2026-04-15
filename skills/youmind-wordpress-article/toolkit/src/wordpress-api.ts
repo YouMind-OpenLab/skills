@@ -1,45 +1,24 @@
 /**
- * wordpress-api.ts — MOCK IMPLEMENTATION
+ * WordPress API client via YouMind OpenAPI.
  *
- * ⚠️ This file is a mock. The skill talks to WordPress exclusively through
- * YouMind's OpenAPI proxy, but YouMind has not yet shipped the WordPress
- * namespace on that OpenAPI. This mock lets the rest of the skill
- * (publisher, CLI) be built and smoke-tested end-to-end right now, without
- * a real backend.
- *
- * Swap-in plan when the real YouMind endpoints ship:
- *   1. YouMind will expose endpoints whose request/response shape mirrors
- *      WordPress's REST API (same field names like `title`, `content`,
- *      `excerpt`, `status`, `categories`, `tags`, `featured_media`, same
- *      /posts, /posts/{id}, /media, /categories, /tags endpoints). The
- *      only auth difference is that YouMind accepts
- *      `x-api-key: <youmind_api_key>` instead of Basic Auth to
- *      `{site_url}/wp-json/wp/v2/` with an Application Password —
- *      YouMind holds the user's site_url + app_password server-side and
- *      attaches them.
- *   2. Replace each mock function body below with a `fetch()` POST/GET/PUT
- *      to the corresponding `https://youmind.com/openapi/v1/wordpress/<op>`
- *      using the `x-api-key` header (same helper pattern as youmind-api.ts).
- *   3. Keep the exported type signatures stable — they ARE the swap-in
- *      contract. Nothing in publisher.ts / cli.ts / content-adapter.ts
- *      should need to change.
- *   4. Delete the `mockState`, `initMockState`, and the mock seed data
- *      at that point.
- *
- * loadWordPressConfig is NOT mocked — it reads real config the same way as
- * youmind-api.ts, because users will set their YouMind API key through the
- * normal config flow even before the WordPress endpoints exist.
+ * The skill only requires a YouMind API key locally. The user's WordPress
+ * site URL, username, and Application Password are configured once inside
+ * YouMind, and the YouMind backend attaches them when proxying WP requests.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
-// Public types — stable contract (do NOT change signatures when swapping to
-// real HTTP; only the function bodies below should change).
+// Public types — stable contract. Fields use camelCase (server normalizes
+// raw WP shape `title.rendered` etc into flat strings).
 // ---------------------------------------------------------------------------
+
+export type WPPostStatus = 'publish' | 'draft' | 'pending' | 'private' | 'future';
+export type WPListStatus = WPPostStatus | 'any';
+export type WPViewContext = 'view' | 'edit' | 'embed';
 
 export interface WordPressConfig {
   apiKey: string;
@@ -48,416 +27,519 @@ export interface WordPressConfig {
 
 export interface WPPost {
   id: number;
-  date: string;
-  date_gmt: string;
+  title: string;
+  content: string;
+  excerpt?: string;
+  status: WPPostStatus;
   slug: string;
-  status: 'publish' | 'draft' | 'pending' | 'private' | 'future' | 'trash';
-  title: { rendered: string };
-  content: { rendered: string };
-  excerpt: { rendered: string };
+  link: string;
   author: number;
-  featured_media: number;
+  featuredMedia: number;
   categories: number[];
   tags: number[];
-  link: string;
-  [key: string]: unknown;
+  date: string;
+  modified: string;
+  format?: string;
+  adminUrl?: string | null;
+}
+
+export interface WPPostListResponse {
+  posts: WPPost[];
+  total: number;
+  totalPages: number;
+  page: number;
+  perPage: number;
+}
+
+export interface WPMedia {
+  id: number;
+  sourceUrl: string;
+  title: string;
+  mimeType: string;
+  mediaType: string;
+  slug: string;
+  altText?: string;
+  caption?: string;
+  /** Markdown image snippet ready to paste into a post body */
+  markdown: string;
+}
+
+export interface WPCategory {
+  id: number;
+  name: string;
+  slug: string;
+  parent: number;
+  count: number;
+  description: string;
+}
+
+export interface WPCategoryListResponse {
+  categories: WPCategory[];
+  total: number;
+  totalPages: number;
+}
+
+export interface WPTag {
+  id: number;
+  name: string;
+  slug: string;
+  count: number;
+  description: string;
+}
+
+export interface WPTagListResponse {
+  tags: WPTag[];
+  total: number;
+  totalPages: number;
+}
+
+export interface WPConnectionResult {
+  ok: boolean;
+  message: string;
+  accountId?: number;
+  accountName?: string;
+  accountUsername?: string;
+  siteUrl?: string;
+}
+
+export interface WPDeleteResult {
+  ok: boolean;
+  id: number;
+  deletedPermanently: boolean;
 }
 
 export interface CreatePostOptions {
   title: string;
   content: string;
   excerpt?: string;
-  status?: 'publish' | 'draft' | 'pending' | 'private' | 'future';
-  categories?: number[];
-  tags?: number[];
-  featured_media?: number;
+  status?: WPPostStatus;
+  /** Tag names (server resolves to IDs and auto-creates missing ones) */
+  tags?: string[];
+  /** Category names (server resolves to IDs; errors if missing) */
+  categories?: string[];
+  featuredMedia?: number;
   slug?: string;
   date?: string;
-  format?: 'standard' | 'aside' | 'chat' | 'gallery' | 'link' | 'image' | 'quote' | 'status' | 'video' | 'audio';
+  format?: string;
 }
 
-export interface WPMedia {
-  id: number;
-  date: string;
-  slug: string;
-  status: string;
-  title: { rendered: string };
-  source_url: string;
-  media_type: string;
-  mime_type: string;
-  [key: string]: unknown;
-}
+export type UpdatePostOptions = Partial<CreatePostOptions>;
 
-export interface WPCategory {
-  id: number;
-  count: number;
-  description: string;
-  link: string;
-  name: string;
-  slug: string;
-  parent: number;
-  [key: string]: unknown;
-}
-
-export interface WPTag {
-  id: number;
-  count: number;
-  description: string;
-  link: string;
-  name: string;
-  slug: string;
-  [key: string]: unknown;
+export interface UploadMediaInput {
+  /** Local file path to upload */
+  filePath: string;
+  filename?: string;
+  contentType?: string;
+  altText?: string;
+  caption?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Config loading — real implementation, mirrors youmind-api.ts pattern.
+// Config loading — YouMind apikey only; WP creds live in YouMind backend.
 // ---------------------------------------------------------------------------
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
+const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
 
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
+interface OpenApiErrorDetail {
+  connectUrl?: string;
+  upgradeUrl?: string;
+  hint?: string;
+  upstreamMessage?: string;
+  retryAfter?: string | null;
+  status?: number | null;
+  categoryName?: string;
+}
+
+interface OpenApiErrorResponse {
+  message?: string;
+  code?: string;
+  detail?: OpenApiErrorDetail;
+}
+
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
 }
 
 function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-    }
+  const path = resolve(PROJECT_DIR, 'config.yaml');
+  if (existsSync(path)) {
+    return parseYaml(readFileSync(path, 'utf-8')) ?? {};
   }
   return {};
 }
 
 export function loadWordPressConfig(): WordPressConfig {
-  const central = loadCentralCredentials();
   const local = loadLocalConfig();
-  const ym = {
-    ...(central.youmind as Record<string, unknown> ?? {}),
-    ...(local.youmind as Record<string, unknown> ?? {}),
-  };
-  // Filter out local empty strings so central credentials aren't masked.
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
+  const ym = (local.youmind as Record<string, unknown>) ?? {};
+  const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
+
   return {
     apiKey: (ym.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    baseUrl: configuredBaseUrl || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
   };
 }
 
 // ---------------------------------------------------------------------------
-// Mock state — module-scoped, lives for the lifetime of the process. Not
-// exported; swap-in code should delete this whole block.
+// HTTP transport
 // ---------------------------------------------------------------------------
 
-interface MockState {
-  postCounter: number;
-  mediaCounter: number;
-  categoryCounter: number;
-  tagCounter: number;
-  publishedPosts: WPPost[];
-  mediaById: Map<number, WPMedia>;
-  categories: WPCategory[];
-  tags: WPTag[];
+async function postJson<T = unknown>(
+  endpoint: string,
+  body: Record<string, unknown> = {},
+  config?: WordPressConfig,
+): Promise<T> {
+  const cfg = config ?? loadWordPressConfig();
+  if (!cfg.apiKey) {
+    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
+  }
+
+  const response = await fetch(`${cfg.baseUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': cfg.apiKey,
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const parsed = parseOpenApiError(text);
+    throw new Error(
+      `YouMind WordPress API ${endpoint} failed (${response.status})` +
+        `: ${formatOpenApiError(parsed, text)}`,
+    );
+  }
+
+  return response.json() as Promise<T>;
 }
 
-function buildMockCategory(id: number, name: string): WPCategory {
-  const slug = slugify(name) || `category-${id}`;
-  return {
-    id,
-    count: 0,
-    description: '',
-    link: `https://mock.wordpress.com/category/${slug}/`,
-    name,
-    slug,
-    parent: 0,
-  };
+function parseOpenApiError(text: string): OpenApiErrorResponse | null {
+  try {
+    return JSON.parse(text) as OpenApiErrorResponse;
+  } catch {
+    return null;
+  }
 }
 
-function buildMockTag(id: number, name: string): WPTag {
-  const slug = slugify(name) || `tag-${id}`;
-  return {
-    id,
-    count: 0,
-    description: '',
-    link: `https://mock.wordpress.com/tag/${slug}/`,
-    name,
-    slug,
-  };
-}
-
-function initMockState(): MockState {
-  const seededCategories: WPCategory[] = [
-    buildMockCategory(1, 'Uncategorized'),
-    buildMockCategory(2, 'Tech'),
-    buildMockCategory(3, 'Writing'),
-  ];
-  const seededTags: WPTag[] = [
-    buildMockTag(1, 'ai'),
-    buildMockTag(2, 'tutorial'),
-    buildMockTag(3, 'productivity'),
-  ];
-  return {
-    postCounter: 100,
-    mediaCounter: 500,
-    categoryCounter: seededCategories.length,
-    tagCounter: seededTags.length,
-    publishedPosts: [],
-    mediaById: new Map<number, WPMedia>(),
-    categories: seededCategories,
-    tags: seededTags,
-  };
-}
-
-const mockState: MockState = initMockState();
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
-function mockPostLink(id: number): string {
-  return `https://mock.wordpress.com/?p=${id}`;
-}
-
-function buildMockPost(id: number, options: CreatePostOptions): WPPost {
-  const now = new Date();
-  const iso = now.toISOString();
-  const slugBase = options.slug || slugify(options.title) || `mock-post-${id}`;
-  const rawExcerpt = options.excerpt || `${options.content.slice(0, 150)}...`;
-  return {
-    id,
-    date: iso,
-    date_gmt: iso,
-    slug: slugBase,
-    status: options.status ?? 'draft',
-    title: { rendered: options.title },
-    content: { rendered: options.content },
-    excerpt: { rendered: `<p>${rawExcerpt}</p>` },
-    author: 1,
-    featured_media: options.featured_media ?? 0,
-    categories: options.categories ?? [1],
-    tags: options.tags ?? [],
-    link: mockPostLink(id),
-  };
+function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string): string {
+  if (!parsed) return rawText.slice(0, 300);
+  const parts = [parsed.message, parsed.code, parsed.detail?.hint].filter(
+    (v): v is string => typeof v === 'string' && v.length > 0,
+  );
+  if (parsed.detail?.connectUrl) parts.push(`Connect WordPress: ${parsed.detail.connectUrl}`);
+  if (parsed.detail?.upgradeUrl) parts.push(`Upgrade plan: ${parsed.detail.upgradeUrl}`);
+  if (parsed.detail?.upstreamMessage) parts.push(`WP said: ${parsed.detail.upstreamMessage}`);
+  if (parsed.detail?.categoryName) parts.push(`Missing category: ${parsed.detail.categoryName}`);
+  if (parsed.detail?.retryAfter) parts.push(`Retry-After: ${parsed.detail.retryAfter}`);
+  return parts.join(' | ') || rawText.slice(0, 300);
 }
 
 // ---------------------------------------------------------------------------
-// Exported mock functions — Posts
+// Normalization
 // ---------------------------------------------------------------------------
 
-/**
- * Create a new WordPress post.
- */
+function normalizePost(post: Record<string, unknown>): WPPost {
+  return {
+    id: Number(post.id ?? 0),
+    title: String(post.title ?? ''),
+    content: String(post.content ?? ''),
+    excerpt: (post.excerpt as string | undefined) ?? undefined,
+    status: (post.status as WPPostStatus) ?? 'draft',
+    slug: String(post.slug ?? ''),
+    link: String(post.link ?? ''),
+    author: Number(post.author ?? 0),
+    featuredMedia: Number(post.featuredMedia ?? 0),
+    categories: Array.isArray(post.categories)
+      ? post.categories.filter((n): n is number => typeof n === 'number')
+      : [],
+    tags: Array.isArray(post.tags) ? post.tags.filter((n): n is number => typeof n === 'number') : [],
+    date: String(post.date ?? ''),
+    modified: String(post.modified ?? ''),
+    format: typeof post.format === 'string' ? post.format : undefined,
+    adminUrl: (post.adminUrl as string | null | undefined) ?? null,
+  };
+}
+
+function normalizeMedia(media: Record<string, unknown>): WPMedia {
+  return {
+    id: Number(media.id ?? 0),
+    sourceUrl: String(media.sourceUrl ?? ''),
+    title: String(media.title ?? ''),
+    mimeType: String(media.mimeType ?? ''),
+    mediaType: String(media.mediaType ?? ''),
+    slug: String(media.slug ?? ''),
+    altText: (media.altText as string | undefined) ?? undefined,
+    caption: (media.caption as string | undefined) ?? undefined,
+    markdown: String(media.markdown ?? ''),
+  };
+}
+
+function normalizeCategory(c: Record<string, unknown>): WPCategory {
+  return {
+    id: Number(c.id ?? 0),
+    name: String(c.name ?? ''),
+    slug: String(c.slug ?? ''),
+    parent: Number(c.parent ?? 0),
+    count: Number(c.count ?? 0),
+    description: String(c.description ?? ''),
+  };
+}
+
+function normalizeTag(t: Record<string, unknown>): WPTag {
+  return {
+    id: Number(t.id ?? 0),
+    name: String(t.name ?? ''),
+    slug: String(t.slug ?? ''),
+    count: Number(t.count ?? 0),
+    description: String(t.description ?? ''),
+  };
+}
+
+function buildPostPayload(options: UpdatePostOptions): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  if (options.title !== undefined) payload.title = options.title;
+  if (options.content !== undefined) payload.content = options.content;
+  if (options.excerpt !== undefined) payload.excerpt = options.excerpt;
+  if (options.status !== undefined) payload.status = options.status;
+  if (options.tags !== undefined) payload.tags = options.tags;
+  if (options.categories !== undefined) payload.categories = options.categories;
+  if (options.featuredMedia !== undefined) payload.featuredMedia = options.featuredMedia;
+  if (options.slug !== undefined) payload.slug = options.slug;
+  if (options.date !== undefined) payload.date = options.date;
+  if (options.format !== undefined) payload.format = options.format;
+  return payload;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Posts
+// ---------------------------------------------------------------------------
+
+export async function validateConnection(config?: WordPressConfig): Promise<WPConnectionResult> {
+  const r = await postJson<Record<string, unknown>>('/wordpress/validateConnection', {}, config);
+  return {
+    ok: Boolean(r.ok),
+    message: String(r.message ?? ''),
+    accountId: typeof r.accountId === 'number' ? r.accountId : undefined,
+    accountName: (r.accountName as string | undefined) ?? undefined,
+    accountUsername: (r.accountUsername as string | undefined) ?? undefined,
+    siteUrl: (r.siteUrl as string | undefined) ?? undefined,
+  };
+}
+
 export async function createPost(
-  _config: WordPressConfig,
+  config: WordPressConfig | undefined,
   options: CreatePostOptions,
 ): Promise<WPPost> {
-  mockState.postCounter += 1;
-  const post = buildMockPost(mockState.postCounter, options);
-  mockState.publishedPosts.unshift(post);
-  return post;
-}
-
-/**
- * Update an existing WordPress post.
- */
-export async function updatePost(
-  _config: WordPressConfig,
-  postId: number,
-  options: Partial<CreatePostOptions>,
-): Promise<WPPost> {
-  const existing = mockState.publishedPosts.find((p) => p.id === postId);
-  if (existing) {
-    if (options.title !== undefined) existing.title = { rendered: options.title };
-    if (options.content !== undefined) existing.content = { rendered: options.content };
-    if (options.excerpt !== undefined) existing.excerpt = { rendered: `<p>${options.excerpt}</p>` };
-    if (options.status !== undefined) existing.status = options.status;
-    if (options.categories !== undefined) existing.categories = options.categories;
-    if (options.tags !== undefined) existing.tags = options.tags;
-    if (options.featured_media !== undefined) existing.featured_media = options.featured_media;
-    if (options.slug !== undefined) existing.slug = options.slug;
-    return existing;
-  }
-
-  // Fabricate a plausible post if we've never seen this id.
-  return buildMockPost(postId, {
-    title: options.title ?? `Mock Post ${postId}`,
-    content: options.content ?? '<p>Mock content.</p>',
-    excerpt: options.excerpt,
-    status: options.status,
-    categories: options.categories,
-    tags: options.tags,
-    featured_media: options.featured_media,
-    slug: options.slug,
-  });
-}
-
-/**
- * Get a single WordPress post by ID.
- */
-export async function getPost(
-  _config: WordPressConfig,
-  postId: number,
-): Promise<WPPost> {
-  const found = mockState.publishedPosts.find((p) => p.id === postId);
-  if (found) return found;
-  return buildMockPost(postId, {
-    title: `Mock Post ${postId}`,
-    content: '<p>Mock content.</p>',
-    status: 'publish',
-  });
-}
-
-/**
- * List recent WordPress posts.
- */
-export async function listPosts(
-  _config: WordPressConfig,
-  page = 1,
-  perPage = 10,
-): Promise<WPPost[]> {
-  const start = (page - 1) * perPage;
-  return mockState.publishedPosts.slice(start, start + perPage);
-}
-
-// ---------------------------------------------------------------------------
-// Exported mock functions — Media
-// ---------------------------------------------------------------------------
-
-/**
- * Upload a media file to WordPress.
- */
-export async function uploadMedia(
-  _config: WordPressConfig,
-  filePath: string,
-  filename?: string,
-): Promise<WPMedia> {
-  mockState.mediaCounter += 1;
-  const id = mockState.mediaCounter;
-  const name = filename || filePath.split('/').pop() || `mock-media-${id}`;
-  const ext = name.split('.').pop()?.toLowerCase() || 'jpg';
-
-  const mimeMap: Record<string, string> = {
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    gif: 'image/gif',
-    webp: 'image/webp',
-    svg: 'image/svg+xml',
-    mp4: 'video/mp4',
-    pdf: 'application/pdf',
-  };
-  const mimeType = mimeMap[ext] || 'application/octet-stream';
-  const mediaType = mimeType.startsWith('image/')
-    ? 'image'
-    : mimeType.startsWith('video/')
-      ? 'video'
-      : 'file';
-
-  const slug = slugify(name.replace(/\.[^.]+$/, '')) || `mock-media-${id}`;
-  const iso = new Date().toISOString();
-  const media: WPMedia = {
-    id,
-    date: iso,
-    slug,
-    status: 'inherit',
-    title: { rendered: name },
-    source_url: `https://mock.wordpress.com/wp-content/uploads/${slug}.${ext}`,
-    media_type: mediaType,
-    mime_type: mimeType,
-  };
-  mockState.mediaById.set(id, media);
-  return media;
-}
-
-// ---------------------------------------------------------------------------
-// Exported mock functions — Categories
-// ---------------------------------------------------------------------------
-
-/**
- * List all WordPress categories.
- */
-export async function listCategories(
-  _config: WordPressConfig,
-): Promise<WPCategory[]> {
-  return [...mockState.categories];
-}
-
-// ---------------------------------------------------------------------------
-// Exported mock functions — Tags
-// ---------------------------------------------------------------------------
-
-/**
- * List all WordPress tags.
- */
-export async function listTags(
-  _config: WordPressConfig,
-): Promise<WPTag[]> {
-  return [...mockState.tags];
-}
-
-/**
- * Create a new WordPress tag.
- */
-export async function createTag(
-  _config: WordPressConfig,
-  name: string,
-): Promise<WPTag> {
-  const existing = mockState.tags.find(
-    (t) => t.name.toLowerCase() === name.toLowerCase(),
+  const post = await postJson<Record<string, unknown>>(
+    '/wordpress/createPost',
+    buildPostPayload(options),
+    config,
   );
-  if (existing) return existing;
+  return normalizePost(post);
+}
 
-  mockState.tagCounter += 1;
-  const tag = buildMockTag(mockState.tagCounter, name);
-  mockState.tags.push(tag);
-  return tag;
+export async function updatePost(
+  config: WordPressConfig | undefined,
+  postId: number,
+  options: UpdatePostOptions,
+): Promise<WPPost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/wordpress/updatePost',
+    { id: postId, ...buildPostPayload(options) },
+    config,
+  );
+  return normalizePost(post);
+}
+
+export async function getPost(
+  config: WordPressConfig | undefined,
+  postId: number,
+  context: WPViewContext = 'view',
+): Promise<WPPost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/wordpress/getPost',
+    { id: postId, context },
+    config,
+  );
+  return normalizePost(post);
+}
+
+export async function deletePost(
+  config: WordPressConfig | undefined,
+  postId: number,
+  force = false,
+): Promise<WPDeleteResult> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/deletePost',
+    { id: postId, force },
+    config,
+  );
+  return {
+    ok: Boolean(r.ok),
+    id: Number(r.id ?? postId),
+    deletedPermanently: Boolean(r.deletedPermanently),
+  };
+}
+
+export async function publishPost(
+  config: WordPressConfig | undefined,
+  postId: number,
+): Promise<WPPost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/wordpress/publishPost',
+    { id: postId },
+    config,
+  );
+  return normalizePost(post);
+}
+
+export async function unpublishPost(
+  config: WordPressConfig | undefined,
+  postId: number,
+): Promise<WPPost> {
+  const post = await postJson<Record<string, unknown>>(
+    '/wordpress/unpublishPost',
+    { id: postId },
+    config,
+  );
+  return normalizePost(post);
+}
+
+export async function listPosts(
+  config: WordPressConfig | undefined,
+  page = 1,
+  perPage = 15,
+  status?: WPListStatus,
+): Promise<WPPostListResponse> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/listPosts',
+    { page, perPage, ...(status ? { status } : {}) },
+    config,
+  );
+  return {
+    posts: Array.isArray(r.posts) ? r.posts.map((p) => normalizePost(p as Record<string, unknown>)) : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
+    page: Number(r.page ?? page),
+    perPage: Number(r.perPage ?? perPage),
+  };
+}
+
+export async function listDraftPosts(
+  config: WordPressConfig | undefined,
+  page = 1,
+  perPage = 15,
+): Promise<WPPostListResponse> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/listDrafts',
+    { page, perPage },
+    config,
+  );
+  return {
+    posts: Array.isArray(r.posts) ? r.posts.map((p) => normalizePost(p as Record<string, unknown>)) : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
+    page: Number(r.page ?? page),
+    perPage: Number(r.perPage ?? perPage),
+  };
+}
+
+export async function listPublishedPosts(
+  config: WordPressConfig | undefined,
+  page = 1,
+  perPage = 15,
+): Promise<WPPostListResponse> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/listPublished',
+    { page, perPage },
+    config,
+  );
+  return {
+    posts: Array.isArray(r.posts) ? r.posts.map((p) => normalizePost(p as Record<string, unknown>)) : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
+    page: Number(r.page ?? page),
+    perPage: Number(r.perPage ?? perPage),
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Exported mock functions — Validation
+// Public API — Media
 // ---------------------------------------------------------------------------
 
-/**
- * Validate the API connection to WordPress via the YouMind proxy.
- */
-export async function validateConnection(
-  config: WordPressConfig,
-): Promise<{ ok: boolean; message: string }> {
-  if (!config.apiKey) {
-    return {
-      ok: false,
-      message: 'youmind.api_key not set in config.yaml',
-    };
+export async function uploadMedia(
+  config: WordPressConfig | undefined,
+  input: UploadMediaInput,
+): Promise<WPMedia> {
+  const filePath = resolve(input.filePath);
+  if (!existsSync(filePath)) {
+    throw new Error(`Media file not found: ${filePath}`);
   }
-  try {
-    const posts = await listPosts(config, 1, 1);
-    return {
-      ok: true,
-      message: `Connected to WordPress via YouMind proxy. Found ${posts.length} recent post(s). API is working.`,
-    };
-  } catch (e) {
-    return {
-      ok: false,
-      message: `Connection failed: ${(e as Error).message}`,
-    };
-  }
+  const filename = input.filename || filePath.split('/').pop() || 'upload.bin';
+  const contentBase64 = readFileSync(filePath).toString('base64');
+
+  const media = await postJson<Record<string, unknown>>(
+    '/wordpress/uploadMedia',
+    {
+      filename,
+      contentBase64,
+      ...(input.contentType ? { contentType: input.contentType } : {}),
+      ...(input.altText !== undefined ? { altText: input.altText } : {}),
+      ...(input.caption !== undefined ? { caption: input.caption } : {}),
+    },
+    config,
+  );
+  return normalizeMedia(media);
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Taxonomy
+// ---------------------------------------------------------------------------
+
+export async function listCategories(
+  config: WordPressConfig | undefined,
+  page = 1,
+  perPage = 50,
+  search?: string,
+): Promise<WPCategoryListResponse> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/listCategories',
+    { page, perPage, ...(search ? { search } : {}) },
+    config,
+  );
+  return {
+    categories: Array.isArray(r.categories)
+      ? r.categories.map((c) => normalizeCategory(c as Record<string, unknown>))
+      : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
+  };
+}
+
+export async function listTags(
+  config: WordPressConfig | undefined,
+  page = 1,
+  perPage = 50,
+  search?: string,
+): Promise<WPTagListResponse> {
+  const r = await postJson<Record<string, unknown>>(
+    '/wordpress/listTags',
+    { page, perPage, ...(search ? { search } : {}) },
+    config,
+  );
+  return {
+    tags: Array.isArray(r.tags) ? r.tags.map((t) => normalizeTag(t as Record<string, unknown>)) : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
+  };
 }

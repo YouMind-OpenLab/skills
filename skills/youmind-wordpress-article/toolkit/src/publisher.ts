@@ -1,65 +1,51 @@
 /**
- * WordPress publisher: converts Markdown and publishes to WordPress.
- *
- * - Handles media upload for featured image
- * - Sets post status to 'draft' by default
- * - Returns post ID, URL, slug, and status
+ * WordPress publisher — converts Markdown and publishes via YouMind proxy.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import {
-  type WordPressConfig,
-  loadWordPressConfig,
-  createPost,
-  uploadMedia,
-} from './wordpress-api.js';
 import { adaptForWordPress } from './content-adapter.js';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import {
+  createPost,
+  loadWordPressConfig,
+  uploadMedia,
+  type WordPressConfig,
+  type WPPostStatus,
+} from './wordpress-api.js';
 
 export interface PublishOptions {
   /** Path to Markdown file, or raw Markdown string */
   input: string;
   /** Whether input is a file path (true) or raw Markdown (false) */
   isFile?: boolean;
-  /** Post status: 'draft' (default), 'publish', 'pending', 'private' */
-  status?: 'publish' | 'draft' | 'pending' | 'private';
-  /** Tag names to assign */
+  status?: WPPostStatus;
+  /** Tag names — server resolves and auto-creates missing */
   tags?: string[];
-  /** Category names to assign */
+  /** Category names — server resolves; errors if missing */
   categories?: string[];
-  /** Path to featured image file */
+  /** Local file path of featured image — uploaded then attached */
   featuredImage?: string;
   /** Override title */
   title?: string;
-  /** WordPress config (loaded from config.yaml if not provided) */
   config?: WordPressConfig;
 }
 
 export interface PublishResult {
   id: number;
   url: string;
+  adminUrl?: string | null;
   slug: string;
   status: string;
   title: string;
   excerpt: string;
 }
 
-// ---------------------------------------------------------------------------
-// Publisher
-// ---------------------------------------------------------------------------
-
 export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadWordPressConfig();
-
   if (!config.apiKey) {
     throw new Error('youmind.api_key not set in config.yaml');
   }
 
-  // Read Markdown content
   let markdown: string;
   if (options.isFile !== false && existsSync(resolve(options.input))) {
     markdown = readFileSync(resolve(options.input), 'utf-8');
@@ -67,46 +53,37 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     markdown = options.input;
   }
 
-  // Adapt content for WordPress
-  const adapted = await adaptForWordPress({
-    markdown,
-    title: options.title,
-    tagNames: options.tags,
-    categoryNames: options.categories,
-    config,
-  });
+  const adapted = adaptForWordPress({ markdown, title: options.title });
 
-  // Upload featured image if provided
-  let featuredMediaId: number | undefined;
+  let featuredMedia: number | undefined;
   if (options.featuredImage && existsSync(resolve(options.featuredImage))) {
     try {
-      const media = await uploadMedia(config, resolve(options.featuredImage));
-      featuredMediaId = media.id;
-      console.log(`Featured image uploaded: ID=${media.id}, URL=${media.source_url}`);
+      const media = await uploadMedia(config, { filePath: options.featuredImage });
+      featuredMedia = media.id;
+      console.log(`Featured image uploaded: ID=${media.id}, URL=${media.sourceUrl}`);
     } catch (e) {
       console.error(`Failed to upload featured image: ${(e as Error).message}`);
       console.error('Continuing without featured image...');
     }
   }
 
-  // Create the post
-  const status = options.status || 'draft';
   const post = await createPost(config, {
     title: adapted.title,
     content: adapted.html,
     excerpt: adapted.excerpt,
-    status,
-    tags: adapted.tags.length ? adapted.tags : undefined,
-    categories: adapted.categories.length ? adapted.categories : undefined,
-    featured_media: featuredMediaId,
+    status: options.status ?? 'draft',
+    tags: options.tags?.length ? options.tags : undefined,
+    categories: options.categories?.length ? options.categories : undefined,
+    featuredMedia,
   });
 
   return {
     id: post.id,
     url: post.link,
+    adminUrl: post.adminUrl,
     slug: post.slug,
     status: post.status,
-    title: adapted.title,
+    title: post.title || adapted.title,
     excerpt: adapted.excerpt,
   };
 }

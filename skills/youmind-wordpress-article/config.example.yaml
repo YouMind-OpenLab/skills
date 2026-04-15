@@ -1,3 +1,10 @@
+# YouMind WordPress Skill Configuration
+#
+# Only your YouMind API key is needed locally.
+# Your WordPress site URL / username / Application Password are stored
+# server-side in YouMind after you link your WordPress site at
+# https://youmind.com/settings/connector — the skill never sees them.
+
 youmind:
   api_key: ""
   base_url: "https://youmind.com/openapi/v1"
