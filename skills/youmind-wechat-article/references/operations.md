@@ -96,45 +96,30 @@ If `config.yaml` does not exist when the skill triggers:
 
 1. Copy `config.example.yaml` to `config.yaml`
 2. Run `cd toolkit && npm install && npm run build` if `node_modules/` is missing
-3. Ask the user for **WeChat credentials** (required for publishing):
-   - `appid` — from [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev) → 公众号 → 基础信息
-   - `secret` — 同一页面「开发密钥」区域，点击重置获取
-4. Ask about **YouMind API Key** (recommended):
+3. Ask about **YouMind API Key** (required — this is the only credential the skill holds locally):
    - 获取地址：[YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article)
    - 登录后创建密钥，复制 `sk-ym-xxxx` 格式填入 `youmind.api_key`
-   - 用于知识库搜索、联网搜索、文章归档、AI 生图
+   - 用于知识库搜索、联网搜索、文章归档、AI 生图，以及代理所有 WeChat 调用
+4. Confirm the WeChat Official Account is bound once in **YouMind → Connector Settings** (WeChat). YouMind stores the AppID/AppSecret encrypted server-side, caches `access_token` (2hr TTL), and proxies every cgi-bin call. The skill never sees the secret, and there is **no IP whitelist** to manage.
 5. Ask about optional **image provider keys** (Gemini / OpenAI / 豆包)
-6. **Configure WeChat IP whitelist** (required for API access — see below)
+6. Run `cd toolkit && node dist/cli.js validate` to verify the end-to-end wiring (calls YouMind `/wechat/validateConnection` — see "Validation" below).
 
 Store the configuration once; never ask again.
 
-> 完整图文配置指南见 [README.md](../README.md#获取-appid--appsecret--配置-ip-白名单) 和 [SKILL.md Setup](../SKILL.md#setup)
+> Full setup walkthrough with screenshots lives in [README.md](../README.md#安装) and [SKILL.md Setup](../SKILL.md#setup).
 
-### WeChat IP Whitelist Configuration
+### Validation
 
-The WeChat Official Account API **rejects all requests from IPs not on the whitelist**. This must be configured before publishing can work.
-
-**Step 1 — Get the user's public IP:**
+The `validate` CLI command (toolkit/src/cli.ts) is the pre-flight check for the YouMind ↔ WeChat connection:
 
 ```bash
-# macOS / Linux
-curl -s https://ifconfig.me
-
-# Windows PowerShell
-(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
+cd toolkit && node dist/cli.js validate
 ```
 
-Run this command and show the IP to the user.
+It calls YouMind's `/wechat/validateConnection` endpoint, which verifies that the bound WeChat Official Account credentials are still valid and returns the AppID plus remaining `access_token` TTL. Run it after:
 
-**Step 2 — Add IP to WeChat whitelist:**
+- initial connector binding,
+- rotating the WeChat AppSecret (rebind in YouMind, then re-validate),
+- any "publishing fails for mysterious reasons" report from the user.
 
-Guide the user to:
-
-1. Open [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev) → 公众号 → 基础信息
-2. Find the **「开发密钥」→ API IP 白名单** section
-3. Click **编辑**, add the IP from Step 1
-4. Save
-
-> **Note:** If the user's IP is dynamic (common for home networks), it may change periodically. When publishing suddenly fails with an IP-related error, re-run the curl command and update the whitelist.
->
-> Cloud servers and CI/CD environments typically have static IPs — configure once and forget.
+If the call returns a non-OK status, direct the user back to YouMind Connector Settings to re-bind WeChat — credential rotation happens server-side, not in `config.yaml`.
