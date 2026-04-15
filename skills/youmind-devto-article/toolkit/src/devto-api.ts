@@ -175,7 +175,7 @@ function normalizeTagList(tagList: unknown, tags: unknown): string[] {
 }
 
 function normalizeArticle(article: Record<string, unknown>): DevtoArticle {
-  const tagList = normalizeTagList(article.tag_list, article.tags);
+  const tagList = normalizeTagList(article.tagList ?? article.tag_list, article.tags);
   const user = typeof article.user === 'object' && article.user
     ? article.user as Record<string, unknown>
     : {};
@@ -187,19 +187,23 @@ function normalizeArticle(article: Record<string, unknown>): DevtoArticle {
     description: String(article.description ?? ''),
     slug: String(article.slug ?? ''),
     url: String(article.url ?? ''),
-    canonical_url: (article.canonical_url as string | null | undefined) ?? null,
-    cover_image: (article.cover_image as string | null | undefined) ?? null,
+    canonical_url: ((article.canonicalUrl ?? article.canonical_url) as string | null | undefined) ?? null,
+    cover_image: ((article.coverImage ?? article.cover_image) as string | null | undefined) ?? null,
     published: Boolean(article.published),
-    published_at: (article.published_at as string | null | undefined) ?? null,
+    published_at: ((article.publishedAt ?? article.published_at) as string | null | undefined) ?? null,
     tag_list: tagList,
     tags: typeof article.tags === 'string' ? article.tags : tagList.join(', '),
-    body_markdown: String(article.body_markdown ?? article.bodyMarkdown ?? ''),
-    body_html: String(article.body_html ?? article.bodyHtml ?? ''),
-    comments_count: Number(article.comments_count ?? 0),
-    positive_reactions_count: Number(article.positive_reactions_count ?? 0),
-    public_reactions_count: Number(article.public_reactions_count ?? 0),
-    page_views_count: Number(article.page_views_count ?? 0),
-    reading_time_minutes: Number(article.reading_time_minutes ?? 0),
+    body_markdown: String(article.bodyMarkdown ?? article.body_markdown ?? ''),
+    body_html: String(article.bodyHtml ?? article.body_html ?? ''),
+    comments_count: Number(article.commentsCount ?? article.comments_count ?? 0),
+    positive_reactions_count: Number(
+      article.positiveReactionsCount ?? article.positive_reactions_count ?? 0,
+    ),
+    public_reactions_count: Number(
+      article.publicReactionsCount ?? article.public_reactions_count ?? 0,
+    ),
+    page_views_count: Number(article.pageViewsCount ?? article.page_views_count ?? 0),
+    reading_time_minutes: Number(article.readingTimeMinutes ?? article.reading_time_minutes ?? 0),
     user: {
       username: String(user.username ?? ''),
       name: String(user.name ?? ''),

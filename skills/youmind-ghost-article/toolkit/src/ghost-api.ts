@@ -187,12 +187,13 @@ function normalizeTag(tag: Record<string, unknown>): GhostTag {
     name: String(tag.name ?? ''),
     slug: String(tag.slug ?? ''),
     description: (tag.description as string | null | undefined) ?? null,
-    feature_image: (tag.feature_image as string | null | undefined) ?? null,
+    feature_image: ((tag.featureImage ?? tag.feature_image) as string | null | undefined) ?? null,
     visibility: String(tag.visibility ?? 'public'),
   };
 }
 
 function normalizePost(post: Record<string, unknown>): GhostPost {
+  const primaryTagRaw = post.primaryTag ?? post.primary_tag;
   return {
     ...post,
     id: String(post.id ?? ''),
@@ -201,14 +202,14 @@ function normalizePost(post: Record<string, unknown>): GhostPost {
     slug: String(post.slug ?? ''),
     html: (post.html as string | null | undefined) ?? null,
     excerpt: (post.excerpt as string | null | undefined) ?? null,
-    custom_excerpt: (post.custom_excerpt as string | null | undefined) ?? null,
-    feature_image: (post.feature_image as string | null | undefined) ?? null,
+    custom_excerpt: ((post.customExcerpt ?? post.custom_excerpt) as string | null | undefined) ?? null,
+    feature_image: ((post.featureImage ?? post.feature_image) as string | null | undefined) ?? null,
     featured: Boolean(post.featured),
     status: (post.status as GhostPost['status']) ?? 'draft',
     visibility: (post.visibility as GhostPost['visibility']) ?? 'public',
-    created_at: String(post.created_at ?? ''),
-    updated_at: String(post.updated_at ?? ''),
-    published_at: (post.published_at as string | null | undefined) ?? null,
+    created_at: String(post.createdAt ?? post.created_at ?? ''),
+    updated_at: String(post.updatedAt ?? post.updated_at ?? ''),
+    published_at: ((post.publishedAt ?? post.published_at) as string | null | undefined) ?? null,
     url: String(post.url ?? ''),
     adminUrl:
       (post.adminUrl as string | null | undefined) ??
@@ -216,8 +217,8 @@ function normalizePost(post: Record<string, unknown>): GhostPost {
       null,
     tags: Array.isArray(post.tags) ? post.tags.map((tag) => normalizeTag(tag as Record<string, unknown>)) : [],
     primary_tag:
-      post.primary_tag && typeof post.primary_tag === 'object'
-        ? normalizeTag(post.primary_tag as Record<string, unknown>)
+      primaryTagRaw && typeof primaryTagRaw === 'object'
+        ? normalizeTag(primaryTagRaw as Record<string, unknown>)
         : null,
   };
 }
