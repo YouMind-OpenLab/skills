@@ -29,76 +29,45 @@ pip install -r requirements.txt
 
 # 2. 生成配置文件（如果 config.yaml 不存在）
 cp config.example.yaml config.yaml
-
-# 3. 获取公网 IP（填入微信 IP 白名单，否则无法发布，详见下方「获取本机公网 IP」）
-curl -s https://ifconfig.me
 ```
 
-`config.yaml` 需要填写以下凭证：
+`config.yaml` 只需要一个字段：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `wechat.appid` | **是** | 微信公众号 AppID |
-| `wechat.secret` | **是** | 微信公众号 AppSecret |
-| `wechat.author` | 否 | 文章作者名，默认 "YouMind" |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档、AI 生图 → [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) |
-| `image.providers.*.api_key` | 否 | 配了哪个就启用哪个（youmind / gemini / openai / doubao） |
+| `youmind.api_key` | **是** | YouMind API Key → [获取入口](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) |
 
-### 获取 AppID / AppSecret / 配置 IP 白名单
+WeChat 凭据**不在 skill 本地存** —— 走 YouMind connector 加密保存，下面单独说。
 
-> 微信开发者平台控制台：<https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev>
+### 在 YouMind 绑定 WeChat 公众号（一次性）
 
-**第 1 步 — 进入微信开发者平台**
+1. 打开 [微信公众平台](https://mp.weixin.qq.com)，**设置与开发 → 基本配置**
 
-打开 [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev)，点击首页的 **「前往使用」** 按钮登录。
+   ![步骤1：进入微信公众平台](image/1.png)
 
-![步骤1：点击前往使用](image/1.png)
+2. 在「公众号开发信息」区域复制 **AppID**，并点击「重置」获取 **AppSecret**（只展示一次）
 
-**第 2 步 — 选择公众号**
+   ![步骤2：复制 AppID](image/2.png)
 
-在「我的业务」面板中，找到并点击 **「公众号」** 进入公众号管理页。
+3. 打开 [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article)，选择 **WeChat**，粘贴 AppID / AppSecret / 作者名，保存。YouMind 立即调 `cgi-bin/token` 验证 — 绿勾代表绑定成功
 
-![步骤2：点击公众号](image/2.png)
+   ![步骤3：在 YouMind 绑定](image/3.png)
 
-**第 3 步 — 复制 AppID、AppSecret 并配置 IP 白名单**
+**为什么不在本地存 secret？**
 
-在公众号 → **基础信息** 页面：
+- secret 加密落库在 YouMind，泄漏面更小
+- access_token 由 YouMind 服务端缓存（2hr TTL，命中省一次 token 请求）
+- **无需 IP 白名单** —— YouMind 出口 IP 已在 WeChat 侧白名单里
 
-1. **AppID** — 顶部「基础信息」区域直接复制，填入 `config.yaml` 的 `wechat.appid`
-2. **AppSecret** — 「开发密钥」区域，点击 **重置** 获取（只展示一次，请立即保存），填入 `wechat.secret`
-3. **API IP 白名单** — 同一区域，点击 **编辑**，将你的公网 IP 粘贴进去
+要轮换密钥就回 WeChat 平台重置 secret，再回 connector 重新粘贴即可。
 
-![步骤3：AppID、AppSecret 和 IP 白名单位置](image/3.png)
-
-### 获取本机公网 IP
-
-家庭宽带 IP 会变，发布报 IP 错误时重新获取并更新白名单即可。
-
-**macOS**
+### 验证
 
 ```bash
-curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
-# 或者
-curl -s https://ifconfig.me
+cd toolkit && node dist/cli.js validate
 ```
 
-**Windows（PowerShell）**
-
-```powershell
-(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
-# 或者
-(Invoke-RestMethod -Uri "https://httpbin.org/ip").origin
-```
-
-**Linux**
-
-```bash
-curl -s https://ifconfig.me
-# 或者
-curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
-```
-
-> **提示**：拿到 IP 后，回到上面第 3 步的「API IP 白名单」→ 编辑，粘贴保存即可。
+期望 `OK: Connected to WeChat Official Account wxxxxxxxxxx`。
 
 ---
 

@@ -88,9 +88,9 @@ Write professional WeChat Official Account articles with AI that doesn't sound l
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) → fill `youmind.api_key` in `config.yaml`
-> 3. Get WeChat AppID & AppSecret from [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev) → fill `wechat.appid` and `wechat.secret`, add your public IP (`curl -s https://ifconfig.me`) to the API IP whitelist
+> 3. Bind your WeChat Official Account in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article) — paste your AppID, AppSecret, and (optionally) author byline. YouMind stores them encrypted and proxies all WeChat calls server-side. The skill never sees your secrets, and there is **no IP whitelist** to manage.
 >
-> No WeChat API yet? You can still write and preview locally — just skip the WeChat config steps.
+> Want to write locally first? The `preview` and `themes` commands work without any WeChat connection.
 >
 > See the **Setup** section below for detailed step-by-step instructions with screenshots.
 >
@@ -145,40 +145,25 @@ youmind:
   api_key: "sk-ym-xxxxxxxxxxxxxxxxxxxx"
 ```
 
-### Step 4 — Get WeChat AppID & AppSecret
+### Step 4 — Bind WeChat Official Account in YouMind (一次性，在 YouMind UI 操作)
 
-1. 打开 [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev)，点击 **「前往使用」** 登录
-2. 在「我的业务」面板点击 **「公众号」** 进入管理页
-3. 在 **基础信息** 页顶部复制 **AppID**
-4. 在「开发密钥」区域点击 **重置** 获取 **AppSecret**（仅展示一次，立即保存）
-5. 填入 `config.yaml`：
+WeChat 凭据**不再存在 skill 本地** —— 全部加密保存在 YouMind 后端，由 YouMind 服务端管理 access_token 缓存（2 小时复用）+ 代理所有 cgi-bin 请求。Skill 只持有 `youmind.api_key`，**无需 IP 白名单**（YouMind 出口 IP 已配置在 WeChat 平台白名单里）。
 
-```yaml
-wechat:
-  appid: "wx_your_appid"
-  secret: "your_secret"
-  author: "你的作者名"
-```
+1. 打开 [微信公众平台](https://mp.weixin.qq.com)，进入 **设置与开发 → 基本配置**
+2. 复制 **AppID** 和 **AppSecret**（AppSecret 重置后只展示一次）
+3. 打开 [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article)
+4. 选择 **WeChat**，粘贴 AppID / AppSecret / Author 三个字段，保存
+5. YouMind 立即调 `cgi-bin/token` 验证凭据 — 绿勾代表绑定成功
 
-> 详细图文步骤见 [README.md](README.md#获取-appid--appsecret--配置-ip-白名单)
+YouMind 把 secret 加密落库，access_token 缓存在内存（2hr TTL，命中时省去每次请求重新换 token 的开销）。需要轮换密钥就在 WeChat 平台重置 secret，回到 connector 重新粘贴即可。
 
-### Step 5 — Configure IP Whitelist
-
-微信公众号 API **拒绝所有不在白名单中的 IP 请求**，必须配置后才能发布。
-
-获取公网 IP：
+### 验证设置
 
 ```bash
-# macOS / Linux
-curl -s https://ifconfig.me
-
-# Windows PowerShell
-(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
+cd toolkit && node dist/cli.js validate
 ```
 
-拿到 IP 后，在上一步的微信开发者平台公众号页面 →「开发密钥」→ **API IP 白名单** → 点击 **编辑** → 粘贴 IP 保存。
-
-> 家庭宽带 IP 会变。发布报 IP 错误时重新获取 IP 并更新白名单即可。云服务器 / CI 环境通常是静态 IP，配一次就行。
+期望输出：`OK: Connected to WeChat Official Account wxxxxxxxxxx` + token 剩余秒数。
 
 ### Step 6 — Image Provider Keys (Optional)
 
