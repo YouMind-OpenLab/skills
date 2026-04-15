@@ -1,58 +1,21 @@
 # YouMind Qiita Skill
 
-AI-powered Qiita article writing and publishing. Tell your agent a topic, it handles research, writing, formatting, and publishing.
+AI-powered Qiita article writing and publishing. Tell your agent a topic, and it can research, write, format, and publish through the Qiita account you already connected in YouMind.
 
 ---
 
-## What Can It Do
+## What It Does
 
 | You say | Skill does |
 |---------|------------|
-| `Write about Docker best practices for Qiita` | Full pipeline: research -> write -> adapt -> publish as private |
+| `Write about Docker best practices for Qiita` | Research -> write -> adapt -> publish as private |
 | `Publish this markdown to Qiita` | Skip writing, format and publish directly |
 | `Validate my article for Qiita` | Check tags, code blocks, structure |
-| `List my Qiita articles` | Fetch and display your published articles |
+| `List my Qiita articles` | Fetch your Qiita articles through YouMind |
 
 ---
 
-## Getting Credentials
-
-### Getting a Qiita Access Token
-
-> Qiita access token settings page: <https://qiita.com/settings/applications>
-
-**Step 1 -- Log in to Qiita**
-
-Log in to [Qiita](https://qiita.com) with your account.
-
-**Step 2 -- Go to Settings > Applications**
-
-Click your avatar (top-right) -> **Settings** -> select **Applications** from the menu.
-
-Direct link: <https://qiita.com/settings/applications>
-
-**Step 3 -- Generate a Personal Access Token**
-
-Under **Personal Access Tokens**:
-
-1. Click **"Generate new token"**
-2. Enter a description (e.g., `youmind`)
-3. Select the **`write_qiita`** scope (required for creating and updating articles)
-4. Click **"Generate token"**
-5. Copy the token (shown only once -- save it immediately)
-
-**Step 4 -- Fill in Config**
-
-Paste the access token into `config.yaml`:
-
-```yaml
-qiita:
-  access_token: "your-access-token-here"
-```
-
----
-
-## Installation
+## Setup
 
 > Prerequisites: Node.js >= 18
 
@@ -62,16 +25,26 @@ cd toolkit && npm install && npm run build && cd ..
 
 # 2. Create config (if config.yaml doesn't exist)
 cp config.example.yaml config.yaml
-
-# 3. Fill in API keys in config.yaml
 ```
 
-Required fields in `config.yaml`:
+`config.yaml` only needs the YouMind API key:
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `qiita.access_token` | **Yes** | Qiita personal access token, see steps above |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving -> [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article) |
+```yaml
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
+```
+
+Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+
+### Publishing prerequisite
+
+Before publishing, connect your Qiita account inside YouMind. The skill no longer reads `qiita.access_token` locally and should never ask the user to paste a Qiita token into this repo.
+
+### Get a YouMind API Key
+
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article), create a key, and place it in `youmind.api_key`.
 
 ---
 
@@ -114,16 +87,18 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys) to get y
 
 ### CLI Commands
 
+Put local source Markdown under the skill's `output/` directory so it stays out of git status.
+
 ```bash
 cd toolkit
 
 # Publish a markdown file
-npx tsx src/cli.ts publish article.md --tags "Python,API,Qiita"
+npx tsx src/cli.ts publish ../output/article.md --tags "Python,API,Qiita"
 
 # Preview and validate locally
-npx tsx src/cli.ts preview article.md
+npx tsx src/cli.ts preview ../output/article.md
 
-# Validate API connectivity
+# Validate YouMind + Qiita connectivity
 npx tsx src/cli.ts validate
 
 # List your articles
@@ -134,13 +109,23 @@ npx tsx src/cli.ts list --page 1
 
 The skill publishes as private (limited sharing) by default. Use `--public` to publish publicly, or change the visibility in the Qiita dashboard.
 
+All local article drafts should live under `output/`, which is already git-ignored.
+
+### Paid Plan Requirement
+
+Qiita OpenAPI requires a paid YouMind plan (Pro / Max). If the current account is not eligible, the API returns `402` and points the user to [YouMind Pricing](https://youmind.com/pricing).
+
 ---
 
 ## FAQ
 
-**Q: Access token invalid or 401 error**
+**Q: I get a 401 or auth error**
 
-Double-check the `qiita.access_token` in `config.yaml`. Make sure the token has the `write_qiita` scope. If expired, regenerate at <https://qiita.com/settings/applications>.
+Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind.
+
+**Q: Publishing says Qiita is not connected**
+
+Connect Qiita inside YouMind first. The Qiita token lives there, not in `config.yaml`.
 
 **Q: Tags not working**
 
@@ -156,7 +141,7 @@ Private articles are only accessible via direct URL. They don't appear in search
 
 **Q: Can I update published articles?**
 
-Yes. The Qiita API supports updating article content, tags, and visibility.
+Yes. The YouMind Qiita OpenAPI supports create, get, update, and list flows.
 
 ---
 

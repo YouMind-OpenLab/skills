@@ -58,6 +58,30 @@ Qiita articles tend to follow a clear, structured format:
 - Show both input and output when relevant
 - Include version numbers for dependencies
 
+## Images and the `cdn.gooo.ai` hotlink trap
+
+YouMind's AI-generated images are served from `cdn.gooo.ai`, which enforces
+Referer-based anti-hotlink protection. If an article embeds those URLs
+directly (e.g. `![cover](https://cdn.gooo.ai/gen-images/...jpg)`), Qiita
+readers' browsers will send a `qiita.com` Referer and the CDN will reject
+the request, so the article shows broken image icons.
+
+**Workaround — re-host every image on Qiita before publishing:**
+
+1. Download the `cdn.gooo.ai` image locally (the agent can `curl`/`fetch`
+   without a Referer header, so the download itself works).
+2. Upload the local file into Qiita's own image store so it ends up on a
+   Qiita-owned domain (e.g. `qiita-image-store.s3.amazonaws.com`). Qiita's
+   editor accepts drag-and-drop upload and returns a stable Markdown snippet
+   — use that URL in the article body. The monthly image-upload quota for
+   the connected account is reported by `POST /qiita/validateConnection`
+   via `imageMonthlyUploadLimit` / `imageMonthlyUploadRemaining`; respect it.
+3. Replace every `cdn.gooo.ai` URL in the Markdown body with the
+   Qiita-hosted URL before calling `POST /qiita/createItem` or
+   `POST /qiita/updateItem`.
+
+Never leave a `cdn.gooo.ai` URL in the final `body` sent to Qiita.
+
 ## Tags
 
 - **Max 5 tags recommended** per article

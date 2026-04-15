@@ -4,12 +4,12 @@
 
 ## Step 1: Config Load
 
-1. Read `config.yaml` for API credentials
-2. Validate Qiita access token (call `validate` command or attempt list)
-3. Check YouMind API key availability (optional)
+1. Read `config.yaml` for the YouMind API key
+2. Validate the YouMind API key (call `validate` command or attempt list)
+3. Check that the user's Qiita account is already connected in YouMind
 4. Report config status
 
-**Fallback:** If config.yaml missing, check environment variables (`QIITA_ACCESS_TOKEN`, `YOUMIND_API_KEY`).
+**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change the local config file.
 
 ## Step 2: YouMind Knowledge Mining
 
@@ -69,7 +69,7 @@ Read `content-adaptation.md` before this step.
 3. Include tags
 4. Report article ID, URL, and status
 
-**Fallback:** If Qiita API fails, save the markdown locally. User can copy-paste into Qiita editor.
+**Fallback:** If Qiita publishing through YouMind fails, save the markdown locally. User can copy-paste into Qiita editor.
 
 ## Step 7: Report
 

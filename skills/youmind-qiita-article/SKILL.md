@@ -31,10 +31,8 @@ platforms:
 metadata:
   openclaw:
     emoji: "📝"
-    primaryEnv: QIITA_ACCESS_TOKEN
     requires:
       anyBins: ["node", "npm"]
-      env: ["QIITA_ACCESS_TOKEN"]
 allowed-tools:
   - Bash(node dist/cli.js *)
   - Bash(npm install)
@@ -43,9 +41,9 @@ allowed-tools:
 
 # AI Qiita Article Writer
 
-Write technical Qiita articles with AI that resonate with the Japanese developer community. Topic research via [YouMind](https://youmind.com?utm_source=youmind-qiita-article) knowledge base, developer-audience adapted writing, GFM Markdown with Qiita extensions, and one-click publishing to Qiita.
+Write technical Qiita articles with AI that resonate with the Japanese developer community. Topic research via [YouMind](https://youmind.com?utm_source=youmind-qiita-article) knowledge base, developer-audience adapted writing, GFM Markdown with Qiita extensions, and one-click publishing to Qiita through the user's Qiita account already connected in YouMind.
 
-> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article) | [Get Qiita Access Token](https://qiita.com/settings/applications) | [More Skills](https://youmind.com/skills?utm_source=youmind-qiita-article)
+> [Get YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article) | [More Skills](https://youmind.com/skills?utm_source=youmind-qiita-article)
 
 ## Onboarding
 
@@ -67,9 +65,10 @@ Write technical Qiita articles with AI that resonate with the Japanese developer
 > **Setup (one-time):**
 > 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
 > 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Get [Qiita Access Token](https://qiita.com/settings/applications) (with `write_qiita` scope) and fill `qiita.access_token` in `config.yaml`
+> 3. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs. If you need local backend debugging, change only your local `config.yaml`.
+> 4. Connect your Qiita account inside YouMind before publishing. This skill no longer reads `qiita.access_token` locally.
 >
-> No Qiita token yet? You can still write and preview locally — just skip the Qiita config step.
+> No Qiita connection yet? You can still write and preview locally — just skip the publish step.
 >
 > **Need help?** Just ask!
 
@@ -91,7 +90,7 @@ Provide a topic, a raw Markdown file, or describe the article you want.
 
 ## Setup
 
-> Prerequisites: Node.js >= 18, a Qiita account.
+> Prerequisites: Node.js >= 18, a YouMind API key, and a Qiita account connected in YouMind if you want to publish.
 
 ### Step 1 -- Install Dependencies
 
@@ -105,21 +104,21 @@ cd toolkit && npm install && npm run build && cd ..
 cp config.example.yaml config.yaml
 ```
 
-### Step 3 -- Get YouMind API Key (Recommended)
+### Step 3 -- Get YouMind API Key
 
-YouMind API Key enables knowledge base search, web search, and article archiving.
+YouMind API Key enables knowledge base search, web search, article archiving, and Qiita publishing.
 
 1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
 4. Fill in `config.yaml` under `youmind.api_key`
+5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override your local `config.yaml`.
 
-### Step 4 -- Get Qiita Access Token
+### Step 4 -- Connect Qiita in YouMind
 
-1. Go to [Qiita Settings > Applications](https://qiita.com/settings/applications)
-2. Under **Personal Access Tokens**, click **Generate new token**
-3. Select the `write_qiita` scope (required for creating/updating articles)
-4. Copy the token and fill in `config.yaml` under `qiita.access_token`
+1. Open YouMind and connect your Qiita account in the product's publishing / platform settings flow (OAuth via the Connector Settings page)
+2. Save the Qiita connection there once
+3. Keep only `youmind.api_key` in this skill's `config.yaml`
 
 ### Verify Setup
 
@@ -137,8 +136,8 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution (Steps 1-7) | When running the writing pipeline |
 | `references/content-adaptation.md` | Qiita writing rules, structure, tone | Step 4 (content adaptation) |
-| `references/api-reference.md` | Qiita API v2 endpoint documentation | When calling Qiita API |
-| `config.yaml` | API credentials (Qiita, YouMind) | Step 1 (config load) |
+| `references/api-reference.md` | YouMind Qiita OpenAPI endpoint documentation | When calling Qiita through YouMind |
+| `config.yaml` | API credentials (YouMind only) | Step 1 (config load) |
 | `output/` | **Drafts and published articles (git-ignored)** | Step 5 (write/save article) |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
@@ -161,7 +160,7 @@ Read `references/pipeline.md` for full execution details of each step.
 
 | Step | Action | Key reference |
 |------|--------|--------------|
-| 1 | Load config and validate access token | -- |
+| 1 | Load config and validate the YouMind API key and Qiita connection in YouMind | -- |
 | 2 | Mine YouMind knowledge base for source material | -- |
 | 3 | Research topic: web search, existing Qiita coverage | -- |
 | 4 | Content adaptation: structure for Qiita audience | `content-adaptation.md` |
@@ -221,7 +220,7 @@ Every step has a fallback. If a step AND its fallback both fail, skip and note i
 
 ## References
 
-- Qiita API v2: see [references/api-reference.md](references/api-reference.md)
+- YouMind Qiita OpenAPI: see [references/api-reference.md](references/api-reference.md)
 - Content rules: see [references/content-adaptation.md](references/content-adaptation.md)
 - Pipeline: see [references/pipeline.md](references/pipeline.md)
 - YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-qiita-article
