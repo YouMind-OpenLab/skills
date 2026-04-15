@@ -1,59 +1,21 @@
 # YouMind X (Twitter) Skill
 
-Publish tweets and threads to X (Twitter) with AI. Research, write, and publish -- all from one prompt.
+AI-powered tweet writing and publishing. Tell your agent a topic, and it can research, write, split long text into a numbered tweet sequence, and publish through the X account you already connected in YouMind.
 
 ---
 
-## What Can It Do
+## What It Does
 
 | You say | Skill does |
 |---------|------------|
-| `Tweet about AI coding tools` | Write → adapt to 280 chars → publish tweet |
-| `Write a thread about Docker best practices` | Write → split into thread → publish tweet chain |
+| `Tweet about AI coding tools` | Research → write → adapt to 280 chars → publish tweet |
+| `Write a thread about Docker best practices` | Research → write → split into numbered sequence → publish |
 | `Tweet this: "Just shipped!"` | Format and publish directly |
+| `Validate my YouMind setup` | Check the local API key |
 
 ---
 
-## Getting Credentials
-
-### Step 1 — Visit X Developer Portal
-
-Go to [X Developer Portal](https://developer.x.com/en/portal/dashboard) and sign in with your X account.
-
-### Step 2 — Create a Project and App
-
-Create a new **Project** in the Dashboard, then create an **App** under that Project.
-
-### Step 3 — Configure User Authentication
-
-In your App settings, find **User authentication settings** and configure:
-
-- **App permissions**: Read and Write
-- **Type of App**: Web App
-- **Redirect URL**: `http://localhost:3000/callback`
-
-### Step 4 — Get Credentials
-
-Two methods to get credentials:
-
-**Method A: OAuth 2.0 (Recommended)**
-
-1. Go to your App's **Keys and Tokens** page and generate an Access Token
-2. Fill in `config.yaml` field `x.access_token`
-
-**Method B: OAuth 1.0a (Legacy)**
-
-1. Get API Key + API Secret → fill in `x.api_key`, `x.api_secret`
-2. Generate Access Token + Secret → fill in `x.access_token_legacy`, `x.access_token_secret`
-
-### Rate Limits
-
-- **Free tier**: 1,500 tweets/month
-- **Basic ($100/mo)**: 3,000 tweets/month
-
----
-
-## Installation
+## Setup
 
 > Prerequisites: Node.js >= 18
 
@@ -61,81 +23,89 @@ Two methods to get credentials:
 # 1. Install dependencies
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. Create config file
+# 2. Create config (if config.yaml doesn't exist)
 cp config.example.yaml config.yaml
 ```
 
-Fill in your credentials in `config.yaml`:
+`config.yaml` only needs the YouMind API key:
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `x.access_token` | **Yes*** | OAuth 2.0 user access token |
-| `x.api_key` | Alt* | OAuth 1.0a consumer key |
-| `x.api_secret` | Alt* | OAuth 1.0a consumer secret |
-| `x.access_token_legacy` | Alt* | OAuth 1.0a access token |
-| `x.access_token_secret` | Alt* | OAuth 1.0a access token secret |
-| `youmind.api_key` | Recommended | For knowledge base search, web search, article archiving → [Get API Key](https://youmind.com/settings/api-keys?utm_source=youmind-x-article) |
+```yaml
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
+```
 
-*Either OAuth 2.0 access_token OR all four OAuth 1.0a fields required.
+Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
 
----
+### Publishing prerequisite
 
-## YouMind Integration
+Before publishing, connect your X account inside YouMind (one-click OAuth 2.0). This skill no longer reads X Developer Portal credentials locally and should never ask the user to paste X API keys, bearer tokens, or OAuth 1.0a secrets into this repo.
 
-This skill integrates with [YouMind](https://youmind.com) knowledge base to enhance content quality.
+### Get a YouMind API Key
 
-| Feature | Description |
-|---------|-------------|
-| Semantic Search | Search your library for related articles, notes, bookmarks as research material |
-| Web Search | Search the web for real-time info and trending topics |
-| Article Archiving | Save published articles back to YouMind for future reference |
-| Material Mining | Browse boards and extract materials for content creation |
-| Board Management | List and view your boards and materials |
-
-> **Get API Key:** [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch)
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-x-article), create a key, and place it in `youmind.api_key`.
 
 ---
 
 ## Usage Tips
 
-### Single Tweet
-
-Just say what you want to tweet. The Skill automatically adapts to the 280-character limit with proper tone and formatting.
-
-### Threads
-
-Provide a longer topic and the Skill splits it into a coherent thread, publishing each tweet in sequence.
-
 ### CLI Commands
 
+Put local source Markdown under the skill's `output/` directory so it stays out of git status.
+
 ```bash
-# Post a single tweet
+cd toolkit
+
+# Publish a single tweet
 npx tsx src/cli.ts tweet --text "Your tweet here"
 
-# Post a thread from a file
-npx tsx src/cli.ts thread --file article.md
+# Publish a tweet with images (cdn.gooo.ai URLs only, up to 4)
+npx tsx src/cli.ts tweet --text "Check this out" --image https://cdn.gooo.ai/user-files/pic.jpg
 
-# Preview thread splitting
-npx tsx src/cli.ts preview --file article.md
+# Publish a numbered tweet sequence from a file
+npx tsx src/cli.ts thread --file ../output/article.md
 
-# Check your profile
-npx tsx src/cli.ts me
+# Preview sequence splitting without posting
+npx tsx src/cli.ts preview --file ../output/article.md --mode thread
 
-# Delete a tweet
-npx tsx src/cli.ts delete --id 1234567890
+# Preview a single tweet
+npx tsx src/cli.ts preview --text "Check length" --mode tweet
+
+# Validate YouMind credentials (local API key sanity check)
+npx tsx src/cli.ts validate
 ```
+
+### Tweet vs Thread
+
+Short content goes out as a single tweet. Long content is split into numbered tweets (`1/N`) and published as a native X thread — the skill chains each tweet as a reply to the previous one via `replyToPostId`, so readers see a proper thread on your timeline.
+
+### Images
+
+Attach up to 4 images per tweet via `--image <url>...`. URLs must be under `https://cdn.gooo.ai/...` — YouMind enforces this allowlist server-side to avoid SSRF. Upload local files to YouMind first (via the YouMind product or AI image generation) and reference the resulting CDN URL here.
+
+### Paid Plan
+
+X publishing through YouMind does **not** require a paid plan today. (Other article-dispatch endpoints like `createTokenPlatformPost` do — those are for Ghost / WordPress / Dev.to / etc.)
 
 ---
 
 ## FAQ
 
-**403 Forbidden on publish** — Check that App permissions are set to "Read and Write".
+**Q: I get a 401 or auth error**
 
-**OAuth Token expired** — Regenerate your Access Token and update `config.yaml`.
+Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind.
 
-**Tweet truncated** — The Skill auto-fits within 280 chars; if content is too long, it suggests splitting into a thread.
+**Q: Publishing says X is not connected**
 
-**Free tier quota exceeded** — Free tier allows 1,500 tweets/month. Upgrade to Basic ($100/mo) for 3,000/month.
+Connect X inside YouMind first. The X access token and refresh token live there, not in `config.yaml`.
+
+**Q: My image was rejected**
+
+YouMind requires media URLs to be under `cdn.gooo.ai`. External URLs (Imgur, S3, etc.) are rejected with `X_MEDIA_HOST_NOT_ALLOWED`. Upload the image to YouMind first.
+
+**Q: Can I still preview locally without an X connection?**
+
+Yes. `preview` only runs the local adaptation logic and never calls YouMind.
 
 ---
 

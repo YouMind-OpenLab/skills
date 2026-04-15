@@ -2,37 +2,35 @@
 /**
  * CLI entry point for YouMind X Skill.
  *
- * All publishing now flows through YouMind's proxy. The skill no longer
- * juggles OAuth 2.0 Bearer tokens or OAuth 1.0a HMAC signatures locally —
- * YouMind holds the user's X credentials server-side and attaches whichever
- * flow each downstream endpoint requires.
+ * All publishing flows through YouMind's OpenAPI proxy. The user only needs a
+ * YouMind API key locally; their X account is connected once inside YouMind.
  *
  * Usage:
  *   npx tsx src/cli.ts tweet --text "Your tweet here"
+ *   npx tsx src/cli.ts tweet --text "Check this out" --image https://cdn.gooo.ai/user-files/pic.jpg
  *   npx tsx src/cli.ts thread --file article.md
  *   npx tsx src/cli.ts preview --text "Check length" --mode tweet
  *   npx tsx src/cli.ts preview --file article.md --mode thread
- *   npx tsx src/cli.ts me
- *   npx tsx src/cli.ts delete --id 1234567890
+ *   npx tsx src/cli.ts validate
  */
 
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getMe, deleteTweet, loadXConfig } from './x-api.js';
+import { loadXConfig } from './x-api.js';
 import {
-  publishTweet,
-  publishThread,
-  previewTweet,
   previewThread,
+  previewTweet,
+  publishThread,
+  publishTweet,
 } from './publisher.js';
 
 const program = new Command();
 
 program
   .name('youmind-x')
-  .description('YouMind X: Write and publish tweets and threads')
+  .description('YouMind X: Write and publish tweets and threads via YouMind OpenAPI')
   .version('1.0.0');
 
 program
@@ -40,9 +38,7 @@ program
   .description('Publish a single tweet')
   .option('--text <text>', 'Tweet text content')
   .option('--file <path>', 'Read content from a file')
-  .option('--image <paths...>', 'Image file paths or URLs')
-  .option('--reply-to <id>', 'Reply to tweet ID')
-  .option('--quote <id>', 'Quote tweet ID')
+  .option('--image <urls...>', 'Image URLs (https://cdn.gooo.ai/..., max 4)')
   .option('--hashtags <tags>', 'Comma-separated hashtags (max 2)')
   .action(async (opts) => {
     let content = opts.text || '';
@@ -66,17 +62,16 @@ program
 
     const result = await publishTweet({
       content,
-      media: opts.image,
-      replyTo: opts.replyTo,
-      quoteTweetId: opts.quote,
+      mediaUrls: opts.image,
       hashtags,
       config,
     });
 
     if (result.success) {
-      console.log('\nTweet published via YouMind proxy!');
-      console.log(`Tweet ID: ${result.tweetIds[0]}`);
-      console.log(`URL: https://x.com/i/status/${result.tweetIds[0]}`);
+      const post = result.posts[0];
+      console.log('\nTweet published via YouMind OpenAPI!');
+      console.log(`Post ID: ${post.postId}`);
+      console.log(`URL:     ${post.url}`);
     } else {
       console.error(`\nPublish failed: ${result.error}`);
     }
@@ -94,10 +89,10 @@ program
 
 program
   .command('thread')
-  .description('Publish a thread from long-form content')
+  .description('Publish a sequence of numbered tweets from long-form content')
   .option('--text <text>', 'Thread content')
   .option('--file <path>', 'Read content from a file')
-  .option('--image <paths...>', 'Image for first tweet')
+  .option('--image <urls...>', 'Image URLs attached to the first tweet only')
   .option('--hashtags <tags>', 'Comma-separated hashtags')
   .option('--no-numbering', 'Disable tweet numbering')
   .action(async (opts) => {
@@ -122,19 +117,27 @@ program
 
     const result = await publishThread({
       content,
-      media: opts.image,
+      mediaUrls: opts.image,
       hashtags,
       addNumbering: opts.numbering !== false,
       config,
     });
 
     if (result.success) {
-      console.log(`\nThread published via YouMind proxy! (${result.tweetIds.length} tweets)`);
-      for (let i = 0; i < result.tweetIds.length; i++) {
-        console.log(`  ${i + 1}. https://x.com/i/status/${result.tweetIds[i]}`);
+      console.log(
+        `\nThread published via YouMind OpenAPI (${result.posts.length} tweets)`,
+      );
+      for (let i = 0; i < result.posts.length; i++) {
+        console.log(`  ${i + 1}. ${result.posts[i].url}`);
       }
     } else {
       console.error(`\nPublish failed: ${result.error}`);
+      if (result.posts.length > 0) {
+        console.log(`Published before failure: ${result.posts.length}`);
+        for (let i = 0; i < result.posts.length; i++) {
+          console.log(`  ${i + 1}. ${result.posts[i].url}`);
+        }
+      }
     }
 
     if (result.warnings.length > 0) {
@@ -201,64 +204,25 @@ program
   });
 
 program
-  .command('login')
-  .description('(no-op) X auth is now handled server-side by YouMind')
-  .action(() => {
-    console.log('YouMind handles X authentication server-side via the proxy.');
-    console.log('Just set youmind.api_key in config.yaml — no separate X login needed.');
-  });
-
-program
   .command('validate')
-  .description('Validate YouMind credentials and show X profile (via YouMind proxy)')
-  .action(async () => {
+  .description('Validate YouMind credentials (local config sanity check)')
+  .action(() => {
     const config = loadXConfig();
 
     if (!config.apiKey) {
       console.error('[ERROR] youmind.api_key not set in config.yaml');
+      console.error(
+        'Get a key: https://youmind.com/settings/api-keys?utm_source=youmind-x-article',
+      );
       process.exit(1);
     }
 
-    try {
-      console.log('[INFO] Validating X credentials via YouMind proxy...');
-      const user = await getMe(config);
-      console.log('\n--- X Profile ---');
-      console.log(`User ID:  ${user.id}`);
-      console.log(`Name:     ${user.name}`);
-      console.log(`Username: @${user.username}`);
-      console.log('\nCredentials are valid!');
-    } catch (err) {
-      console.error(`[ERROR] Validation failed: ${(err as Error).message}`);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('me')
-  .description('Show authenticated X user profile (via YouMind proxy)')
-  .action(async () => {
-    const config = loadXConfig();
-    if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
-      process.exit(1);
-    }
-    const user = await getMe(config);
-    console.log('X Profile (via YouMind proxy):');
-    console.log(JSON.stringify(user, null, 2));
-  });
-
-program
-  .command('delete')
-  .description('Delete a tweet (via YouMind proxy)')
-  .requiredOption('--id <tweetId>', 'Tweet ID to delete')
-  .action(async (opts) => {
-    const config = loadXConfig();
-    if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
-      process.exit(1);
-    }
-    const result = await deleteTweet(config, opts.id);
-    console.log(result.deleted ? 'Tweet deleted.' : 'Tweet not deleted (may not exist).');
+    console.log('YouMind API key is configured.');
+    console.log(`Base URL: ${config.baseUrl}`);
+    console.log(
+      'X account connection is validated on the first publish call; ' +
+        'if your X account is not connected in YouMind yet, publishing will return a clear error with a connect URL.',
+    );
   });
 
 program.parse();

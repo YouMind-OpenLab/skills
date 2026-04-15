@@ -1,112 +1,77 @@
 /**
- * x-api.ts — MOCK IMPLEMENTATION
+ * X (Twitter) client via YouMind OpenAPI.
  *
- * ⚠️ This file is a mock. The skill talks to X (Twitter) exclusively through
- * YouMind's OpenAPI proxy, but YouMind has not yet shipped the X namespace on
- * that OpenAPI. This mock lets the rest of the skill (publisher, CLI) be
- * built and smoke-tested end-to-end right now, without a real backend.
+ * The skill only requires a YouMind API key locally. The user's X account is
+ * connected once inside YouMind (OAuth 2.0 PKCE), and the YouMind backend
+ * attaches the X access token when proxying the tweet request.
  *
- * Why a mock and not the real X API? The previous version of this file
- * supported BOTH OAuth 2.0 (Bearer token) and OAuth 1.0a (HMAC-SHA1 signed
- * requests with nonce/timestamp/percent-encoded base string), because X's
- * v2 endpoints want OAuth 2.0 user tokens but media upload still lives on
- * v1.1 which only accepts OAuth 1.0a. That dual-flow complexity is now GONE
- * from the skill: YouMind holds the user's X credentials server-side and
- * picks whichever auth mode each downstream endpoint requires. The skill
- * itself only ever talks to one URL, with one header, end of story.
+ * Backend contract (apps/youapi):
+ *   POST /openapi/v1/createXPost
+ *   headers:   x-api-key, x-use-camel-case: true
+ *   request:   {
+ *     text: string (1-280),
+ *     mediaUrls?: string[] (≤4, cdn.gooo.ai only),
+ *     replyToPostId?: string (numeric tweet ID; build threads by chaining)
+ *   }
+ *   response:  { postId: string, text: string, url: string }
  *
- * Swap-in plan when the real YouMind endpoints ship:
- *   1. YouMind will expose endpoints whose request/response shape mirrors
- *      X's v2 API (same field names like `text`, `reply.in_reply_to_tweet_id`,
- *      `media.media_ids`, `quote_tweet_id`; same /tweets, /tweets/{id},
- *      /users/me endpoints; v1.1-style media upload exposed at a v2-shaped
- *      proxy endpoint). The only auth difference is that YouMind accepts
- *      `x-api-key: <youmind_api_key>` instead of an X access token / OAuth
- *      1.0a Authorization header — YouMind holds the X credentials and
- *      attaches whichever flow each endpoint needs.
- *   2. Replace each mock function body below with a `fetch()` POST/GET/DELETE
- *      to the corresponding `https://youmind.com/openapi/v1/x/<op>` using the
- *      `x-api-key` header (same helper pattern as youmind-api.ts).
- *   3. Keep the exported type signatures stable — they ARE the swap-in
- *      contract. The thread-chain flow (each reply uses the previous post's
- *      id as `reply_to`) is also part of the contract; publisher.ts and the
- *      CLI rely on the Tweet/TweetResponse shape and the createThread loop
- *      semantics. Nothing in publisher.ts / cli.ts should need to change.
- *   4. Delete the `mockState`, `initMockState`, and the OAuth-1.0a helper
- *      block at that point (the helpers are already deleted in this mock —
- *      no nonce, no HMAC-SHA1, no percent-encode, no signature base string).
- *
- * loadXConfig is NOT mocked — it reads real config the same way as
- * youmind-api.ts, because users will set their YouMind API key through the
- * normal config flow even before the X endpoints exist.
+ * Threads are published as a native X reply chain by passing each previous
+ * tweet's postId as the next tweet's replyToPostId. Quote-tweets, delete,
+ * and local media upload are not in the OpenAPI surface today.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
-
-// ---------------------------------------------------------------------------
-// Public types — stable contract (do NOT change signatures when swapping to
-// real HTTP; only the function bodies below should change).
-// ---------------------------------------------------------------------------
 
 export interface XConfig {
   apiKey: string;
   baseUrl: string;
 }
 
-export interface Tweet {
-  id: string;
+export interface CreateXPostOptions {
   text: string;
-  edit_history_tweet_ids?: string[];
-  /** Optional traceability: id of the tweet this one replies to (chain flow). */
-  in_reply_to_tweet_id?: string;
-  [key: string]: unknown;
+  /** Optional image URLs — must be publicly reachable https URLs under cdn.gooo.ai. Max 4. */
+  mediaUrls?: string[];
+  /**
+   * Optional tweet ID this post replies to. Used to build threads — publish the first tweet,
+   * then pass its `postId` here for each subsequent tweet so X renders the chain natively.
+   */
+  replyToPostId?: string;
 }
 
-export interface TweetResponse {
-  data: Tweet;
-  [key: string]: unknown;
+export interface XPost {
+  postId: string;
+  text: string;
+  url: string;
 }
-
-export interface CreateTweetOptions {
-  reply_to?: string;
-  media_ids?: string[];
-  quote_tweet_id?: string;
-}
-
-export interface XUser {
-  id: string;
-  name: string;
-  username: string;
-  [key: string]: unknown;
-}
-
-export interface MediaUploadResult {
-  media_id: number;
-  media_id_string: string;
-  size?: number;
-  expires_after_secs?: number;
-  [key: string]: unknown;
-}
-
-// Auth-mode type kept as a stable public surface. Now degenerate: there is
-// exactly one effective mode — the YouMind proxy — but the type is preserved
-// so the shape doesn't change when YouMind ships the real /x/* endpoints.
-export type AuthMode = 'youmind';
-
-// ---------------------------------------------------------------------------
-// Config loading — real implementation, mirrors youmind-api.ts pattern.
-// ---------------------------------------------------------------------------
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
+const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
+
+interface OpenApiErrorDetail {
+  connectUrl?: string;
+  upgradeUrl?: string;
+  hint?: string;
+}
+
+interface OpenApiErrorResponse {
+  message?: string;
+  code?: string;
+  detail?: OpenApiErrorDetail;
+}
+
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/openapi/v1')) return trimmed;
+  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
+  return `${trimmed}/openapi/v1`;
+}
 
 function loadCentralCredentials(): Record<string, unknown> {
   const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -130,179 +95,113 @@ function loadLocalConfig(): Record<string, unknown> {
 export function loadXConfig(): XConfig {
   const central = loadCentralCredentials();
   const local = loadLocalConfig();
-  const ym = {
+  const ym: Record<string, unknown> = {
     ...(central.youmind as Record<string, unknown> ?? {}),
     ...(local.youmind as Record<string, unknown> ?? {}),
   };
-  // Filter out local empty strings so central credentials aren't masked.
   for (const [k, v] of Object.entries(ym)) {
     if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
       ym[k] = (central.youmind as Record<string, unknown>)[k];
     }
   }
+  const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
   return {
     apiKey: (ym.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    baseUrl: configuredBaseUrl || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Mock state — module-scoped, lives for the lifetime of the process. Not
-// exported; swap-in code should delete this whole block.
-// ---------------------------------------------------------------------------
+async function postJson<T = unknown>(
+  endpoint: string,
+  body: Record<string, unknown> = {},
+  config?: XConfig,
+): Promise<T> {
+  const cfg = config ?? loadXConfig();
+  if (!cfg.apiKey) {
+    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
+  }
 
-interface MockState {
-  tweetCounter: number;
-  mediaCounter: number;
-  publishedTweets: Tweet[];
-  mediaById: Map<string, MediaUploadResult>;
+  const response = await fetch(`${cfg.baseUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': cfg.apiKey,
+      'x-use-camel-case': 'true',
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const parsed = parseOpenApiError(text);
+    throw new Error(
+      `YouMind X API ${endpoint} failed (${response.status})` +
+        `: ${formatOpenApiError(parsed, text)}`,
+    );
+  }
+
+  return response.json() as Promise<T>;
 }
 
-function initMockState(): MockState {
+function parseOpenApiError(text: string): OpenApiErrorResponse | null {
+  try {
+    return JSON.parse(text) as OpenApiErrorResponse;
+  } catch {
+    return null;
+  }
+}
+
+function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string): string {
+  if (!parsed) {
+    return rawText.slice(0, 300);
+  }
+
+  const parts = [parsed.message, parsed.code, parsed.detail?.hint].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
+
+  if (parsed.detail?.connectUrl) {
+    parts.push(`Connect X: ${parsed.detail.connectUrl}`);
+  }
+
+  if (parsed.detail?.upgradeUrl) {
+    parts.push(`Upgrade plan: ${parsed.detail.upgradeUrl}`);
+  }
+
+  return parts.join(' | ') || rawText.slice(0, 300);
+}
+
+function normalizePost(raw: Record<string, unknown>): XPost {
   return {
-    tweetCounter: 0,
-    mediaCounter: 0,
-    publishedTweets: [],
-    mediaById: new Map<string, MediaUploadResult>(),
+    postId: String(raw.postId ?? raw.post_id ?? ''),
+    text: String(raw.text ?? ''),
+    url: String(raw.url ?? ''),
   };
 }
 
-const mockState: MockState = initMockState();
-
-// ---------------------------------------------------------------------------
-// Exported mock functions — Tweets
-// ---------------------------------------------------------------------------
-
 /**
- * Create a single tweet. If `options.reply_to` is set, the tweet is recorded
- * as a reply to that tweet id (this is what makes the thread-chain flow
- * work end-to-end via mocks).
- */
-export async function createTweet(
-  config: XConfig,
-  text: string,
-  options?: CreateTweetOptions,
-): Promise<TweetResponse> {
-  void config;
-  mockState.tweetCounter += 1;
-  const id = `mock_x_tweet_${Date.now()}_${mockState.tweetCounter}`;
-  const tweet: Tweet = {
-    id,
-    text,
-    edit_history_tweet_ids: [id],
-  };
-  if (options?.reply_to) {
-    tweet.in_reply_to_tweet_id = options.reply_to;
-  }
-  if (options?.media_ids?.length) {
-    tweet.attachments = { media_keys: options.media_ids };
-  }
-  if (options?.quote_tweet_id) {
-    tweet.quoted_tweet_id = options.quote_tweet_id;
-  }
-  mockState.publishedTweets.unshift(tweet);
-  return { data: tweet };
-}
-
-/**
- * Create a thread (sequential tweets as a reply chain). Each tweet after the
- * first uses the previous tweet's id as its `reply_to`.
+ * Publish a single tweet via the YouMind proxy.
  *
- * @returns Array of tweet responses in order
+ * `options.mediaUrls` must be publicly reachable https URLs under cdn.gooo.ai
+ * — the YouMind backend enforces this allowlist to avoid SSRF. Non-cdn URLs
+ * will be rejected with `X_MEDIA_HOST_NOT_ALLOWED`.
+ *
+ * `options.replyToPostId` chains this tweet as a reply to an existing one.
+ * That is how threads are built: publish the first tweet, then for each
+ * subsequent tweet in the sequence pass the previous tweet's `postId` here.
  */
-export async function createThread(
+export async function createXPost(
   config: XConfig,
-  tweets: string[],
-): Promise<TweetResponse[]> {
-  if (tweets.length === 0) {
-    throw new Error('Thread must contain at least one tweet.');
+  options: CreateXPostOptions,
+): Promise<XPost> {
+  const body: Record<string, unknown> = { text: options.text };
+  if (options.mediaUrls?.length) {
+    body.mediaUrls = options.mediaUrls;
   }
-
-  const results: TweetResponse[] = [];
-
-  // Post first tweet — no reply_to
-  const first = await createTweet(config, tweets[0]);
-  results.push(first);
-  console.log(`Thread 1/${tweets.length}: ${first.data.id}`);
-
-  // Post remaining as replies, each chained to the previous one
-  let previousId = first.data.id;
-  for (let i = 1; i < tweets.length; i++) {
-    const reply = await createTweet(config, tweets[i], {
-      reply_to: previousId,
-    });
-    results.push(reply);
-    previousId = reply.data.id;
-    console.log(`Thread ${i + 1}/${tweets.length}: ${reply.data.id}`);
+  if (options.replyToPostId) {
+    body.replyToPostId = options.replyToPostId;
   }
-
-  return results;
-}
-
-/**
- * Delete a tweet by ID. Returns `{ deleted: true }` if the tweet was found
- * in the mock state, otherwise `{ deleted: false }`.
- */
-export async function deleteTweet(
-  _config: XConfig,
-  tweetId: string,
-): Promise<{ deleted: boolean }> {
-  const idx = mockState.publishedTweets.findIndex((t) => t.id === tweetId);
-  if (idx >= 0) {
-    mockState.publishedTweets.splice(idx, 1);
-    return { deleted: true };
-  }
-  return { deleted: false };
-}
-
-// ---------------------------------------------------------------------------
-// Exported mock functions — Users
-// ---------------------------------------------------------------------------
-
-/**
- * Get the authenticated user's profile.
- */
-export async function getMe(_config: XConfig): Promise<XUser> {
-  return {
-    id: 'mock_x_user',
-    name: 'Mock User',
-    username: 'mock_user',
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Exported mock functions — Media
-// ---------------------------------------------------------------------------
-
-/**
- * Upload media (image / video) for use in tweets. Returns a fake
- * media_id_string that publisher.ts can attach to a subsequent createTweet
- * call. No real upload happens.
- */
-export async function uploadMedia(
-  _config: XConfig,
-  _mediaData: Buffer | string,
-  _mediaType: string = 'image/png',
-): Promise<MediaUploadResult> {
-  mockState.mediaCounter += 1;
-  const idStr = `mock_x_media_${Date.now()}_${mockState.mediaCounter}`;
-  const idNum = mockState.mediaCounter;
-  const result: MediaUploadResult = {
-    media_id: idNum,
-    media_id_string: idStr,
-    media_key: `${idNum}_${idStr}`,
-    size: 0,
-    expires_after_secs: 86_400,
-  };
-  mockState.mediaById.set(idStr, result);
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// Auth mode — degenerate. Always reports the YouMind-proxy mode now that the
-// dual OAuth complexity is gone. Preserved as a stable export.
-// ---------------------------------------------------------------------------
-
-export function getAuthMode(_config: XConfig): AuthMode {
-  return 'youmind';
+  const raw = await postJson<Record<string, unknown>>('/createXPost', body, config);
+  return normalizePost(raw);
 }

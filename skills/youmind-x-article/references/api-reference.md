@@ -1,127 +1,115 @@
-# X (Twitter) API Reference
+# YouMind X OpenAPI Reference
+
+Base URL: `https://youmind.com/openapi/v1`
+
+All X publishing flows through YouMind's OpenAPI proxy. The caller only sends a YouMind API key in `x-api-key`. The user's X access token and refresh token are stored inside YouMind (connected once via OAuth 2.0 PKCE in the YouMind product) and never placed in the skill config.
 
 ## Authentication
 
-X supports two authentication methods:
+All requests require:
 
-### OAuth 2.0 (Recommended)
-- Bearer token for app-only access (read-only)
-- User access token for user actions (posting, deleting)
-- Scopes: `tweet.read`, `tweet.write`, `users.read`
+```text
+x-api-key: sk-ym-xxxxxxxxxxxxxxxxxxxx
+Content-Type: application/json
+x-use-camel-case: true
+```
 
-### OAuth 1.0a (Legacy)
-- Four credentials: API key, API secret, access token, access token secret
-- HMAC-SHA1 signature for each request
-- Required for media upload endpoint (v1.1)
+Get your YouMind API key from: <https://youmind.com/settings/api-keys>
 
-## API v2 Endpoints
+## Preconditions
+
+- The skill reads `youmind.api_key` and `youmind.base_url` from local `config.yaml`
+- The user has already connected their X account inside YouMind (one-click OAuth)
+- No paid plan is required for `createXPost` — unlike `createTokenPlatformPost`, X publishing is free to call
+
+## Endpoints Used
 
 ### Create Tweet
-```
-POST https://api.x.com/2/tweets
+
+```text
+POST /openapi/v1/createXPost
 ```
 
-Headers:
-```
-Authorization: Bearer {user_access_token}
-Content-Type: application/json
-```
+Request body:
 
-Body:
 ```json
 {
-  "text": "Tweet content here"
+  "text": "Hello from YouMind!",
+  "mediaUrls": [
+    "https://cdn.gooo.ai/user-files/example-image.jpg"
+  ]
 }
 ```
 
-With reply:
-```json
-{
-  "text": "Reply content",
-  "reply": {
-    "in_reply_to_tweet_id": "1234567890"
-  }
-}
-```
-
-With media:
-```json
-{
-  "text": "Tweet with image",
-  "media": {
-    "media_ids": ["1234567890"]
-  }
-}
-```
-
-With quote:
-```json
-{
-  "text": "My commentary",
-  "quote_tweet_id": "1234567890"
-}
-```
-
-### Delete Tweet
-```
-DELETE https://api.x.com/2/tweets/{id}
-```
-
-### Get User
-```
-GET https://api.x.com/2/users/me
-```
-
-## API v1.1 Endpoints (Media Upload)
-
-Media upload still uses the v1.1 endpoint.
-
-### Upload Media
-```
-POST https://upload.twitter.com/1.1/media/upload.json
-Content-Type: application/x-www-form-urlencoded
-```
-
-Parameters (form-encoded):
-- `media_data`: Base64-encoded media
-- `media_category`: `tweet_image` or `tweet_video`
+| Field | Type | Notes |
+|-------|------|-------|
+| `text` | string, required | 1-280 characters. URLs still count as 23 characters on X's side. |
+| `mediaUrls` | string[], optional | Up to 4 images. **Each URL must be under `cdn.gooo.ai`** — YouMind enforces this allowlist server-side to avoid SSRF. Non-CDN URLs will be rejected with `X_MEDIA_HOST_NOT_ALLOWED`. |
+| `replyToPostId` | string, optional | Numeric tweet ID (`^\d{1,32}$`). When set, this tweet is published as a reply — X renders the chain natively. Pass the previous tweet's `postId` to build a proper thread. |
 
 Response:
+
 ```json
 {
-  "media_id": 1234567890,
-  "media_id_string": "1234567890",
-  "size": 12345,
-  "expires_after_secs": 86400
+  "postId": "1234567890123456789",
+  "text": "Hello from YouMind!",
+  "url": "https://x.com/your-handle/status/1234567890123456789"
 }
 ```
 
-## OAuth 1.0a Signature Generation
+## What is NOT in the OpenAPI Today
 
-For requests requiring OAuth 1.0a:
+YouMind's X OpenAPI surface is deliberately narrow. The following are **not** available through the proxy today, and the skill handles them as follows:
 
-1. Collect OAuth parameters: `oauth_consumer_key`, `oauth_nonce`, `oauth_signature_method` (HMAC-SHA1), `oauth_timestamp`, `oauth_token`, `oauth_version` (1.0)
-2. Combine with request parameters, sort alphabetically
-3. Create parameter string: `key=value` joined by `&`
-4. Create signature base string: `METHOD&url&params` (all percent-encoded)
-5. Create signing key: `consumer_secret&token_secret`
-6. Generate HMAC-SHA1 signature
-7. Add `oauth_signature` to Authorization header
+| Missing feature | Skill behavior |
+|-----------------|----------------|
+| Quote tweet (`quote_tweet_id`) | Not supported. |
+| Delete tweet | Not supported. |
+| Fetch authenticated user (`/users/me`) | Not supported — `youmind-x validate` only checks the local API key. |
+| Local media upload (base64 / multipart) | Not supported. Images must already be hosted under `cdn.gooo.ai`. |
+| Long-form article (X Premium, 25K chars) | Not supported yet. |
 
-## Rate Limits
+Threads are fully supported now via `replyToPostId` — the skill publishes the first tweet, then chains each subsequent tweet to the previous one, producing an X-native thread.
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| POST /tweets | 200 tweets | 15 min |
-| DELETE /tweets | 50 requests | 15 min |
-| GET /users/me | 75 requests | 15 min |
-| Media upload | 615 requests | 15 min |
+## Error Responses
 
-## Error Codes
+| Status | Meaning |
+|--------|---------|
+| 400 | X account not connected in YouMind, or X rejected the request (e.g., duplicate tweet, media URL not under cdn.gooo.ai) |
+| 401 | Invalid or missing YouMind API key |
+| 403 | X forbids this action (account suspended, app quota exceeded) |
+| 429 | X rate limit exceeded — includes `retryAfterSeconds` detail |
+| 502 | X API unavailable or media upload failed |
 
-| Code | Meaning |
-|------|---------|
-| 401 | Invalid or expired credentials |
-| 403 | Account suspended or app not authorized |
-| 429 | Rate limit exceeded |
-| 400 | Bad request (invalid tweet text, duplicate, etc.) |
+Typical not-connected error:
+
+```json
+{
+  "message": "X account is not connected in YouMind. Go to https://youmind.com/settings/connector and connect your X account first.",
+  "code": "X_ACCOUNT_NOT_CONNECTED",
+  "detail": {
+    "connectUrl": "https://youmind.com/settings/connector"
+  }
+}
+```
+
+Media host rejection:
+
+```json
+{
+  "message": "Media URL host is not allowed.",
+  "code": "X_MEDIA_HOST_NOT_ALLOWED",
+  "detail": {
+    "hint": "Only URLs under cdn.gooo.ai are accepted."
+  }
+}
+```
+
+Rate-limited response:
+
+```json
+{
+  "code": "X_RATE_LIMITED",
+  "retryAfterSeconds": 60
+}
+```

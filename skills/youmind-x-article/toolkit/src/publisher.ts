@@ -1,51 +1,33 @@
 /**
- * X (Twitter) publishing orchestrator.
+ * X (Twitter) publishing orchestrator via YouMind OpenAPI.
  *
- * Coordinates content adaptation, media upload, and tweet/thread creation.
- * All publishing now flows through YouMind's proxy via the x-api.ts mock —
- * the dual OAuth wiring (OAuth 2.0 Bearer / OAuth 1.0a HMAC) is gone, and
- * so is the browser-cookie fallback. The thread orchestration (split long
- * text → chain replies) lives here, which is where it always belonged; only
- * the token / auth wiring changed.
+ * Content adaptation (280-char clamp + thread splitting) lives here. The
+ * actual HTTP call is `createXPost` from `./x-api.js`. Threads are built
+ * natively by chaining each tweet as a reply to the previous one (via
+ * `replyToPostId`), so X renders the sequence as a proper thread.
  */
 
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createTweet,
-  createThread,
-  uploadMedia,
-  loadXConfig,
-  type XConfig,
-} from './x-api.js';
-import {
   adaptSingleTweet,
   splitIntoThread,
-  adaptLongForm,
-  weightedCharCount,
   type AdaptOptions,
 } from './content-adapter.js';
+import { createXPost, loadXConfig, type XConfig, type XPost } from './x-api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_DIR = resolve(__dirname, '../..');
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface PublishTweetOptions {
   /** Raw text or Markdown content */
   content: string;
-  /** Optional image/media file paths or URLs */
-  media?: string[];
-  /** Reply to an existing tweet ID */
-  replyTo?: string;
-  /** Quote tweet ID */
-  quoteTweetId?: string;
-  /** Custom hashtags */
+  /** Optional image URLs — must be https URLs under cdn.gooo.ai. Max 4. */
+  mediaUrls?: string[];
+  /** Custom hashtags (1-2 recommended) */
   hashtags?: string[];
   /** X config override */
   config?: XConfig;
@@ -54,8 +36,8 @@ export interface PublishTweetOptions {
 export interface PublishThreadOptions {
   /** Raw text or Markdown content to split into a thread */
   content: string;
-  /** Optional image for the first tweet */
-  media?: string[];
+  /** Optional image URLs attached to the first tweet only. Max 4, cdn.gooo.ai only. */
+  mediaUrls?: string[];
   /** Custom hashtags (added to last tweet) */
   hashtags?: string[];
   /** Add numbering (default: true) */
@@ -67,15 +49,31 @@ export interface PublishThreadOptions {
 export interface PublishResult {
   success: boolean;
   type: 'tweet' | 'thread';
-  tweetIds: string[];
+  posts: XPost[];
   content: string | string[];
   warnings: string[];
   error?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Publish single tweet
-// ---------------------------------------------------------------------------
+function assertCdnMediaUrls(urls: string[] | undefined, warnings: string[]): string[] | undefined {
+  if (!urls?.length) return undefined;
+  const valid: string[] = [];
+  for (const url of urls) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'cdn.gooo.ai') {
+        valid.push(url);
+      } else {
+        warnings.push(
+          `Skipped media URL not under cdn.gooo.ai: ${url} (YouMind backend rejects non-CDN hosts)`,
+        );
+      }
+    } catch {
+      warnings.push(`Skipped invalid media URL: ${url}`);
+    }
+  }
+  return valid.length ? valid : undefined;
+}
 
 export async function publishTweet(
   options: PublishTweetOptions,
@@ -86,53 +84,23 @@ export async function publishTweet(
     return {
       success: false,
       type: 'tweet',
-      tweetIds: [],
+      posts: [],
       content: options.content,
       warnings: [],
       error: 'youmind.api_key not set in config.yaml',
     };
   }
 
-  // Adapt content
-  const adapted = adaptSingleTweet(options.content, {
-    hashtags: options.hashtags,
-  });
+  const adapted = adaptSingleTweet(options.content, { hashtags: options.hashtags });
+  const mediaUrls = assertCdnMediaUrls(options.mediaUrls, adapted.warnings);
 
-  // Upload media if provided
-  const mediaIds: string[] = [];
-  if (options.media?.length) {
-    for (const mediaSource of options.media) {
-      try {
-        const result = await uploadMedia(config, mediaSource);
-        mediaIds.push(result.media_id_string);
-        console.log(`Media uploaded: ${mediaSource} -> ${result.media_id_string}`);
-      } catch (err) {
-        adapted.warnings.push(
-          `Failed to upload media ${mediaSource}: ${(err as Error).message}`,
-        );
-      }
-    }
-  }
-
-  // Create tweet
   try {
-    const result = await createTweet(config, adapted.text, {
-      reply_to: options.replyTo,
-      quote_tweet_id: options.quoteTweetId,
-      media_ids: mediaIds.length > 0 ? mediaIds : undefined,
-    });
-
-    // Save output
-    saveOutput('tweet', {
-      tweetId: result.data.id,
-      text: adapted.text,
-      warnings: adapted.warnings,
-    });
-
+    const post = await createXPost(config, { text: adapted.text, mediaUrls });
+    saveOutput('tweet', { postId: post.postId, text: adapted.text, url: post.url });
     return {
       success: true,
       type: 'tweet',
-      tweetIds: [result.data.id],
+      posts: [post],
       content: adapted.text,
       warnings: adapted.warnings,
     };
@@ -140,17 +108,13 @@ export async function publishTweet(
     return {
       success: false,
       type: 'tweet',
-      tweetIds: [],
+      posts: [],
       content: adapted.text,
       warnings: adapted.warnings,
       error: (err as Error).message,
     };
   }
 }
-
-// ---------------------------------------------------------------------------
-// Publish thread
-// ---------------------------------------------------------------------------
 
 export async function publishThread(
   options: PublishThreadOptions,
@@ -161,14 +125,13 @@ export async function publishThread(
     return {
       success: false,
       type: 'thread',
-      tweetIds: [],
+      posts: [],
       content: [],
       warnings: [],
       error: 'youmind.api_key not set in config.yaml',
     };
   }
 
-  // Split content into thread
   const thread = splitIntoThread(options.content, {
     hashtags: options.hashtags,
     addNumbering: options.addNumbering,
@@ -178,58 +141,66 @@ export async function publishThread(
     return {
       success: false,
       type: 'thread',
-      tweetIds: [],
+      posts: [],
       content: [],
       warnings: ['No content to post.'],
       error: 'Empty content',
     };
   }
 
-  // If only one tweet, just post as single
   if (thread.tweets.length === 1) {
     return publishTweet({
       content: thread.tweets[0],
-      media: options.media,
+      mediaUrls: options.mediaUrls,
       config,
     });
   }
 
-  try {
-    const results = await createThread(config, thread.tweets);
-    const tweetIds = results.map((r) => r.data.id);
+  const warnings = [...thread.warnings];
+  const firstMediaUrls = assertCdnMediaUrls(options.mediaUrls, warnings);
+  const posts: XPost[] = [];
 
-    saveOutput('thread', {
-      tweetIds,
-      tweets: thread.tweets,
-      warnings: thread.warnings,
-    });
-
-    return {
-      success: true,
-      type: 'thread',
-      tweetIds,
-      content: thread.tweets,
-      warnings: thread.warnings,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      type: 'thread',
-      tweetIds: [],
-      content: thread.tweets,
-      warnings: thread.warnings,
-      error: (err as Error).message,
-    };
+  // Chain each tweet to the previous one so X renders the sequence as a
+  // native thread instead of independent standalone tweets.
+  let previousPostId: string | undefined;
+  for (let i = 0; i < thread.tweets.length; i++) {
+    try {
+      const post = await createXPost(config, {
+        text: thread.tweets[i],
+        mediaUrls: i === 0 ? firstMediaUrls : undefined,
+        replyToPostId: previousPostId,
+      });
+      posts.push(post);
+      previousPostId = post.postId;
+      console.log(`Thread ${i + 1}/${thread.tweets.length}: ${post.postId}`);
+    } catch (err) {
+      return {
+        success: false,
+        type: 'thread',
+        posts,
+        content: thread.tweets,
+        warnings,
+        error: `Tweet ${i + 1}/${thread.tweets.length} failed: ${(err as Error).message}`,
+      };
+    }
   }
+
+  saveOutput('thread', {
+    postIds: posts.map((p) => p.postId),
+    tweets: thread.tweets,
+    urls: posts.map((p) => p.url),
+    warnings,
+  });
+
+  return {
+    success: true,
+    type: 'thread',
+    posts,
+    content: thread.tweets,
+    warnings,
+  };
 }
 
-// ---------------------------------------------------------------------------
-// Preview
-// ---------------------------------------------------------------------------
-
-/**
- * Preview how content will be formatted without publishing.
- */
 export function previewTweet(
   content: string,
   options: AdaptOptions = {},
@@ -254,10 +225,6 @@ export function previewThread(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function saveOutput(type: string, data: Record<string, unknown>): void {
   try {
     const outputDir = resolve(PROJECT_DIR, 'output');
@@ -266,7 +233,10 @@ function saveOutput(type: string, data: Record<string, unknown>): void {
     }
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const outputPath = resolve(outputDir, `x-${type}-${timestamp}.json`);
-    writeFileSync(outputPath, JSON.stringify({ ...data, timestamp: new Date().toISOString() }, null, 2));
+    writeFileSync(
+      outputPath,
+      JSON.stringify({ ...data, timestamp: new Date().toISOString() }, null, 2),
+    );
   } catch {
     // Non-critical, ignore
   }

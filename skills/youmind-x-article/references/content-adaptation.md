@@ -9,16 +9,11 @@
 - **Mentions**: @username counts toward limit
 - **Hashtags**: #tag counts toward limit (use 1-2 max)
 
-### Thread
-- Each tweet in a thread: 280 characters (including numbering)
-- No limit on thread length (but 5-15 tweets is ideal)
-- Thread numbering format: "1/N" at end of each tweet
-
-### Long-form Article (X Premium)
-- 25,000 characters
-- Full Markdown support
-- Cover image supported
-- Title field available
+### Thread (Tweet Chain)
+- Each tweet in the chain: 280 characters (including optional numbering)
+- No hard limit on thread length (but 5-15 tweets is ideal)
+- Numbering format: "1/N" at end of each tweet — optional but recommended for scanability
+- Publishing is a native X reply-chain: the skill passes the previous tweet's `postId` as `replyToPostId` on each subsequent call, so X renders the sequence as a proper thread.
 
 ## Single Tweet Best Practices
 
@@ -74,6 +69,5 @@ X does not support Markdown in tweets. Content adapter strips:
 
 1. **Post timing**: 8-10 AM, 12-1 PM, 5-6 PM local time
 2. **Reply to comments** within first hour
-3. **Quote tweet > retweet** for adding commentary
-4. **Thread > single tweet** for complex topics (5x more engagement)
-5. **Images boost engagement** by ~150%
+3. **Tweet sequence > single tweet** for complex topics (5x more engagement historically; numbered sequences still read well even without native reply chains)
+4. **Images boost engagement** by ~150% — reference `https://cdn.gooo.ai/...` URLs only
