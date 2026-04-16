@@ -93,6 +93,12 @@ cp config.example.yaml config.yaml
 node toolkit/dist/cli.js validate
 ```
 
+> **Upgrade-safe config (recommended):**
+> - Shared YouMind credentials → `~/.youmind/config.yaml` (fill ONCE for all 8 skills). Template: [`/shared/config.example.yaml`](/shared/config.example.yaml).
+> - WeChat-specific overrides (optional) → `~/.youmind/config/youmind-wechat-article.yaml` for `theme` + `theme_color`.
+> - Skill-local `config.yaml` remains a legacy fallback.
+> - Resolution: shared → overrides → legacy. See [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+
 Expected: `OK: Connected to WeChat Official Account wxxxxxxxxxx` + token 剩余秒数.
 
 **Full walkthrough with screenshots:** [README.md §安装](README.md) — covers YouMind API key creation, WeChat Connector binding, rotation procedure.

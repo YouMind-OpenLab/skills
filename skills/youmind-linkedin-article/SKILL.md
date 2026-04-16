@@ -99,6 +99,8 @@ cd toolkit && npm install && npm run build && cd ..
 cp config.example.yaml config.yaml
 ```
 
+> **Upgrade-safe credentials (recommended):** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`/shared/config.example.yaml`](/shared/config.example.yaml) for the template and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) for the resolution order. Skill-local `config.yaml` remains a legacy fallback for this skill only. This skill has no skill-specific overrides.
+
 ### Step 3 -- Get YouMind API Key (Recommended)
 
 1. Open [YouMind API Keys page](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article)

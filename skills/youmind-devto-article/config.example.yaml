@@ -1,3 +1,11 @@
+# Legacy skill-local config — retained as fallback for pre-~/.youmind/ installs.
+#
+# New installs: put shared YouMind credentials at ~/.youmind/config.yaml
+# using /shared/config.example.yaml as the template. The skill reads the
+# shared location first and falls back to this file.
+#
+# This skill has no skill-specific override fields beyond the shared config.
+
 youmind:
   api_key: ""
   base_url: "https://youmind.com/openapi/v1"

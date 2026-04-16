@@ -1,0 +1,21 @@
+# YouMind Shared Config — copy to ~/.youmind/config.yaml
+#
+# This file holds the credentials and endpoints that every YouMind skill needs.
+# Put it at ~/.youmind/config.yaml — you fill it ONCE and all 8+ YouMind skills
+# (dispatch + devto/ghost/hashnode/linkedin/qiita/wechat/wordpress/x) read from it.
+#
+# Skill-specific knobs (e.g. WeChat theme) do NOT belong here — they live at
+# ~/.youmind/config/<skill-name>.yaml as small per-skill overrides.
+#
+# See /shared/YOUMIND_HOME.md for the full directory convention and resolution order.
+
+youmind:
+  # YouMind API Key — get from https://youmind.com/settings/api-keys
+  # Used for: knowledge base search, web search, article archiving, AI image
+  # generation (where applicable), and every platform's publishing proxy.
+  api_key: ""                               # sk-ym-xxxxxxxxxxxxxxxxxxxx
+
+  # YouMind OpenAPI base URL. Keep as the public endpoint in shared configs.
+  # To test against a local dev backend, override just this field in a
+  # machine-local copy — never edit the shared template.
+  base_url: "https://youmind.com/openapi/v1"

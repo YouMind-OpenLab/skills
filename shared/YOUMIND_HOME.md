@@ -32,9 +32,14 @@ Skills resolve this via `os.homedir()` + `.youmind` (Node) or `Path.home() / ".y
 
 ```
 ~/.youmind/
+├── config.yaml                # SHARED — YouMind API key + base URL (filled once, read by every skill)
 ├── author-profile.yaml        # Cross-skill writing DNA (voice / audience / content / language)
 ├── learning-log.yaml          # Append-only DNA learning signals (5-source pipeline)
 ├── dispatch-roster.yaml       # User's active platform list (only read/written by dispatch hub)
+│
+├── config/                    # Per-skill OVERRIDES — only skill-specific knobs (optional; most skills ship empty)
+│   ├── youmind-wechat-article.yaml   # e.g. theme + theme_color
+│   └── …                             # other skills may add small overrides later
 │
 ├── articles/                  # Canonical local article drafts, scoped by platform
 │   ├── devto/
@@ -71,14 +76,28 @@ Skills resolve this via `os.homedir()` + `.youmind` (Node) or `Path.home() / ".y
 
 ## Resolution order (every skill follows this)
 
-When a skill reads a piece of user data (author profile, history, etc.), it tries in this order:
+### For user data (author profile, history, articles, etc.)
 
 1. **`~/.youmind/<file>`** — canonical shared location (preferred)
 2. **`<skill>/output/`** or **`<skill>/<file>`** — legacy skill-local fallback
 3. **Onboarding** — create `~/.youmind/<file>` from template + user answers
 
-When writing, the skill writes to `~/.youmind/<file>` FIRST. If that path is not writable
-(permissions, read-only filesystem), fall back to skill-local and warn the user.
+When writing, the skill writes to `~/.youmind/<file>` FIRST. If that path is not writable,
+fall back to skill-local and warn the user.
+
+### For config (YouMind API key + skill-specific knobs)
+
+Skills follow a **three-layer merge**: shared → overrides → legacy.
+
+1. **`~/.youmind/config.yaml`** — shared YouMind credentials (fill once, all skills read)
+2. **`~/.youmind/config/<skill>.yaml`** — per-skill overrides (optional; only for skill-specific fields)
+3. **`skills/<name>/config.yaml`** — legacy skill-local fallback (pre-`~/.youmind/` installs)
+
+Final config = **shared ⊕ overrides ⊕ legacy** (later layers override earlier ones where keys conflict).
+
+**Design principle:** `youmind.api_key` and `youmind.base_url` belong to the user, not to any one skill.
+They live in the shared `config.yaml` — filled once, used everywhere. Skill-specific preferences
+(WeChat `theme`, future per-skill knobs) live in per-skill override files — small, additive, optional.
 
 ## Creation semantics
 
@@ -108,16 +127,47 @@ can see the expected schema. On first run:
 
 ## What lives WHERE (canonical table)
 
-| Data | Canonical location | Writer(s) | Reader(s) |
-|------|-------------------|-----------|-----------|
-| Author DNA (voice/audience/content) | `~/.youmind/author-profile.yaml` | any skill (onboarding); dispatch (GUI editor) | all skills |
-| Learning log (DNA signals) | `~/.youmind/learning-log.yaml` | dispatch; optionally any skill | dispatch |
-| Dispatch roster (active platforms) | `~/.youmind/dispatch-roster.yaml` | dispatch only | dispatch only |
-| Local article drafts | `~/.youmind/articles/<platform>/` | platform skill (write) | platform skill (read) |
-| Published history | `~/.youmind/history/<platform>.yaml` | platform skill (append on publish) | platform skill (dedup); dispatch (analytics) |
-| WeChat client configs | `~/.youmind/clients/<client>/` | wechat skill (onboarding) | wechat skill only |
-| Platform credentials | **NOT here** — YouMind Connector Settings (server-side encrypted) | YouMind server | YouMind server |
-| YouMind API key | **NOT here** — `<skill>/config.yaml` (skill-local, git-ignored) | user manually | each skill |
+| Data | Canonical location | Writer(s) | Reader(s) | Upgrade-safe? |
+|------|-------------------|-----------|-----------|:-------------:|
+| Author DNA (voice/audience/content) | `~/.youmind/author-profile.yaml` | any skill (onboarding); dispatch (GUI editor) | all skills | ✅ |
+| Learning log (DNA signals) | `~/.youmind/learning-log.yaml` | dispatch; optionally any skill | dispatch | ✅ |
+| Dispatch roster (active platforms) | `~/.youmind/dispatch-roster.yaml` | dispatch only | dispatch only | ✅ |
+| Shared YouMind credentials (api_key + base_url) | `~/.youmind/config.yaml` | user manually (or onboarding) | **every skill** | ✅ |
+| Per-skill overrides (skill-specific knobs only, e.g. WeChat theme) | `~/.youmind/config/<skill>.yaml` | user manually | the owning skill | ✅ |
+| Local article drafts | `~/.youmind/articles/<platform>/` | platform skill (write) | platform skill (read) | ✅ |
+| Published history | `~/.youmind/history/<platform>.yaml` | platform skill (append on publish) | platform skill (dedup); dispatch (analytics) | ✅ |
+| WeChat client configs | `~/.youmind/clients/<client>/` | wechat skill (onboarding) | wechat skill only | ✅ |
+| Platform credentials (OAuth tokens, app passwords) | **NOT here** — YouMind Connector Settings (server-side encrypted) | YouMind server | YouMind server | ✅ (server-side) |
+| Legacy per-skill `config.yaml` | `skills/<name>/config.yaml` | user manually | skill (fallback read) | ⚠️ at risk of skill upgrade wipe |
+
+## Upgrade safety — why data lives OUTSIDE the skill directory
+
+Skill upgrades (via ClawHub CLI, `git pull`, manual reinstall, etc.) may replace the contents of `skills/<name>/` wholesale. Any file inside the skill directory — even git-ignored ones — is at risk of being overwritten or deleted by an aggressive installer.
+
+**Everything in `~/.youmind/` is immune to this risk** because it lives in the user's home directory, outside any skill's scope. A skill upgrade, reinstall, or even complete removal leaves `~/.youmind/` untouched.
+
+### Upgrade checklist (what survives)
+
+| Scenario | Survives? | Why |
+|----------|:---------:|-----|
+| `ClawHub update` (skill version bump) | ✅ | `~/.youmind/` is outside skill dir |
+| `rm -rf skills/<name>/` (full skill removal) | ✅ | Same — home dir is separate |
+| Switching machines with home dir backup | ✅ | `~/.youmind/` is part of your home; back it up with your home |
+| Skill-local `config.yaml` wiped by installer | ⚠️ | Mitigated: use `~/.youmind/config/<skill>.yaml` as canonical |
+| Skill-local `output/` wiped by installer | ⚠️ | Mitigated: canonical drafts live at `~/.youmind/articles/<platform>/` |
+
+### Migration strategy on upgrade
+
+When a skill starts up and detects a newer version is running, it should:
+
+1. Check `~/.youmind/config/<skill>.yaml`. If present → use it.
+2. If not, check legacy `skills/<name>/config.yaml`. If present → offer a one-time migration: copy to `~/.youmind/config/<skill>.yaml`, leave a stub at the old location pointing to the new one.
+3. Same pattern for `output/` → `~/.youmind/articles/<platform>/`.
+4. Never force migration. Legacy paths continue to work as fallback reads.
+
+### How to back up `~/.youmind/`
+
+Include `~/.youmind/` in your home-directory backup strategy (Time Machine, rsync, iCloud, Dropbox, Syncthing, etc.). Everything is plain YAML/Markdown — portable, human-readable, diffable. No binary blobs, no databases.
 
 ## Migration path for existing installs
 

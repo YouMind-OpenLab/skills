@@ -57,7 +57,10 @@ The local skill only requires a YouMind API key. The user's Hashnode token and p
 
 ## Local Config
 
-`config.yaml` only needs:
+**Upgrade-safe shared config (recommended):** put your YouMind credentials at `~/.youmind/config.yaml`. You fill this ONCE and every YouMind skill reads from it. See [`/shared/config.example.yaml`](/shared/config.example.yaml) and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+**Legacy fallback:** `skills/youmind-hashnode-article/config.yaml` (same format; read as fallback for pre-`~/.youmind/` installs).
+
+Shape (identical in both locations):
 
 ```yaml
 youmind:
@@ -65,8 +68,7 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-All commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
-Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+This skill has no skill-specific overrides. All commands read `youmind.api_key` and `youmind.base_url` from the first location found (shared → legacy). Keep the documented domain as `https://youmind.com/openapi/v1`. If you test against a local `youapi`, override only your local copy — never the docs.
 
 Do not ask the user to fill local `hashnode.token` or `hashnode.publication_id`. That flow is obsolete.
 
