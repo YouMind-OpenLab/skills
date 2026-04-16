@@ -1,1 +1,9 @@
 references/environment.md
+
+# User data — never publish (*.example.yaml ARE published as templates)
+config.yaml
+author-profile.yaml
+dispatch-roster.yaml
+learning-log.yaml
+.env
+output/

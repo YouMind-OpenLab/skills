@@ -3,3 +3,12 @@ toolkit/package-lock.json
 toolkit/node_modules/
 image/
 cover/
+
+# User data — never publish
+config.yaml
+.env
+output/
+
+# Client configs — keep demo template; never publish real client data
+clients/*
+!clients/demo/
