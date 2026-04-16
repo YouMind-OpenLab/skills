@@ -6,7 +6,7 @@ username, and Application Password are held server-side after the user
 links WordPress in YouMind.
 
 Base URL: `https://youmind.com/openapi/v1` (override via `youmind.base_url`
-in `config.yaml` for local dev, e.g. `http://localhost:4000/openapi/v1`).
+in `~/.youmind/config.yaml` or `~/.youmind/config/youmind-wordpress-article.yaml` for local dev, e.g. `http://localhost:4000/openapi/v1`).
 
 ## Authentication
 

@@ -13,60 +13,26 @@
  *   npx tsx src/youmind-api.ts mine-topics "AI,産品設計" --board <board_id> --top-k 5
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { DEFAULT_YOUMIND_OPENAPI_BASE_URL, loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
 
 interface YouMindConfig {
   apiKey: string;
   baseUrl: string;
 }
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
-function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-    }
-  }
-  return {};
-}
+const YOUMIND_OPENAPI_BASE_URLS = [DEFAULT_YOUMIND_OPENAPI_BASE_URL];
 
 function loadConfig(): YouMindConfig {
-  const central = loadCentralCredentials();
-  const local = loadLocalConfig();
-  const ym = { ...(central.youmind as Record<string, unknown> ?? {}), ...(local.youmind as Record<string, unknown> ?? {}) };
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
-  const imgYm = (local as any).image?.providers?.youmind ?? {};
+  const { apiKey, baseUrl } = loadYouMindConfig();
   return {
-    apiKey: (ym.api_key as string) || (imgYm.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    apiKey,
+    baseUrl,
   };
 }
 
@@ -81,7 +47,7 @@ async function post<T = unknown>(
 ): Promise<T> {
   const cfg = config ?? loadConfig();
   if (!cfg.apiKey) {
-    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
+    throw new Error(`YouMind API key not configured. ${YOUMIND_CONFIG_ERROR_HINT}`);
   }
 
   const baseUrls = [cfg.baseUrl, ...YOUMIND_OPENAPI_BASE_URLS.filter(u => u !== cfg.baseUrl)];

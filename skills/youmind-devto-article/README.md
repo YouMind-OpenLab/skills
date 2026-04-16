@@ -23,11 +23,12 @@ AI-powered Dev.to article writing and publishing. Tell your agent a topic, and i
 # 1. Install dependencies
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. Create config (if config.yaml doesn't exist)
-cp config.example.yaml config.yaml
+# 2. Create shared config (recommended)
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` only needs the YouMind API key:
+`~/.youmind/config.yaml` only needs the YouMind API key:
 
 ```yaml
 youmind:
@@ -35,8 +36,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
-Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+Commands resolve config in this order: `~/.youmind/config/youmind-devto-article.yaml` -> `~/.youmind/config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change `~/.youmind/config.yaml` or add a skill-specific override under `~/.youmind/config/`.
 
 ### Publishing prerequisite
 
@@ -44,7 +45,7 @@ Before publishing, connect your Dev.to account inside YouMind. The skill no long
 
 ### Get a YouMind API Key
 
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article), create a key, and place it in `youmind.api_key`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article), create a key, and place it in `~/.youmind/config.yaml` under `youmind.api_key`.
 
 ---
 
@@ -107,11 +108,11 @@ Dev.to OpenAPI now requires a paid YouMind plan (Pro / Max). If the current acco
 
 **Q: I get a 401 or auth error**
 
-Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind.
+Check `youmind.api_key` in `~/.youmind/config.yaml`. The skill now authenticates only with YouMind.
 
 **Q: Publishing says Dev.to is not connected**
 
-Connect Dev.to inside YouMind first. The Dev.to token lives there, not in `config.yaml`.
+Connect Dev.to inside YouMind first. The Dev.to token lives there, not in `~/.youmind/config.yaml`.
 
 **Q: Tag doesn't exist**
 

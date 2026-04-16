@@ -18,7 +18,8 @@ cd toolkit
 npm install
 npm run build
 cd ..
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
 本地只需要填写 YouMind：
@@ -29,8 +30,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-命令会统一从本地 `config.yaml` 读取 `youmind.api_key` 和 `youmind.base_url`。
-文档里的域名固定写 `https://youmind.com/openapi/v1`。如果你要联调本地 `youapi`，只改你本地的 `config.yaml`，不要改文档或命令示例。
+命令会按 `~/.youmind/config/youmind-hashnode-article.yaml` -> `~/.youmind/config.yaml` 的顺序读取 `youmind.api_key` 和 `youmind.base_url`。
+文档里的域名固定写 `https://youmind.com/openapi/v1`。如果你要联调本地 `youapi`，只改 `~/.youmind/config.yaml` 或 skill 专属 override，不要改文档或命令示例。
 
 ## 当前行为
 

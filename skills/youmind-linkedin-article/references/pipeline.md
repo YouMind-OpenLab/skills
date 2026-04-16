@@ -3,7 +3,7 @@
 ## Step-by-Step Execution
 
 ### Step 1: Load Configuration
-- Read `config.yaml` for LinkedIn credentials and YouMind API key
+- Read `~/.youmind/config.yaml` for the YouMind API key and `~/.youmind/config/youmind-linkedin-article.yaml` for LinkedIn-specific credentials
 - Validate `linkedin.access_token` and `linkedin.person_urn` are present
 - If missing, prompt user to complete setup
 

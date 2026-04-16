@@ -14,8 +14,8 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';
-import { parse as parseYaml } from 'yaml';
 import { COVER_PALETTE, COLOR_HUE_MAP, type CoverMeta } from './cover-assets.js';
+import { loadLayeredConfig } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,14 +56,12 @@ interface ImageConfig {
 }
 
 function loadConfig(): { image: ImageConfig; youmind?: { api_key?: string } } {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      return { image: {}, youmind: raw.youmind };
-    }
-  }
-  return { image: {} };
+  const raw = loadLayeredConfig();
+  const youmind =
+    raw.youmind && typeof raw.youmind === 'object' && !Array.isArray(raw.youmind)
+      ? (raw.youmind as { api_key?: string })
+      : undefined;
+  return { image: {}, youmind };
 }
 
 function resolveProvider(
@@ -365,7 +363,7 @@ async function main() {
     // Fallback 3: prompt only
     output({
       status: 'prompt_only', prompt: args.prompt,
-      message: '无可用 API key。请在 config.yaml 中配置 youmind.api_key',
+      message: 'No API key available. Configure ~/.youmind/config.yaml.',
     });
     return;
   }

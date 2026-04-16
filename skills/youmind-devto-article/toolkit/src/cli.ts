@@ -98,7 +98,7 @@ function getConfigOrExit() {
   const config = loadDevtoConfig();
 
   if (!config.apiKey) {
-    console.error('Error: YouMind API key not set. Configure youmind.api_key in config.yaml.');
+    console.error('Error: YouMind API key not set. Configure ~/.youmind/config.yaml.');
     process.exit(1);
   }
 

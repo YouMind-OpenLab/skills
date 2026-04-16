@@ -44,7 +44,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   } = options;
 
   if (!config.apiKey) {
-    throw new Error('youmind.api_key not set in config.yaml');
+    throw new Error('youmind.api_key not set. Configure ~/.youmind/config.yaml.');
   }
   if (!title || !title.trim()) {
     throw new Error('Article title is required.');

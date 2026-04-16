@@ -4,7 +4,7 @@
 
 ### Step 1: Load Config
 
-- Read `config.yaml` for `youmind.api_key`
+- Read `~/.youmind/config.yaml` for `youmind.api_key`
 - Validate that a YouMind API key is present
 - Call YouMind Ghost OpenAPI `validateConnection`
 - If Ghost is not connected, surface the connector URL from the API response

@@ -84,7 +84,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
       postText: adapted.text,
       extractedLinks: adapted.extractedLinks,
       warnings: adapted.warnings,
-      error: 'youmind.api_key not set in config.yaml',
+      error: 'youmind.api_key not set. Configure ~/.youmind/config.yaml.',
     };
   }
 

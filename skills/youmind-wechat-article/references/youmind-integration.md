@@ -26,7 +26,7 @@
 
 ### Step 1.5 — Knowledge Mining (Automatic)
 
-When `config.yaml` has `youmind.api_key` and the client's `style.yaml` has `youmind.source_boards`:
+When `~/.youmind/config.yaml` has `youmind.api_key` and the client's `style.yaml` has `youmind.source_boards`:
 
 ```bash
 node dist/youmind-api.js mine-topics "{topics_csv}" --board "{board_id}" --top-k 10
@@ -179,7 +179,7 @@ curl -X POST https://youmind.com/openapi/v1/createScheduledTask \
 
 ## Configuration
 
-In `config.yaml`:
+In `~/.youmind/config.yaml`:
 
 ```yaml
 youmind:

@@ -18,7 +18,8 @@ cd toolkit
 npm install
 npm run build
 cd ..
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
 Fill only the YouMind section:
@@ -29,8 +30,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
-Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+Commands resolve config in this order: `~/.youmind/config/youmind-hashnode-article.yaml` -> `~/.youmind/config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change `~/.youmind/config.yaml` or add a skill-specific override under `~/.youmind/config/`.
 
 ## Important Behavior
 

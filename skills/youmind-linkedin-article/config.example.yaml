@@ -1,10 +1,8 @@
-# Legacy skill-local config — retained as fallback for pre-~/.youmind/ installs.
+# Obsolete skill-local example.
 #
-# New installs: put shared YouMind credentials at ~/.youmind/config.yaml
-# using /shared/config.example.yaml as the template. The skill reads the
-# shared location first and falls back to this file.
-#
-# This skill has no skill-specific override fields beyond the shared config.
+# Canonical shared config now lives at ~/.youmind/config.yaml.
+# LinkedIn-specific overrides belong in ~/.youmind/config/youmind-linkedin-article.yaml.
+# Article skills no longer read this repo-local file.
 
 youmind:
   api_key: ""

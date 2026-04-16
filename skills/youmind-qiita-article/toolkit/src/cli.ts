@@ -65,7 +65,7 @@ function parseFrontMatter(raw: string): { data: Record<string, unknown>; content
 function ensureConfig(): QiitaConfig {
   const cfg = loadQiitaConfig();
   if (!cfg.apiKey) {
-    console.error('Error: youmind.api_key not set in config.yaml');
+    console.error('Error: youmind.api_key not set. Configure ~/.youmind/config.yaml.');
     process.exit(1);
   }
   return cfg;

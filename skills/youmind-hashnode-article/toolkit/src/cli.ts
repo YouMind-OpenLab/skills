@@ -96,7 +96,7 @@ program
     try {
       const config = loadHashnodeConfig();
       if (!config.apiKey) {
-        console.error('[ERROR] YouMind API key not set. Configure youmind.api_key in config.yaml.');
+        console.error('[ERROR] YouMind API key not set. Configure ~/.youmind/config.yaml.');
         process.exit(1);
       }
 
@@ -274,7 +274,7 @@ program
     try {
       const config = loadHashnodeConfig();
       if (!config.apiKey) {
-        console.error('[ERROR] YouMind API key not set. Configure youmind.api_key in config.yaml.');
+        console.error('[ERROR] YouMind API key not set. Configure ~/.youmind/config.yaml.');
         process.exit(1);
       }
 

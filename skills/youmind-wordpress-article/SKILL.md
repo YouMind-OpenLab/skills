@@ -66,8 +66,8 @@ Write professional WordPress articles with AI that doesn't sound like AI. Topic 
 > - Publish directly to your WordPress site (as draft or published)
 >
 > **Setup (one-time):**
-> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) → fill `youmind.api_key` in `config.yaml`. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs; only override locally if you need to hit a dev `youapi`.
+> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article) → fill `youmind.api_key` in `~/.youmind/config.yaml`. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs; only override `~/.youmind/config.yaml` or `~/.youmind/config/youmind-wordpress-article.yaml` if you need to hit a dev `youapi`.
 > 3. Connect your WordPress site at [YouMind Connector Settings](https://youmind.com/settings/connector) — paste your site URL, username, and an Application Password generated in WP Admin → Users → Profile → Application Passwords. YouMind stores them encrypted; this skill no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpress.app_password` locally.
 >
 > Want to write locally first? The `preview` command works without any WordPress connection.
@@ -102,10 +102,11 @@ cd toolkit && npm install && npm run build && cd ..
 ### Step 2 — Create Config File
 
 ```bash
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-> **Upgrade-safe credentials (recommended):** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`/shared/config.example.yaml`](/shared/config.example.yaml) for the template and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) for the resolution order. Skill-local `config.yaml` remains a legacy fallback for this skill only. This skill has no skill-specific overrides.
+> **Canonical credentials:** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`shared/config.example.yaml`](shared/config.example.yaml) for the template and [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md). Optional skill overrides live in `~/.youmind/config/youmind-wordpress-article.yaml`.
 
 ### Step 3 — Get YouMind API Key (Required)
 
@@ -114,12 +115,12 @@ YouMind API Key drives knowledge base search, web search, article archiving, and
 1. Open [YouMind API Keys page](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
-4. Fill into `config.yaml` under `youmind.api_key`
-5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override your local `config.yaml`.
+4. Fill into `~/.youmind/config.yaml` under `youmind.api_key`
+5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override `~/.youmind/config.yaml` or `~/.youmind/config/youmind-wordpress-article.yaml`.
 
 ### Step 4 — Connect WordPress in YouMind (one-time, in the YouMind UI)
 
-This skill never holds your WordPress credentials. It no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpress.app_password` from `config.yaml`. The credentials live encrypted in YouMind and are attached automatically when the proxy talks to your site.
+This skill never holds your WordPress credentials. It no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpress.app_password` from repo-local config files. The credentials live encrypted in YouMind and are attached automatically when the proxy talks to your site.
 
 1. In your WordPress admin: **Users → Profile → Application Passwords**, add a new password named "YouMind" and copy the generated string (shown only once).
 2. Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article).
@@ -141,10 +142,10 @@ You should see `OK: Connected to WordPress site as <username>`.
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a WordPress article about X"). Works with zero other YouMind skills installed.
-- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. WordPress's SEO discipline — focus keyphrase, meta description, internal links, E-E-A-T — stays native to this skill regardless of invocation path.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` includes the Yoast/RankMath SEO requirements for dispatch routing. Deleting it reverts to defaults; it never breaks this skill.
-- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+- **Optional interop protocol:** [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 
@@ -204,13 +205,13 @@ Every step has a fallback. If a step AND its fallback both fail, skip that step 
 | `references/content-adaptation-playbook.md` | Existing article → WordPress-native workflow | When adapting/cross-posting content |
 | `references/content-adaptation.md` | WordPress-specific writing rules (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind /wordpress/* OpenAPI contract | When calling the proxy from the toolkit |
-| `config.yaml` | API credentials (YouMind only) | Step 1 (first-run check) |
+| `~/.youmind/config.yaml` | Shared API credentials (YouMind only) | Step 1 (first-run check) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
 
 ## Draft Location Rule
 
-**Canonical:** write local article Markdown files to `~/.youmind/articles/wordpress/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+**Canonical:** write local article Markdown files to `~/.youmind/articles/wordpress/<slug>.md`. This shared home directory is available to all YouMind skills — see [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 **Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-wordpress-article/output/<slug>.md`.
 

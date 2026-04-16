@@ -62,9 +62,9 @@ Write technical Dev.to articles with AI that resonate with developers. Topic res
 > - Publish directly to Dev.to (as draft or public) through the Dev.to account connected in YouMind
 >
 > **Setup (one-time):**
-> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs. If you need local backend debugging, change only your local `config.yaml`.
+> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article) and fill `youmind.api_key` in `~/.youmind/config.yaml`
+> 3. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs. If you need local backend debugging, change `~/.youmind/config.yaml` or `~/.youmind/config/youmind-devto-article.yaml`.
 > 4. Connect your Dev.to account inside YouMind before publishing. This skill no longer reads `devto.api_key` locally.
 >
 > No Dev.to connection yet? You can still write and preview locally — just skip the publish step.
@@ -100,10 +100,11 @@ cd toolkit && npm install && npm run build && cd ..
 ### Step 2 -- Create Config File
 
 ```bash
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-> **Upgrade-safe credentials (recommended):** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`/shared/config.example.yaml`](/shared/config.example.yaml) for the template and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) for the resolution order. Skill-local `config.yaml` remains a legacy fallback for this skill only. This skill has no skill-specific overrides.
+> **Canonical credentials:** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`shared/config.example.yaml`](shared/config.example.yaml) for the template and [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md). Optional skill overrides live in `~/.youmind/config/youmind-devto-article.yaml`.
 
 ### Step 3 -- Get YouMind API Key
 
@@ -112,14 +113,14 @@ YouMind API Key enables knowledge base search, web search, article archiving, an
 1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-devto-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
-4. Fill in `config.yaml` under `youmind.api_key`
-5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override your local `config.yaml`.
+4. Fill in `~/.youmind/config.yaml` under `youmind.api_key`
+5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override `~/.youmind/config.yaml` or `~/.youmind/config/youmind-devto-article.yaml`.
 
 ### Step 4 -- Connect Dev.to in YouMind
 
 1. Open YouMind and connect your Dev.to account in the product's publishing / platform settings flow
 2. Save the Dev.to token there once
-3. Keep only `youmind.api_key` in this skill's `config.yaml`
+3. Keep only `youmind.api_key` in `~/.youmind/config.yaml`
 
 ### Verify Setup
 
@@ -143,13 +144,13 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | `references/content-adaptation-playbook.md` | Existing article → Dev.to-native workflow | When adapting/cross-posting content |
 | `references/content-adaptation.md` | Dev.to writing rules, structure, tone (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind Dev.to OpenAPI endpoint documentation | When calling Dev.to through YouMind |
-| `config.yaml` | API credentials (YouMind only) | Step 1 (config load) |
+| `~/.youmind/config.yaml` | Shared API credentials (YouMind only) | Step 1 (config load) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
 ## Draft Location Rule
 
-**Canonical:** write local article Markdown files to `~/.youmind/articles/devto/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+**Canonical:** write local article Markdown files to `~/.youmind/articles/devto/<slug>.md`. This shared home directory is available to all YouMind skills — see [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 **Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-devto-article/output/<slug>.md`.
 
@@ -166,10 +167,10 @@ Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmi
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a Dev.to article about X"). Works with zero other YouMind skills installed.
-- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed: the profile lives in the user's home, not in any skill. If the file doesn't exist, the skill runs onboarding or uses platform defaults.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed: the profile lives in the user's home, not in any skill. If the file doesn't exist, the skill runs onboarding or uses platform defaults.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. Without such a brief, the skill runs its own pipeline normally.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` is metadata that lets dispatch route intelligently. Deleting it reverts to defaults; it never breaks this skill.
-- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+- **Optional interop protocol:** [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 

@@ -52,7 +52,7 @@ program
 
     const config = loadXConfig();
     if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      console.error('[ERROR] youmind.api_key not set. Configure ~/.youmind/config.yaml.');
       process.exit(1);
     }
 
@@ -107,7 +107,7 @@ program
 
     const config = loadXConfig();
     if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      console.error('[ERROR] youmind.api_key not set. Configure ~/.youmind/config.yaml.');
       process.exit(1);
     }
 
@@ -205,12 +205,12 @@ program
 
 program
   .command('validate')
-  .description('Validate YouMind credentials (local config sanity check)')
+  .description('Validate YouMind credentials from ~/.youmind config')
   .action(() => {
     const config = loadXConfig();
 
     if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      console.error('[ERROR] youmind.api_key not set. Configure ~/.youmind/config.yaml.');
       console.error(
         'Get a key: https://youmind.com/settings/api-keys?utm_source=youmind-x-article',
       );
@@ -233,7 +233,7 @@ program
   .action(async (postId: string, opts) => {
     const config = loadXConfig();
     if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      console.error('[ERROR] youmind.api_key not set. Configure ~/.youmind/config.yaml.');
       process.exit(1);
     }
     if (!opts.yes) {

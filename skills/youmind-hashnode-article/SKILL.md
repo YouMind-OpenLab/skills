@@ -47,8 +47,8 @@ The local skill only requires a YouMind API key. The user's Hashnode token and p
 >
 > **One-time setup:**
 > 1. Install & build: `cd toolkit && npm install && npm run build && cd ..`
-> 2. Copy config: `cp config.example.yaml config.yaml`
-> 3. Fill `youmind.api_key` in `config.yaml`
+> 2. Create shared config: `mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
+> 3. Fill `youmind.api_key` in `~/.youmind/config.yaml`
 > 4. In YouMind, connect Hashnode at `https://youmind.com/settings/connector`
 >
 > **Requirements:**
@@ -57,8 +57,7 @@ The local skill only requires a YouMind API key. The user's Hashnode token and p
 
 ## Local Config
 
-**Upgrade-safe shared config (recommended):** put your YouMind credentials at `~/.youmind/config.yaml`. You fill this ONCE and every YouMind skill reads from it. See [`/shared/config.example.yaml`](/shared/config.example.yaml) and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
-**Legacy fallback:** `skills/youmind-hashnode-article/config.yaml` (same format; read as fallback for pre-`~/.youmind/` installs).
+**Canonical shared config:** put your YouMind credentials at `~/.youmind/config.yaml`. You fill this ONCE and every YouMind skill reads from it. See [`shared/config.example.yaml`](shared/config.example.yaml) and [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 Shape (identical in both locations):
 
@@ -68,7 +67,7 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-This skill has no skill-specific overrides. All commands read `youmind.api_key` and `youmind.base_url` from the first location found (shared → legacy). Keep the documented domain as `https://youmind.com/openapi/v1`. If you test against a local `youapi`, override only your local copy — never the docs.
+This skill has no skill-specific overrides. All commands read `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml`. Keep the documented domain as `https://youmind.com/openapi/v1`. If you test against a local `youapi`, override `~/.youmind/config.yaml` — never the docs.
 
 Do not ask the user to fill local `hashnode.token` or `hashnode.publication_id`. That flow is obsolete.
 
@@ -122,10 +121,10 @@ node dist/cli.js search-tags typescript
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a Hashnode article about X"). Works with zero other YouMind skills installed.
-- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. Without such a brief, the skill runs its own pipeline normally. Hashnode's depth-first DNA stays native to this skill.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` is metadata that lets dispatch route intelligently. Deleting it reverts to defaults; it never breaks this skill.
-- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+- **Optional interop protocol:** [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 

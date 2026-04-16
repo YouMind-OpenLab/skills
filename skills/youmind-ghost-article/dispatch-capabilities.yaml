@@ -1,6 +1,6 @@
 # Dispatch Capability Manifest
 # Read by youmind-article-dispatch when orchestrating multi-platform publishing.
-# Contract: /shared/DISPATCH_CONTRACT.md (v1.0)
+# Contract: shared/DISPATCH_CONTRACT.md (v1.0)
 
 contract_version: "1.0"
 

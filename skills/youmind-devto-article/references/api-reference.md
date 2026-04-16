@@ -17,7 +17,7 @@ Get your YouMind API key from: <https://youmind.com/settings/api-keys>
 
 ## Preconditions
 
-- The skill reads `youmind.api_key` and `youmind.base_url` from local `config.yaml`
+- The skill reads `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml` plus optional `~/.youmind/config/youmind-devto-article.yaml`
 - The user has already connected Dev.to inside YouMind
 
 ## Endpoints Used

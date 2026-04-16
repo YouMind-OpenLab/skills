@@ -2,9 +2,9 @@
 
 ## Step 1: Load Config
 
-1. Read `youmind.api_key` and `youmind.base_url` from local `config.yaml`
+1. Read `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml`
 2. Keep all public-facing examples on `https://youmind.com/openapi/v1`
-3. If local backend testing is needed, override only the local `config.yaml`
+3. If local backend testing is needed, override only `~/.youmind/config.yaml`
 3. Do not ask for local `hashnode.token` or `hashnode.publication_id`
 
 ## Step 2: Validate Backend Readiness

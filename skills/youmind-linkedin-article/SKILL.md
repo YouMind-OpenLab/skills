@@ -63,9 +63,9 @@ Write professional LinkedIn posts with AI that drive engagement. Topic research 
 > - Publish directly to your LinkedIn profile or company page
 >
 > **Setup (one-time):**
-> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Get LinkedIn OAuth 2.0 access token from [LinkedIn Developer Portal](https://www.linkedin.com/developers/) and fill `linkedin.access_token` in `config.yaml`
+> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article) and fill `youmind.api_key` in `~/.youmind/config.yaml`
+> 3. Get LinkedIn OAuth 2.0 access token from [LinkedIn Developer Portal](https://www.linkedin.com/developers/) and fill `linkedin.access_token` in `~/.youmind/config/youmind-linkedin-article.yaml`
 > 4. Get your person URN (urn:li:person:{id}) and fill `linkedin.person_urn`
 >
 > **Need help?** Just ask!
@@ -96,17 +96,18 @@ cd toolkit && npm install && npm run build && cd ..
 ### Step 2 -- Create Config File
 
 ```bash
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-> **Upgrade-safe credentials (recommended):** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`/shared/config.example.yaml`](/shared/config.example.yaml) for the template and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) for the resolution order. Skill-local `config.yaml` remains a legacy fallback for this skill only. This skill has no skill-specific overrides.
+> **Canonical credentials:** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. Put LinkedIn-specific credentials in `~/.youmind/config/youmind-linkedin-article.yaml`. See [`shared/config.example.yaml`](shared/config.example.yaml) and [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 ### Step 3 -- Get YouMind API Key (Recommended)
 
 1. Open [YouMind API Keys page](https://youmind.com/settings/api-keys?utm_source=youmind-linkedin-article)
 2. Create a new API key
 3. Copy the `sk-ym-xxxx` key
-4. Fill `youmind.api_key` in `config.yaml`
+4. Fill `youmind.api_key` in `~/.youmind/config.yaml`
 
 ### Step 4 -- Get LinkedIn API Credentials
 
@@ -121,7 +122,7 @@ cp config.example.yaml config.yaml
 cd toolkit && node dist/oauth-helper.js --client-id {CLIENT_ID} --client-secret {CLIENT_SECRET}
 ```
 
-The script starts a local server, opens the browser for authorization, captures the callback, exchanges the code for an access token, fetches the person URN, and writes everything to `config.yaml`.
+The script starts a local server, opens the browser for authorization, captures the callback, exchanges the code for an access token, fetches the person URN, and writes everything to `~/.youmind/config/youmind-linkedin-article.yaml`.
 
 Access Token expires in 60 days. Re-run the same command to refresh.
 
@@ -138,14 +139,14 @@ After configuration, say:
 | `references/pipeline.md` | Full step-by-step execution | When running the publishing pipeline |
 | `references/content-adaptation.md` | LinkedIn content formatting rules | When adapting content for LinkedIn |
 | `references/api-reference.md` | LinkedIn API endpoint details | When debugging API calls |
-| `config.yaml` | API credentials | Step 1 (first-run check) |
+| `~/.youmind/config.yaml` | Shared YouMind credentials | Step 1 (first-run check) |
 | `toolkit/dist/cli.js` | CLI: publish, preview, profile | Various steps |
 | `toolkit/dist/oauth-helper.js` | One-click OAuth: get token & person URN | Setup step 4 |
 | `output/` | **Local post Markdown drafts (git-ignored)** | When writing the post |
 
 ## Draft Location Rule
 
-**Canonical:** write local post Markdown files to `~/.youmind/articles/linkedin/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+**Canonical:** write local post Markdown files to `~/.youmind/articles/linkedin/<slug>.md`. This shared home directory is available to all YouMind skills — see [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 **Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-linkedin-article/output/<slug>.md`.
 
@@ -159,10 +160,10 @@ Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmi
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a LinkedIn post about X"). Works with zero other YouMind skills installed.
-- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context (first-2-lines hook and no-body-links discipline stay native to this skill). Without such a brief, the skill runs its own pipeline normally.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares 3000-char limit, hashtag caps, and body-link ban for dispatch routing. Deleting it reverts to defaults; it never breaks this skill.
-- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+- **Optional interop protocol:** [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 

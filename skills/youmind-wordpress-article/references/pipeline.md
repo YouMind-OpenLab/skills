@@ -3,12 +3,12 @@
 ## 7-Step Execution Flow
 
 ### Step 1: Load Config
-- Read `config.yaml` for the YouMind API key (`youmind.api_key`) and `youmind.base_url`.
+- Read `~/.youmind/config.yaml` for the YouMind API key (`youmind.api_key`) and `youmind.base_url`.
 - Validate the YouMind API key (call `validate` command or attempt a list).
 - Check that the user's WordPress site is already connected inside YouMind. The skill no longer reads `wordpress.site_url` / `wordpress.username` / `wordpress.app_password` locally — those live encrypted in YouMind after the user links their site at [YouMind Connector Settings](https://youmind.com/settings/connector).
 - If the YouMind API key is missing, prompt the user to fill `youmind.api_key`. If WordPress is not connected in YouMind, point them to the connector page.
 
-**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change the local config file.
+**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml`, plus optional skill-specific overrides in `~/.youmind/config/youmind-wordpress-article.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change those `~/.youmind` files.
 
 ### Step 2: YouMind Knowledge Mining
 - If YouMind API key is configured, mine the user's knowledge base for source material.

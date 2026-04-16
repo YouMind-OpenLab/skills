@@ -44,7 +44,7 @@ This is the complete file inventory. Read on demand — do NOT load everything u
 | `clients/{client}/style.yaml` | Client brand voice, topics, blacklist, theme | Step 1 (load config) |
 | `clients/{client}/playbook.md` | Client-specific writing rules (if exists) | Step 4 (writing) |
 | `clients/{client}/history.yaml` | Published article history | Step 2.5 (dedup) |
-| `config.yaml` | YouMind API key (only required field) | Step 1 (first-run check) |
+| `~/.youmind/config.yaml` | Shared YouMind API key (only required field) | Step 1 (first-run check) |
 | `output/` | Local article Markdown drafts (git-ignored) | When writing |
 
 ## Toolkit

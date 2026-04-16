@@ -23,11 +23,12 @@ AI-powered Qiita article writing and publishing. Tell your agent a topic, and it
 # 1. Install dependencies
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. Create config (if config.yaml doesn't exist)
-cp config.example.yaml config.yaml
+# 2. Create shared config (recommended)
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` only needs the YouMind API key:
+`~/.youmind/config.yaml` only needs the YouMind API key:
 
 ```yaml
 youmind:
@@ -35,8 +36,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
-Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+Commands resolve config in this order: `~/.youmind/config/youmind-qiita-article.yaml` -> `~/.youmind/config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change `~/.youmind/config.yaml` or add a skill-specific override under `~/.youmind/config/`.
 
 ### Publishing prerequisite
 
@@ -44,7 +45,7 @@ Before publishing, connect your Qiita account inside YouMind. The skill no longe
 
 ### Get a YouMind API Key
 
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article), create a key, and place it in `youmind.api_key`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article), create a key, and place it in `~/.youmind/config.yaml` under `youmind.api_key`.
 
 ---
 
@@ -70,7 +71,7 @@ Browse boards and extract relevant materials from your YouMind workspace for con
 
 ### Get API Key
 
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys) to get your API Key, then fill it into the `youmind.api_key` field in `config.yaml`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys) to get your API Key, then fill it into the `youmind.api_key` field in `~/.youmind/config.yaml`.
 
 ---
 
@@ -121,11 +122,11 @@ Qiita OpenAPI requires a paid YouMind plan (Pro / Max). If the current account i
 
 **Q: I get a 401 or auth error**
 
-Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind.
+Check `youmind.api_key` in `~/.youmind/config.yaml`. The skill now authenticates only with YouMind.
 
 **Q: Publishing says Qiita is not connected**
 
-Connect Qiita inside YouMind first. The Qiita token lives there, not in `config.yaml`.
+Connect Qiita inside YouMind first. The Qiita token lives there, not in `~/.youmind/config.yaml`.
 
 **Q: Tags not working**
 

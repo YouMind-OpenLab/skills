@@ -1,8 +1,8 @@
-# Legacy skill-local config — retained as fallback for pre-~/.youmind/ installs.
+# Obsolete skill-local example.
 #
-# New installs: put shared YouMind credentials at ~/.youmind/config.yaml
-# using /shared/config.example.yaml as the template. The skill reads the
-# shared location first and falls back to this file.
+# Canonical config now lives at ~/.youmind/config.yaml
+# using shared/config.example.yaml as the template.
+# Article skills no longer read this repo-local file.
 #
 # This skill has no skill-specific override fields beyond the shared config.
 

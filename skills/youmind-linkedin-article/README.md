@@ -59,7 +59,7 @@ The script will automatically:
 3. Capture the Authorization Code after you log in and approve
 4. Exchange the code for an Access Token
 5. Fetch your Person URN via the LinkedIn API
-6. Write all credentials to `config.yaml`
+6. Write all credentials to `~/.youmind/config/youmind-linkedin-article.yaml`
 
 When the browser shows "Authorization Complete", you can close the page.
 
@@ -95,10 +95,11 @@ The default "Share on LinkedIn" product only supports publishing posts, not read
 cd toolkit && npm install && npm run build && cd ..
 
 # 2. Create config file
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-Fill in the following credentials in `config.yaml`:
+Put shared YouMind credentials in `~/.youmind/config.yaml`, then put LinkedIn-specific credentials in `~/.youmind/config/youmind-linkedin-article.yaml`:
 
 | Field | Required | Description |
 |-------|----------|-------------|

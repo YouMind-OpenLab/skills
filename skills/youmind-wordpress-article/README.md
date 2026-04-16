@@ -23,11 +23,12 @@ AI-powered WordPress article writing and publishing. Tell your agent a topic, an
 # 1. Install dependencies
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. Create config (if config.yaml doesn't exist)
-cp config.example.yaml config.yaml
+# 2. Create shared config (recommended)
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` only needs the YouMind API key:
+`~/.youmind/config.yaml` only needs the YouMind API key:
 
 ```yaml
 youmind:
@@ -35,8 +36,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`.
-Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+Commands resolve config in this order: `~/.youmind/config/youmind-wordpress-article.yaml` -> `~/.youmind/config.yaml`.
+Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change `~/.youmind/config.yaml` or add a skill-specific override under `~/.youmind/config/`.
 
 ### Publishing prerequisite
 
@@ -48,7 +49,7 @@ The skill no longer reads `wordpress.site_url`, `wordpress.username`, or `wordpr
 
 ### Get a YouMind API Key
 
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article), create a key, and place it in `youmind.api_key`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-wordpress-article), create a key, and place it in `~/.youmind/config.yaml` under `youmind.api_key`.
 
 ### Verify Setup
 
@@ -81,23 +82,25 @@ This skill integrates with [YouMind](https://youmind.com) knowledge base to enha
 ### CLI Commands
 
 ```bash
+cd toolkit
+
 # Publish a Markdown file as draft
-npx tsx src/cli.ts publish article.md --draft
+npx tsx src/cli.ts publish ../output/article.md --draft
 
 # Publish immediately
-npx tsx src/cli.ts publish article.md --publish
+npx tsx src/cli.ts publish ../output/article.md --publish
 
 # Publish with tags and category
-npx tsx src/cli.ts publish article.md --tags "AI,tech" --category "Technology"
+npx tsx src/cli.ts publish ../output/article.md --tags "AI,tech" --category "Technology"
 
 # Preview HTML conversion locally
-npx tsx src/cli.ts preview article.md
+npx tsx src/cli.ts preview ../output/article.md
 
 # List recent posts
 npx tsx src/cli.ts list --per-page 10
 
 # Upload a media file
-npx tsx src/cli.ts upload-media cover.jpg
+npx tsx src/cli.ts upload-media ../output/cover.jpg
 
 # Validate credentials
 npx tsx src/cli.ts validate
@@ -120,7 +123,7 @@ WordPress is a **server-side web application** (PHP + MySQL), not a desktop app.
 
 **Q: I get a 401 or auth error**
 
-Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind. If YouMind itself returns "WordPress not connected" or a proxy auth failure, reopen [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article), re-enter your WP site URL / username / Application Password, and save. YouMind validates against `/wp-json/wp/v2/users/me` on save.
+Check `youmind.api_key` in `~/.youmind/config.yaml`. The skill now authenticates only with YouMind. If YouMind itself returns "WordPress not connected" or a proxy auth failure, reopen [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wordpress-article), re-enter your WP site URL / username / Application Password, and save. YouMind validates against `/wp-json/wp/v2/users/me` on save.
 
 **Q: I don't see the Application Passwords section in WP Admin**
 

@@ -43,7 +43,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadHashnodeConfig();
 
   if (!config.apiKey) {
-    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
+    throw new Error('YouMind API key not configured. Set ~/.youmind/config.yaml.');
   }
 
   if (!options.title?.trim()) {

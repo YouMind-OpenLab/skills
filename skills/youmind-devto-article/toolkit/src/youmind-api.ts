@@ -13,49 +13,24 @@
  *   npx tsx src/youmind-api.ts mine-topics "AI,产品设计" --board <board_id> --top-k 5
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
 
 interface YouMindConfig {
   apiKey: string;
   baseUrl: string;
 }
 
-const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
-
-function normalizeBaseUrl(value: string | undefined): string {
-  if (!value) return '';
-  const trimmed = value.replace(/\/+$/, '');
-  if (trimmed.endsWith('/openapi/v1')) return trimmed;
-  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
-  return `${trimmed}/openapi/v1`;
-}
-
-function loadLocalConfig(): Record<string, unknown> {
-  const p = resolve(PROJECT_DIR, 'config.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
 function loadConfig(): YouMindConfig {
-  const local = loadLocalConfig();
-  const ym = local.youmind as Record<string, unknown> ?? {};
-  const imgYm = (local as any).image?.providers?.youmind ?? {};
+  const { apiKey, baseUrl } = loadYouMindConfig();
   return {
-    apiKey: (ym.api_key as string) || (imgYm.api_key as string) || '',
-    baseUrl: normalizeBaseUrl(ym.base_url as string | undefined) || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
+    apiKey,
+    baseUrl,
   };
 }
 
@@ -70,7 +45,7 @@ async function post<T = unknown>(
 ): Promise<T> {
   const cfg = config ?? loadConfig();
   if (!cfg.apiKey) {
-    throw new Error('YouMind API key 未配置。请在 config.yaml 设置 youmind.api_key。');
+    throw new Error(`YouMind API key not configured. ${YOUMIND_CONFIG_ERROR_HINT}`);
   }
 
   const resp = await fetch(`${cfg.baseUrl}${endpoint}`, {

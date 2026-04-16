@@ -4,12 +4,12 @@
 
 ## Step 1: Config Load
 
-1. Read `config.yaml` for the YouMind API key
+1. Read `~/.youmind/config.yaml` for the YouMind API key
 2. Validate the YouMind API key (call `validate` command or attempt list)
 3. Check that the user's Dev.to account is already connected in YouMind
 4. Report config status
 
-**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change the local config file.
+**Configuration rule:** Read `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml`, plus optional skill-specific overrides in `~/.youmind/config/youmind-devto-article.yaml`. Keep documentation and examples on `https://youmind.com/openapi/v1`; local backend debugging should only change those `~/.youmind` files.
 
 ## Step 2: YouMind Knowledge Mining
 

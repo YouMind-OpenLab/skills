@@ -5,7 +5,7 @@ end user only ever supplies a YouMind API key; the Qiita personal access
 token is held server-side after the user connects Qiita inside YouMind.
 
 Base URL: `https://youmind.com/openapi/v1` (override via `youmind.base_url`
-in `config.yaml` for local dev, e.g. `http://localhost:4000/openapi/v1`).
+in `~/.youmind/config.yaml` or `~/.youmind/config/youmind-qiita-article.yaml` for local dev, e.g. `http://localhost:4000/openapi/v1`).
 
 ## Authentication
 

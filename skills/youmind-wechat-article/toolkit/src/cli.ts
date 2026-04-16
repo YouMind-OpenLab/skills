@@ -11,7 +11,7 @@
  */
 
 import { Command } from 'commander';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { WeChatConverter, previewHtml } from './converter.js';
@@ -38,47 +38,13 @@ import {
   validateConnection,
 } from './wechat-api.js';
 import { createDraft } from './publisher.js';
+import { loadLayeredConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // --- Config Loading ---
-
-import { existsSync } from 'node:fs';
-import { parse as parseYaml } from 'yaml';
 import { dirname, join } from 'node:path';
 
-const CONFIG_PATHS = [
-  join(process.cwd(), 'config.yaml'),
-  join(dirname(import.meta.url.replace('file://', '')), '..', '..', 'config.yaml'),
-  join(dirname(import.meta.url.replace('file://', '')), '..', 'config.yaml'),
-];
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = join(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) || {};
-  }
-  return {};
-}
-
 function loadConfig(): Record<string, unknown> {
-  const central = loadCentralCredentials();
-  let local: Record<string, unknown> = {};
-  for (const p of CONFIG_PATHS) {
-    if (existsSync(p)) {
-      local = parseYaml(readFileSync(p, 'utf-8')) || {};
-      break;
-    }
-  }
-  // 合并各 section：本地覆盖中心
-  const merged: Record<string, unknown> = { ...central };
-  for (const [key, val] of Object.entries(local)) {
-    if (typeof val === 'object' && val !== null && typeof merged[key] === 'object' && merged[key] !== null) {
-      merged[key] = { ...(merged[key] as Record<string, unknown>), ...(val as Record<string, unknown>) };
-    } else {
-      merged[key] = val;
-    }
-  }
-  return merged;
+  return loadLayeredConfig();
 }
 
 function loadCustomTheme(jsonPath: string): Theme {
@@ -168,7 +134,7 @@ program
     const author = opts.author;
 
     if (!youmindCfg.api_key) {
-      console.error('Error: youmind.api_key not set in config.yaml');
+      console.error(`Error: ${YOUMIND_CONFIG_ERROR_HINT}`);
       process.exit(1);
     }
 

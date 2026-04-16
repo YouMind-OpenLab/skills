@@ -64,8 +64,8 @@ Write professional WeChat Official Account articles with AI that doesn't sound l
 > **What it does:** trending-topic mining → de-AI writing → themed formatting → AI cover → one-click draft publish.
 >
 > **Setup (one-time):**
-> 1. `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt && cp config.example.yaml config.yaml`
-> 2. Get a [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) → fill `youmind.api_key` in `config.yaml`
+> 1. `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt && mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
+> 2. Get a [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) → fill `youmind.api_key` in `~/.youmind/config.yaml`
 > 3. Bind your WeChat Official Account in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article) (paste AppID + AppSecret; YouMind encrypts + proxies, no IP whitelist needed)
 >
 > `preview` and `themes` work without WeChat connection. **Need help?** Just ask.
@@ -88,16 +88,16 @@ Provide a topic, brand/client name, or raw Markdown:
 ```bash
 cd toolkit && npm install && npm run build && cd ..
 pip install -r requirements.txt
-cp config.example.yaml config.yaml
-# Fill youmind.api_key in config.yaml — that's the only required field
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
+# Fill youmind.api_key in ~/.youmind/config.yaml — that's the only required field
 node toolkit/dist/cli.js validate
 ```
 
 > **Upgrade-safe config (recommended):**
-> - Shared YouMind credentials → `~/.youmind/config.yaml` (fill ONCE for all 8 skills). Template: [`/shared/config.example.yaml`](/shared/config.example.yaml).
+> - Shared YouMind credentials → `~/.youmind/config.yaml` (fill ONCE for all 8 skills). Template: [`shared/config.example.yaml`](shared/config.example.yaml).
 > - WeChat-specific overrides (optional) → `~/.youmind/config/youmind-wechat-article.yaml` for `theme` + `theme_color`.
-> - Skill-local `config.yaml` remains a legacy fallback.
-> - Resolution: shared → overrides → legacy. See [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+> - Resolution: shared → overrides. See [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 Expected: `OK: Connected to WeChat Official Account wxxxxxxxxxx` + token 剩余秒数.
 
@@ -122,7 +122,7 @@ Read files on demand — do NOT load everything upfront. Five always-relevant en
 
 ## Draft Location Rule
 
-**Canonical:** write local article Markdown files to `~/.youmind/articles/wechat/<client>/<slug>.md` (multi-client aware — see `/shared/YOUMIND_HOME.md`).
+**Canonical:** write local article Markdown files to `~/.youmind/articles/wechat/<client>/<slug>.md` (multi-client aware — see `shared/YOUMIND_HOME.md`).
 **Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-wechat-article/output/<slug>.md`.
 
 Never the skill root, `drafts/`, `references/`, `toolkit/`, `clients/` (config only), or `scripts/`. Both locations are git-ignored. Kebab-case filenames (`my-article.md`), descriptive slugs. Client configs live at `~/.youmind/clients/<client>/{style.yaml,history.yaml,playbook.md}` — the legacy `clients/demo/` under this skill is a tracked template only.
@@ -135,9 +135,9 @@ Local file ≠ WeChat draft box; the draft box is a server-side publish target, 
 
 **Self-contained standalone** ("帮我写一篇公众号文章" — full pipeline, zero other skills required). The `youmind-article-dispatch` hub is an optional companion — never a dependency.
 
-- This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Independent of whether dispatch is installed.
+- This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Independent of whether dispatch is installed.
 - If dispatch invokes this skill with a brief containing `resolved_author`, use it as extra context. De-AI protocol (`writing-guide.md`) is always mandatory regardless of invocation path.
-- Opt-in manifest: `dispatch-capabilities.yaml`. Optional interop protocol: [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+- Opt-in manifest: `dispatch-capabilities.yaml`. Optional interop protocol: [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 
@@ -226,4 +226,4 @@ Full explanation, fix, and detection method for each: [`references/gotchas.md`](
 - YouMind API: see [references/openapi-document.md](references/openapi-document.md)
 - CLI commands: see [references/cli-reference.md](references/cli-reference.md)
 - YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-wechat-article
-- Publishing: [shared/PUBLISHING.md](../../shared/PUBLISHING.md)
+- Publishing: [shared/PUBLISHING.md](shared/PUBLISHING.md)

@@ -63,9 +63,9 @@ Write technical Qiita articles with AI that resonate with the Japanese developer
 > - Publish directly to Qiita (as private or public)
 >
 > **Setup (one-time):**
-> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article) and fill `youmind.api_key` in `config.yaml`
-> 3. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs. If you need local backend debugging, change only your local `config.yaml`.
+> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
+> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article) and fill `youmind.api_key` in `~/.youmind/config.yaml`
+> 3. Keep `youmind.base_url` pointed at `https://youmind.com/openapi/v1` in docs. If you need local backend debugging, change `~/.youmind/config.yaml` or `~/.youmind/config/youmind-qiita-article.yaml`.
 > 4. Connect your Qiita account inside YouMind before publishing. This skill no longer reads `qiita.access_token` locally.
 >
 > No Qiita connection yet? You can still write and preview locally — just skip the publish step.
@@ -101,10 +101,11 @@ cd toolkit && npm install && npm run build && cd ..
 ### Step 2 -- Create Config File
 
 ```bash
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-> **Upgrade-safe credentials (recommended):** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`/shared/config.example.yaml`](/shared/config.example.yaml) for the template and [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) for the resolution order. Skill-local `config.yaml` remains a legacy fallback for this skill only. This skill has no skill-specific overrides.
+> **Canonical credentials:** put your shared YouMind credentials in `~/.youmind/config.yaml` — filled ONCE and read by every YouMind skill. See [`shared/config.example.yaml`](shared/config.example.yaml) for the template and [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md). Optional skill overrides live in `~/.youmind/config/youmind-qiita-article.yaml`.
 
 ### Step 3 -- Get YouMind API Key
 
@@ -113,14 +114,14 @@ YouMind API Key enables knowledge base search, web search, article archiving, an
 1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-qiita-article)
 2. Click **Create API Key**
 3. Copy the `sk-ym-xxxx` key
-4. Fill in `config.yaml` under `youmind.api_key`
-5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override your local `config.yaml`.
+4. Fill in `~/.youmind/config.yaml` under `youmind.api_key`
+5. Keep `youmind.base_url` as `https://youmind.com/openapi/v1` in examples and documentation. Local backend testing should only override `~/.youmind/config.yaml` or `~/.youmind/config/youmind-qiita-article.yaml`.
 
 ### Step 4 -- Connect Qiita in YouMind
 
 1. Open YouMind and connect your Qiita account in the product's publishing / platform settings flow (OAuth via the Connector Settings page)
 2. Save the Qiita connection there once
-3. Keep only `youmind.api_key` in this skill's `config.yaml`
+3. Keep only `youmind.api_key` in `~/.youmind/config.yaml`
 
 ### Verify Setup
 
@@ -142,13 +143,13 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | `references/content-adaptation-playbook.md` | Existing article → Qiita-native workflow | When adapting/translating content |
 | `references/content-adaptation.md` | Qiita writing rules, structure, tone (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind Qiita OpenAPI endpoint documentation | When calling Qiita through YouMind |
-| `config.yaml` | API credentials (YouMind only) | Step 1 (config load) |
+| `~/.youmind/config.yaml` | Shared API credentials (YouMind only) | Step 1 (config load) |
 | `output/` | **Drafts and published articles (git-ignored)** | Step 5 (write/save article) |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
 ## Draft Location Rule
 
-**Canonical:** write local article Markdown files to `~/.youmind/articles/qiita/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
+**Canonical:** write local article Markdown files to `~/.youmind/articles/qiita/<slug>.md`. This shared home directory is available to all YouMind skills — see [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
 
 **Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-qiita-article/output/<slug>.md`.
 
@@ -164,10 +165,10 @@ Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmi
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Qiita に記事を投稿する" / "Write a Qiita article about X"). Works with zero other YouMind skills installed.
-- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. Qiita's 丁寧語 register and CDN hotlink handling stay native to this skill regardless of invocation path.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares the `cdn_hotlink` flag so dispatch can warn about cdn.gooo.ai image URLs. Deleting the file reverts to defaults; it never breaks this skill.
-- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+- **Optional interop protocol:** [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 

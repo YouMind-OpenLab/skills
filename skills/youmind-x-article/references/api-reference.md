@@ -18,7 +18,7 @@ Get your YouMind API key from: <https://youmind.com/settings/api-keys>
 
 ## Preconditions
 
-- The skill reads `youmind.api_key` and `youmind.base_url` from local `config.yaml`
+- The skill reads `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml` plus optional `~/.youmind/config/youmind-x-article.yaml`
 - The user has already connected their X account inside YouMind (one-click OAuth)
 - The current YouMind plan allows dispatch OpenAPI (`Pro` / `Max`) — same gating as `createTokenPlatformPost`
 - The user's credit balance covers the tweet cost (base + per-image). The handler pre-checks credits before calling X and refuses with `InsufficientCreditsException` if the balance is too low
@@ -66,7 +66,7 @@ YouMind's X OpenAPI surface is deliberately narrow. The following are **not** av
 |-----------------|----------------|
 | Quote tweet (`quote_tweet_id`) | Not supported. |
 | Delete tweet | Not supported. |
-| Fetch authenticated user (`/users/me`) | Not supported — `youmind-x validate` only checks the local API key. |
+| Fetch authenticated user (`/users/me`) | Not supported — `youmind-x validate` only checks the `~/.youmind` API key. |
 | Local media upload (base64 / multipart) | Not supported. Images must already be hosted under `cdn.gooo.ai`. |
 | Long-form article (X Premium, 25K chars) | Not supported yet. |
 

@@ -92,9 +92,9 @@ If user declines → proceed without it. The `theme-dsl.md` design phases still 
 
 ## First-Run Setup
 
-If `config.yaml` does not exist when the skill triggers:
+If `~/.youmind/config.yaml` does not exist when the skill triggers:
 
-1. Copy `config.example.yaml` to `config.yaml`
+1. Create `~/.youmind/config/` and copy `shared/config.example.yaml` to `~/.youmind/config.yaml`
 2. Run `cd toolkit && npm install && npm run build` if `node_modules/` is missing
 3. Ask about **YouMind API Key** (required — this is the only credential the skill holds locally):
    - 获取地址：[YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article)
@@ -122,4 +122,4 @@ It calls YouMind's `/wechat/validateConnection` endpoint, which verifies that th
 - rotating the WeChat AppSecret (rebind in YouMind, then re-validate),
 - any "publishing fails for mysterious reasons" report from the user.
 
-If the call returns a non-OK status, direct the user back to YouMind Connector Settings to re-bind WeChat — credential rotation happens server-side, not in `config.yaml`.
+If the call returns a non-OK status, direct the user back to YouMind Connector Settings to re-bind WeChat — credential rotation happens server-side, not in `~/.youmind/config.yaml`.

@@ -87,7 +87,7 @@ export async function publishTweet(
       posts: [],
       content: options.content,
       warnings: [],
-      error: 'youmind.api_key not set in config.yaml',
+      error: 'youmind.api_key not set. Configure ~/.youmind/config.yaml.',
     };
   }
 
@@ -128,7 +128,7 @@ export async function publishThread(
       posts: [],
       content: [],
       warnings: [],
-      error: 'youmind.api_key not set in config.yaml',
+      error: 'youmind.api_key not set. Configure ~/.youmind/config.yaml.',
     };
   }
 

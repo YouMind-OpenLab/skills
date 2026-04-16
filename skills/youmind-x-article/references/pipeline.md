@@ -5,7 +5,7 @@ All publishing flows through YouMind's OpenAPI. The caller holds only a YouMind 
 ## Step-by-Step Execution
 
 ### Step 1 -- Load Configuration
-- Read `config.yaml` for `youmind.api_key` (and optional `youmind.base_url`)
+- Read `~/.youmind/config.yaml` for `youmind.api_key` (and optional `youmind.base_url`)
 - Validate the API key is present
 - The X account itself is not configured locally — it is connected once inside YouMind
 

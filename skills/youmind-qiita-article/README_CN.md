@@ -23,11 +23,12 @@ AI 驱动的 Qiita 文章写作与发布。告诉 Agent 一个主题，它会通
 # 1. 安装依赖
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. 创建配置文件（如果 config.yaml 不存在）
-cp config.example.yaml config.yaml
+# 2. 创建共享配置
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` 只需要填 YouMind API Key：
+`~/.youmind/config.yaml` 只需要填 YouMind API Key：
 
 ```yaml
 youmind:
@@ -35,8 +36,8 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-命令会从本地 `config.yaml` 读取 `youmind.api_key` 和 `youmind.base_url`。
-文档和示例里一律保持 `https://youmind.com/openapi/v1`。如需本地联调 `youapi`，只在你本地的 `config.yaml` 里覆盖。
+命令会按 `~/.youmind/config/youmind-qiita-article.yaml` -> `~/.youmind/config.yaml` 的顺序读取 `youmind.api_key` 和 `youmind.base_url`。
+文档和示例里一律保持 `https://youmind.com/openapi/v1`。如需本地联调 `youapi`，只在 `~/.youmind/config.yaml` 或 skill 专属 override 里覆盖。
 
 ### 发布前的准备
 
@@ -70,7 +71,7 @@ Qiita 技能可接入 [YouMind](https://youmind.com) 知识库，获得更强大
 
 ### 获取 API Key
 
-访问 [YouMind API Key 设置页](https://youmind.com/settings/api-keys) 获取你的 API Key，填入 `config.yaml` 的 `youmind.api_key` 字段。
+访问 [YouMind API Key 设置页](https://youmind.com/settings/api-keys) 获取你的 API Key，填入 `~/.youmind/config.yaml` 的 `youmind.api_key` 字段。
 
 ---
 
@@ -121,11 +122,11 @@ Qiita OpenAPI 需要付费 YouMind 计划（Pro / Max）。如当前账号不符
 
 **Q: 遇到 401 或鉴权错误**
 
-检查 `config.yaml` 中的 `youmind.api_key`。本技能现在只与 YouMind 鉴权。
+检查 `~/.youmind/config.yaml` 中的 `youmind.api_key`。本技能现在只与 YouMind 鉴权。
 
 **Q: 发布提示 Qiita 未连接**
 
-先在 YouMind 里连接 Qiita 账号。Qiita 令牌保存在 YouMind 服务端，不在 `config.yaml` 里。
+先在 YouMind 里连接 Qiita 账号。Qiita 令牌保存在 YouMind 服务端，不在 `~/.youmind/config.yaml` 里。
 
 **Q: 标签不生效**
 

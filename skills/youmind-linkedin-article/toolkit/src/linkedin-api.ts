@@ -47,10 +47,7 @@
  * normal config flow even before the LinkedIn endpoints exist.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { DEFAULT_YOUMIND_OPENAPI_BASE_URL, loadYouMindConfig } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Public types — stable contract (do NOT change signatures when swapping to
@@ -100,49 +97,13 @@ export interface LinkedInProfile {
 // Config loading — real implementation, mirrors youmind-api.ts pattern.
 // ---------------------------------------------------------------------------
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
-
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
-
-function loadCentralCredentials(): Record<string, unknown> {
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const p = resolve(home, '.youmind-skill', 'credentials.yaml');
-  if (existsSync(p)) {
-    return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
-function loadLocalConfig(): Record<string, unknown> {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) ?? {};
-    }
-  }
-  return {};
-}
+const YOUMIND_OPENAPI_BASE_URLS = [DEFAULT_YOUMIND_OPENAPI_BASE_URL];
 
 export function loadLinkedInConfig(): LinkedInConfig {
-  const central = loadCentralCredentials();
-  const local = loadLocalConfig();
-  const ym = {
-    ...(central.youmind as Record<string, unknown> ?? {}),
-    ...(local.youmind as Record<string, unknown> ?? {}),
-  };
-  // Filter out local empty strings so central credentials aren't masked.
-  for (const [k, v] of Object.entries(ym)) {
-    if (v === '' && (central.youmind as Record<string, unknown>)?.[k]) {
-      ym[k] = (central.youmind as Record<string, unknown>)[k];
-    }
-  }
+  const { apiKey, baseUrl } = loadYouMindConfig();
   return {
-    apiKey: (ym.api_key as string) || '',
-    baseUrl: (ym.base_url as string) || YOUMIND_OPENAPI_BASE_URLS[0],
+    apiKey,
+    baseUrl: baseUrl || YOUMIND_OPENAPI_BASE_URLS[0],
   };
 }
 

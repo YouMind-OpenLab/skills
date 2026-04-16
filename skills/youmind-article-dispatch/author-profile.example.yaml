@@ -5,7 +5,7 @@
 # platform skill's platform-dna.md. This file is about YOUR voice, YOUR
 # audience, YOUR content style.
 #
-# Copy to author-profile.yaml and customize. The dispatch skill reads this
+# Copy to ~/.youmind/author-profile.yaml and customize. The dispatch skill reads this
 # before generating the content brief for each platform.
 #
 # Fields left as null or omitted → dispatch uses sensible defaults or asks.

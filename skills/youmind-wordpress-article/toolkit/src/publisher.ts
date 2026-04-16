@@ -43,7 +43,7 @@ export interface PublishResult {
 export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadWordPressConfig();
   if (!config.apiKey) {
-    throw new Error('youmind.api_key not set in config.yaml');
+    throw new Error('youmind.api_key not set. Configure ~/.youmind/config.yaml.');
   }
 
   let markdown: string;

@@ -45,7 +45,7 @@ line_height: ""           # e.g., "1.85"
 letter_spacing: ""        # e.g., "0.5px"
 text_indent: ""           # e.g., "2em" — first-line indent for literary styles
 
-# YouMind 知识库关联 (可选 — 需要在 config.yaml 配置 youmind.api_key)
+# YouMind 知识库关联 (可选 — 需要在 ~/.youmind/config.yaml 配置 youmind.api_key)
 youmind:
   source_boards: []          # 素材来源 board ID 列表 (写文章时自动搜索这些 board 中的素材)
   save_board: ""             # 发布后归档到的 board ID (留空不归档)
@@ -92,7 +92,7 @@ List 2-3 WeChat accounts whose style you want to emulate. The agent uses these a
 
 ### `youmind` — Knowledge Base Integration
 
-Optional. Requires `youmind.api_key` in `config.yaml`.
+Optional. Requires `youmind.api_key` in `~/.youmind/config.yaml`.
 
 | Field | Effect |
 |-------|--------|

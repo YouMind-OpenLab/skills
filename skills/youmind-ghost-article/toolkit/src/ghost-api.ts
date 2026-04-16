@@ -9,7 +9,7 @@
 import { basename, dirname, extname, resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 export interface GhostConfig {
   apiKey: string;
@@ -74,12 +74,6 @@ export interface GhostConnectionResult {
   total?: number;
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
-
-const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
-
 interface OpenApiErrorDetail {
   connectUrl?: string;
   upgradeUrl?: string;
@@ -92,30 +86,11 @@ interface OpenApiErrorResponse {
   detail?: OpenApiErrorDetail;
 }
 
-function normalizeBaseUrl(value: string | undefined): string {
-  if (!value) return '';
-  const trimmed = value.replace(/\/+$/, '');
-  if (trimmed.endsWith('/openapi/v1')) return trimmed;
-  if (trimmed.endsWith('/openapi')) return `${trimmed}/v1`;
-  return `${trimmed}/openapi/v1`;
-}
-
-function loadLocalConfig(): Record<string, unknown> {
-  const path = resolve(PROJECT_DIR, 'config.yaml');
-  if (existsSync(path)) {
-    return parseYaml(readFileSync(path, 'utf-8')) ?? {};
-  }
-  return {};
-}
-
 export function loadGhostConfig(): GhostConfig {
-  const local = loadLocalConfig();
-  const ym = local.youmind as Record<string, unknown> ?? {};
-  const configuredBaseUrl = normalizeBaseUrl(ym.base_url as string | undefined);
-
+  const { apiKey, baseUrl } = loadYouMindConfig();
   return {
-    apiKey: (ym.api_key as string) || '',
-    baseUrl: configuredBaseUrl || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
+    apiKey,
+    baseUrl,
   };
 }
 
@@ -126,7 +101,7 @@ async function postJson<T = unknown>(
 ): Promise<T> {
   const cfg = config ?? loadGhostConfig();
   if (!cfg.apiKey) {
-    throw new Error('YouMind API key not configured. Set youmind.api_key in config.yaml.');
+    throw new Error(`YouMind API key not configured. ${YOUMIND_CONFIG_ERROR_HINT}`);
   }
 
   const response = await fetch(`${cfg.baseUrl}${endpoint}`, {

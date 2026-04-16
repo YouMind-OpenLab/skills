@@ -10,7 +10,7 @@ The WeChat article pipeline is multi-step. Failures in one step must not cascade
 
 | Step | Action | Fallback if step fails | Fallback of fallback |
 |------|--------|----------------------|---------------------|
-| 1 | Load config + validate | Prompt user to fix `config.yaml` | — |
+| 1 | Load config + validate | Prompt user to fix `~/.youmind/config.yaml` | — |
 | 1.5 | Knowledge mining (YouMind KB) | Empty `knowledge_context`, continue | — |
 | 2 | Trending topics (`fetch_hotspots.py`) | YouMind web-search | WebSearch tool → ask user |
 | 2.5 | SEO keyword scoring | Self-estimate, mark results as "estimated" | Skip scoring |

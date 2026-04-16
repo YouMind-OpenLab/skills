@@ -70,12 +70,12 @@ For visual generation behavior, preserve this invariant:
 
 ## Data and Persistence
 
-Current mutable data lives in repo-local paths such as:
+Current mutable data lives in shared home paths such as:
 
 - `clients/*/history.yaml`
 - `clients/*/lessons/`
 - `output/`
-- local `config.yaml`
+- `~/.youmind/config.yaml`
 
 This is acceptable while the skill is primarily repo-scoped. If this skill is later distributed as a shared plugin or marketplace package, move mutable state to a stable plugin data directory instead of the skill folder itself.
 

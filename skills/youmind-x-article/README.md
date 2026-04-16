@@ -11,7 +11,7 @@ AI-powered tweet writing and publishing. Tell your agent a topic, and it can res
 | `Tweet about AI coding tools` | Research → write → adapt to 280 chars → publish tweet |
 | `Write a thread about Docker best practices` | Research → write → split into numbered sequence → publish |
 | `Tweet this: "Just shipped!"` | Format and publish directly |
-| `Validate my YouMind setup` | Check the local API key |
+| `Validate my YouMind setup` | Check the `~/.youmind` API key |
 
 ---
 
@@ -23,11 +23,12 @@ AI-powered tweet writing and publishing. Tell your agent a topic, and it can res
 # 1. Install dependencies
 cd toolkit && npm install && npm run build && cd ..
 
-# 2. Create config (if config.yaml doesn't exist)
-cp config.example.yaml config.yaml
+# 2. Create shared config (recommended)
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` only needs the YouMind API key:
+`~/.youmind/config.yaml` only needs the YouMind API key:
 
 ```yaml
 youmind:
@@ -35,7 +36,7 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 ```
 
-Commands read `youmind.api_key` and `youmind.base_url` from local `config.yaml`. Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change only your local `config.yaml`.
+Commands resolve config in this order: `~/.youmind/config/youmind-x-article.yaml` -> `~/.youmind/config.yaml`. Keep the documented domain as `https://youmind.com/openapi/v1`. If you need to test against a local `youapi`, change `~/.youmind/config.yaml` or add a skill-specific override under `~/.youmind/config/`.
 
 ### Publishing prerequisite
 
@@ -43,7 +44,7 @@ Before publishing, connect your X account inside YouMind (one-click OAuth 2.0). 
 
 ### Get a YouMind API Key
 
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-x-article), create a key, and place it in `youmind.api_key`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-x-article), create a key, and place it in `~/.youmind/config.yaml` under `youmind.api_key`.
 
 ---
 
@@ -71,7 +72,7 @@ npx tsx src/cli.ts preview --file ../output/article.md --mode thread
 # Preview a single tweet
 npx tsx src/cli.ts preview --text "Check length" --mode tweet
 
-# Validate YouMind credentials (local API key sanity check)
+# Validate YouMind credentials from `~/.youmind`
 npx tsx src/cli.ts validate
 ```
 
@@ -93,11 +94,11 @@ X publishing through YouMind requires a paid plan (Pro or Max). Each published t
 
 **Q: I get a 401 or auth error**
 
-Check `youmind.api_key` in `config.yaml`. The skill now authenticates only with YouMind.
+Check `youmind.api_key` in `~/.youmind/config.yaml`. The skill now authenticates only with YouMind.
 
 **Q: Publishing says X is not connected**
 
-Connect X inside YouMind first. The X access token and refresh token live there, not in `config.yaml`.
+Connect X inside YouMind first. The X access token and refresh token live there, not in `~/.youmind/config.yaml`.
 
 **Q: My image was rejected**
 

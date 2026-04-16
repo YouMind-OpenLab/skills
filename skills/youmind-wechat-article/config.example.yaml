@@ -1,12 +1,11 @@
 # YouMind WeChat Skill Configuration
 #
-# Layered config (see /shared/YOUMIND_HOME.md):
-#   1. ~/.youmind/config.yaml              — shared YouMind credentials (template: /shared/config.example.yaml)
-#   2. ~/.youmind/config/youmind-wechat-article.yaml  — WeChat-specific overrides (theme, theme_color)
-#   3. skills/youmind-wechat-article/config.yaml      — legacy fallback (this file)
+# Canonical layered config (see shared/YOUMIND_HOME.md):
+#   1. ~/.youmind/config.yaml                         — shared YouMind credentials
+#   2. ~/.youmind/config/youmind-wechat-article.yaml — WeChat-specific overrides
 #
-# New installs should use #1 + optionally #2. This file is retained for
-# pre-~/.youmind/ installs and as a complete example of all available fields.
+# Article skills no longer read this repo-local file.
+# It is kept only as a full field example.
 
 youmind:
   api_key: ""              # sk-ym-xxxxxxxxxxxxxxxxxxxx (shared; move to ~/.youmind/config.yaml)

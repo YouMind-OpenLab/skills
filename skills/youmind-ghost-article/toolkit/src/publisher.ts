@@ -35,7 +35,7 @@ export interface PublishOptions {
   featureImageUrl?: string;
   /** Override title */
   title?: string;
-  /** Ghost config (loaded from config.yaml if not provided) */
+  /** Ghost config (loaded from ~/.youmind/config.yaml when not provided) */
   config?: GhostConfig;
 }
 
@@ -57,7 +57,7 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
   const config = options.config ?? loadGhostConfig();
 
   if (!config.apiKey) {
-    throw new Error('YouMind API key not set. Configure youmind.api_key in config.yaml.');
+    throw new Error('YouMind API key not set. Configure ~/.youmind/config.yaml.');
   }
 
   // Read Markdown content

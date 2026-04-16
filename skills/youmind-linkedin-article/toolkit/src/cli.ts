@@ -168,7 +168,7 @@ program
     const config = loadLinkedInConfig();
 
     if (!config.apiKey) {
-      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      console.error('[ERROR] youmind.api_key not set. Configure ~/.youmind/config.yaml.');
       process.exit(1);
     }
 

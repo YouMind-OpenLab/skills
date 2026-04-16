@@ -22,7 +22,7 @@ All platform skills route through YouMind OpenAPI. You only need **one YouMind A
 
 1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch)
 2. Create a key → copy the `sk-ym-xxxx` value
-3. Fill `youmind.api_key` in each platform skill's `config.yaml`
+3. Put the key in `~/.youmind/config.yaml` once for all article skills
 
 ### Step 2: Connect Platforms in YouMind
 
@@ -39,7 +39,7 @@ Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_sou
 | WeChat | youmind-wechat-article | AppID/AppSecret in Connector Settings |
 | Qiita | youmind-qiita-article | OAuth in Connector Settings |
 
-> **You do NOT store platform credentials locally.** Each skill's `config.yaml` only needs `youmind.api_key`. YouMind proxies all platform API calls server-side.
+> **You do NOT store platform credentials locally.** Put only your YouMind API key in `~/.youmind/config.yaml`. YouMind proxies all platform API calls server-side.
 
 ---
 
@@ -49,10 +49,11 @@ Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_sou
 
 ```bash
 cd youmind-article-dispatch
-cp config.example.yaml config.yaml
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-Dispatch itself needs no platform credentials — it's the routing hub. Each sub-skill has its own config.
+Dispatch itself needs no platform credentials — it's the routing hub. Shared YouMind credentials now live in `~/.youmind/config.yaml`, and article skills read only `~/.youmind/config.yaml` plus optional `~/.youmind/config/<skill>.yaml` overrides.
 
 ---
 
@@ -78,7 +79,7 @@ Browse boards and extract relevant materials from your YouMind workspace for con
 
 ### Get API Key
 
-Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch) to get your API Key, then fill it into the `youmind.api_key` field in `config.yaml`.
+Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch) to get your API Key, then fill it into the `youmind.api_key` field in `~/.youmind/config.yaml`.
 
 ---
 

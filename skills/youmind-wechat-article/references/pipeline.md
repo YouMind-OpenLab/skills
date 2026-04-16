@@ -16,7 +16,7 @@ Read `{skill_dir}/clients/{client}/style.yaml`.
 
 ## Step 1.5: YouMind Knowledge Mining
 
-> Only runs when `config.yaml` contains `youmind.api_key`. Otherwise skip.
+> Only runs when `~/.youmind/config.yaml` contains `youmind.api_key`. Otherwise skip.
 
 Use `youmind-api.js mine-topics` with the client's topics and source boards. Keep the top 10 results as `knowledge_context` for use in Steps 3 and 4.
 

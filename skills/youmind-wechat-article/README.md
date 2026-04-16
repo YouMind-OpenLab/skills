@@ -27,17 +27,20 @@
 cd toolkit && npm install && npm run build && cd ..
 pip install -r requirements.txt
 
-# 2. 生成配置文件（如果 config.yaml 不存在）
-cp config.example.yaml config.yaml
+# 2. 生成共享配置（推荐）
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` 只需要一个字段：
+默认只需要在 `~/.youmind/config.yaml` 里放一个字段：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
 | `youmind.api_key` | **是** | YouMind API Key → [获取入口](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) |
 
 WeChat 凭据**不在 skill 本地存** —— 走 YouMind connector 加密保存，下面单独说。
+
+配置解析顺序是：`~/.youmind/config/youmind-wechat-article.yaml` -> `~/.youmind/config.yaml`。如果你要调本地 `youapi`，改共享配置或写 skill 专属 override，不要再默认改 repo 里的 `config.yaml`。
 
 ### 在 YouMind 绑定 WeChat 公众号（一次性）
 
@@ -133,7 +136,7 @@ clients/demo/
 
 **发布报 IP 错误** — 公网 IP 变了。重跑 `curl -s https://ifconfig.me` 拿新 IP，更新微信白名单（详见上方「获取本机公网 IP」章节）。
 
-**图片生成失败** — 不影响发布。Skill 会自动走降级链。想用特定 provider 就在 `config.yaml` 里填对应 key。
+**图片生成失败** — 不影响发布。Skill 会自动走降级链。想用特定 provider，就在 `~/.youmind/config.yaml` 或 `~/.youmind/config/youmind-wechat-article.yaml` 里填对应 key。
 
 **文章有 AI 味** — 在 `style.yaml` 里写清楚你的调性；多喂历史语料建 playbook；发布后改稿再跑"学习风格"。三管齐下效果最好。
 
