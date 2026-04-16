@@ -11,13 +11,22 @@
  *   request:   {
  *     text: string (1-280),
  *     mediaUrls?: string[] (≤4, cdn.gooo.ai only),
+ *     mediaIds?: string[] (≤4, upload local files first via uploadXMedia),
  *     replyToPostId?: string (numeric tweet ID; build threads by chaining)
  *   }
  *   response:  { postId: string, text: string, url: string }
  *
+ *   POST /openapi/v1/uploadXMedia
+ *   request:   {
+ *     filename: string,
+ *     contentBase64: string,
+ *     contentType?: string
+ *   }
+ *   response:  { mediaId: string }
+ *
  * Threads are published as a native X reply chain by passing each previous
  * tweet's postId as the next tweet's replyToPostId. Quote-tweets and local
- * media upload are not in the OpenAPI surface today.
+ * media upload are supported via uploadXMedia + mediaIds.
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -31,6 +40,8 @@ export interface CreateXPostOptions {
   text: string;
   /** Optional image URLs — must be publicly reachable https URLs under cdn.gooo.ai. Max 4. */
   mediaUrls?: string[];
+  /** Optional pre-uploaded X media IDs returned by uploadXMedia. Max 4. */
+  mediaIds?: string[];
   /**
    * Optional tweet ID this post replies to. Used to build threads — publish the first tweet,
    * then pass its `postId` here for each subsequent tweet so X renders the chain natively.
@@ -47,6 +58,16 @@ export interface XPost {
 export interface DeleteXPostResult {
   ok: boolean;
   postId: string;
+}
+
+export interface UploadXMediaOptions {
+  filename: string;
+  contentBase64: string;
+  contentType?: string;
+}
+
+export interface UploadedXMedia {
+  mediaId: string;
 }
 
 interface OpenApiErrorDetail {
@@ -157,11 +178,32 @@ export async function createXPost(
   if (options.mediaUrls?.length) {
     body.mediaUrls = options.mediaUrls;
   }
+  if (options.mediaIds?.length) {
+    body.mediaIds = options.mediaIds;
+  }
   if (options.replyToPostId) {
     body.replyToPostId = options.replyToPostId;
   }
   const raw = await postJson<Record<string, unknown>>('/createXPost', body, config);
   return normalizePost(raw);
+}
+
+export async function uploadXMedia(
+  config: XConfig,
+  options: UploadXMediaOptions,
+): Promise<UploadedXMedia> {
+  const raw = await postJson<Record<string, unknown>>(
+    '/uploadXMedia',
+    {
+      filename: options.filename,
+      contentBase64: options.contentBase64,
+      contentType: options.contentType,
+    },
+    config,
+  );
+  return {
+    mediaId: String(raw.mediaId ?? raw.media_id ?? ''),
+  };
 }
 
 export async function deleteXPost(

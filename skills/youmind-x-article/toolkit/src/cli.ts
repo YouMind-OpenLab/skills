@@ -7,7 +7,7 @@
  *
  * Usage:
  *   npx tsx src/cli.ts tweet --text "Your tweet here"
- *   npx tsx src/cli.ts tweet --text "Check this out" --image https://cdn.gooo.ai/user-files/pic.jpg
+ *   npx tsx src/cli.ts tweet --text "Check this out" --image ./cover.png
  *   npx tsx src/cli.ts thread --file article.md
  *   npx tsx src/cli.ts preview --text "Check length" --mode tweet
  *   npx tsx src/cli.ts preview --file article.md --mode thread
@@ -38,7 +38,7 @@ program
   .description('Publish a single tweet')
   .option('--text <text>', 'Tweet text content')
   .option('--file <path>', 'Read content from a file')
-  .option('--image <urls...>', 'Image URLs (https://cdn.gooo.ai/..., max 4)')
+  .option('--image <pathsOrUrls...>', 'Local image paths or cdn.gooo.ai URLs (max 4)')
   .option('--hashtags <tags>', 'Comma-separated hashtags (max 2)')
   .action(async (opts) => {
     let content = opts.text || '';
@@ -92,7 +92,7 @@ program
   .description('Publish a sequence of numbered tweets from long-form content')
   .option('--text <text>', 'Thread content')
   .option('--file <path>', 'Read content from a file')
-  .option('--image <urls...>', 'Image URLs attached to the first tweet only')
+  .option('--image <pathsOrUrls...>', 'Local image paths or cdn.gooo.ai URLs attached to the first tweet only')
   .option('--hashtags <tags>', 'Comma-separated hashtags')
   .option('--no-numbering', 'Disable tweet numbering')
   .action(async (opts) => {
