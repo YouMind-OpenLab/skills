@@ -149,11 +149,16 @@ export async function publishThread(
   }
 
   if (thread.tweets.length === 1) {
-    return publishTweet({
+    const result = await publishTweet({
       content: thread.tweets[0],
       mediaUrls: options.mediaUrls,
       config,
     });
+    return {
+      ...result,
+      type: 'thread',
+      content: [typeof result.content === 'string' ? result.content : thread.tweets[0]],
+    };
   }
 
   const warnings = [...thread.warnings];

@@ -16,8 +16,8 @@
  *   response:  { postId: string, text: string, url: string }
  *
  * Threads are published as a native X reply chain by passing each previous
- * tweet's postId as the next tweet's replyToPostId. Quote-tweets, delete,
- * and local media upload are not in the OpenAPI surface today.
+ * tweet's postId as the next tweet's replyToPostId. Quote-tweets and local
+ * media upload are not in the OpenAPI surface today.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -45,6 +45,11 @@ export interface XPost {
   postId: string;
   text: string;
   url: string;
+}
+
+export interface DeleteXPostResult {
+  ok: boolean;
+  postId: string;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -185,4 +190,15 @@ export async function createXPost(
   }
   const raw = await postJson<Record<string, unknown>>('/createXPost', body, config);
   return normalizePost(raw);
+}
+
+export async function deleteXPost(
+  config: XConfig,
+  postId: string,
+): Promise<DeleteXPostResult> {
+  const raw = await postJson<Record<string, unknown>>('/deleteXPost', { postId }, config);
+  return {
+    ok: Boolean(raw.ok),
+    postId: String(raw.postId ?? raw.post_id ?? postId),
+  };
 }

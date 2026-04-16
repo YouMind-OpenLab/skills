@@ -18,7 +18,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { loadXConfig } from './x-api.js';
+import { deleteXPost, loadXConfig } from './x-api.js';
 import {
   previewThread,
   previewTweet,
@@ -145,7 +145,7 @@ program
       for (const w of result.warnings) console.log(`  - ${w}`);
     }
 
-    const tweets = result.content as string[];
+    const tweets = Array.isArray(result.content) ? result.content : [String(result.content)];
     console.log(`\nThread preview (${tweets.length} tweets):`);
     for (let i = 0; i < tweets.length; i++) {
       console.log(`\n--- Tweet ${i + 1} ---`);
@@ -223,6 +223,35 @@ program
       'X account connection is validated on the first publish call; ' +
         'if your X account is not connected in YouMind yet, publishing will return a clear error with a connect URL.',
     );
+  });
+
+program
+  .command('delete')
+  .description('Delete a tweet by ID')
+  .argument('<postId>', 'Tweet ID')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (postId: string, opts) => {
+    const config = loadXConfig();
+    if (!config.apiKey) {
+      console.error('[ERROR] youmind.api_key not set in config.yaml');
+      process.exit(1);
+    }
+    if (!opts.yes) {
+      console.error(`Refusing to delete ${postId} without --yes. Re-run with -y to confirm.`);
+      process.exit(1);
+    }
+
+    try {
+      const result = await deleteXPost(config, postId);
+      if (!result.ok) {
+        console.error(`Delete returned ok=false for ${result.postId}.`);
+        process.exit(1);
+      }
+      console.log(`Deleted tweet ${result.postId}.`);
+    } catch (err) {
+      console.error(`Delete failed: ${(err as Error).message}`);
+      process.exit(1);
+    }
   });
 
 program.parse();
