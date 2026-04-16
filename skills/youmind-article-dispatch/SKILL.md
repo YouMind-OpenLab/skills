@@ -3,7 +3,7 @@ name: youmind-article-dispatch
 version: 1.0.0
 description: |
   Dispatch content to multiple platforms from a single topic — Dev.to, Hashnode, WordPress,
-  Ghost, LinkedIn, X/Twitter, Reddit, Medium, WeChat, Qiita. Each platform skill adapts
+  Ghost, LinkedIn, X/Twitter, WeChat, Qiita. Each platform skill adapts
   content independently for its audience and format. Pure orchestration, no publishing logic.
   Integrates YouMind knowledge base for topic research and content material mining.
   Use when user wants to "publish everywhere", "cross-post", "multi-platform publish",
@@ -51,21 +51,98 @@ allowed-tools:
 
 # Content Dispatch Hub — One Topic, Every Platform
 
-Distribute your content to multiple platforms from a single topic. Each platform skill independently adapts content for its target audience — developers on Dev.to, professionals on LinkedIn, communities on Reddit, readers on Medium, and more.
+Distribute your content to multiple platforms from a single topic. Each platform skill independently adapts content for its target audience — developers on Dev.to, professionals on LinkedIn, readers on Ghost, and more.
 
 > [Get YouMind API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch) · [More Skills →](https://youmind.com/skills?utm_source=youmind-article-dispatch)
 
 ## Onboarding
 
-**⚠️ MANDATORY: When the user has just installed this skill, present this message IMMEDIATELY. Translate to the user's language:**
+**⚠️ MANDATORY: When the user has just installed this skill, run the onboarding flow IMMEDIATELY. Translate to the user's language.**
+
+The onboarding flow sets up TWO things in ONE conversation: **platform roster** (where to publish) and **author DNA** (how to write). These are NOT separate steps — they happen together during the first dispatch.
+
+### Phase 1: Platform roster (30 seconds)
 
 > **✅ Content Dispatch Hub installed!**
 >
-> Tell me a topic and I'll help you publish it across multiple platforms.
+> Quick setup — which platforms do you use?
 >
-> **Supported platforms:** Dev.to · Hashnode · WordPress · Ghost · LinkedIn · X/Twitter · Reddit · Medium · WeChat · Qiita
+> 1. Dev.to  2. Hashnode  3. WordPress  4. Ghost
+> 5. LinkedIn  6. X/Twitter  7. WeChat (公众号)  8. Qiita
 >
-> **Try it now:** "Help me write about AI agents and publish to Dev.to and LinkedIn"
+> (list numbers, e.g. "1, 2, 6")
+
+After user selects:
+1. Save to `dispatch-roster.yaml` → `active_platforms`
+2. For each selected, check skill installed + YouMind connection via `validate`
+3. Report status table (✅ connected / ❌ → setup link)
+
+### Phase 2: Author DNA bootstrap (integrated into first dispatch)
+
+**Do NOT ask the user to fill a profile form.** Instead, bootstrap the author profile from one of two paths:
+
+**Path A — User has articles in YouMind KB (preferred):**
+1. Call YouMind search API to fetch the user's recent 10–15 articles
+2. Analyze across articles: avg paragraph length, code density, language distribution, opening patterns, depth level, typical word count, tone markers
+3. Propose a profile:
+
+> 📝 **I analyzed your recent articles. Here's what I see:**
+>
+> - **Voice:** Conversational-technical, first-person practitioner
+> - **Audience:** Mid-level developers (you assume REST/Git knowledge)
+> - **Code density:** High (avg 4 code blocks per article)
+> - **Depth:** Practitioner-level (how-to with real gotchas, not beginner intros)
+> - **Languages:** English primary, Chinese secondary
+> - **Signature moves:** You always lead with the problem, include a gotchas section, and end with working code
+>
+> **Sound right?** I'll use this as your baseline across all platforms. You can adjust anytime.
+
+4. User confirms/adjusts → save to `author-profile.yaml`
+5. Immediately proceed to first dispatch with the profile active
+
+**Path B — New user, no articles (cold start):**
+Embed 3 targeted questions INTO the first dispatch request, not as a separate quiz:
+
+> You said: "帮我写一篇关于 AI agents 的文章发到 Dev.to 和 X"
+>
+> Great! Since this is your first dispatch, 3 quick questions so I write in YOUR voice:
+>
+> **1. 这篇文章的风格？**
+> (a) 代码先行，先看效果再讲原理
+> (b) 故事驱动，用经历带出技术点
+> (c) 数据说话，benchmark 和对比为主
+> (d) 手把手教学，假设读者是入门者
+>
+> **2. 你的读者是谁？**
+> (a) 做产品的开发者
+> (b) 正在学习的学生/新人
+> (c) 做技术决策的 TL/架构师
+> (d) 泛科技读者
+>
+> **3. 你的内容里绝对不要出现什么？**
+> (自由回答 — 例如"不要营销话术"、"不要 AI 味"、"不要太长")
+
+After user answers:
+1. Map answers to `author-profile.yaml` fields
+2. Save profile
+3. **Immediately continue the dispatch** — no second round-trip. The first article is generated WITH the profile already active.
+4. After publishing, confirm: "Saved as your writing profile. Next time just say '帮我分发', I know your style."
+
+### Why this matters
+
+| Approach | First article quality | User friction |
+|----------|:--------------------:|:-------------:|
+| ❌ No profiling | Generic, platform-default | Zero (but bad output) |
+| ❌ Separate 5-question form | Better, but profile ≠ real usage | High (feels like homework) |
+| ✅ Path A: KB bootstrap | Excellent — based on real writing | Near-zero (confirm/adjust) |
+| ✅ Path B: 3 inline questions | Good — targeted baseline | Low (embedded in first dispatch) |
+
+### Roster + Profile updates after onboarding
+
+> "Add Ghost to my platforms" → update `dispatch-roster.yaml`
+> "Remove LinkedIn" → update roster
+> "I want to write more beginner content" → update `author-profile.yaml`
+> "Analyze my recent articles again" → re-run Path A bootstrap
 
 ## Usage Modes
 
@@ -96,46 +173,58 @@ User wants maximum reach → dispatch to all installed platform skills.
 
 ## Platform Registry
 
-| Platform | Skill | API | Auth | Audience | Best For |
-|----------|-------|-----|------|----------|----------|
-| Dev.to | `youmind-devto-article` | REST | API Key | Developers, OSS contributors | Technical tutorials, tool reviews, dev experience |
-| Hashnode | `youmind-hashnode-article` | GraphQL | PAT | Dev bloggers, tech writers | In-depth technical blogs, series, developer stories |
-| WordPress | `youmind-wordpress-article` | REST | App Password | General audiences | Long-form articles, SEO-optimized content |
-| Ghost | `youmind-ghost-article` | Admin API | JWT | Publishers, newsletter writers | Editorial content, premium publications |
-| LinkedIn | `youmind-linkedin-article` | Posts API | OAuth 2.0 | Professionals, B2B | Thought leadership, industry insights, career advice |
-| X/Twitter | `youmind-x-article` | API v2 | OAuth 2.0 | General, viral audiences | Hot takes, threads, breaking news commentary |
-| Reddit | `youmind-reddit-article` | REST | OAuth 2.0 | Niche communities | Community discussions, AMAs, experience sharing |
-| Medium | `youmind-medium-article` | REST | Token | General readers, writers | Narrative essays, thought leadership, personal stories |
-| WeChat | `youmind-wechat-article` | REST | AppID/Secret | Chinese audiences | Styled long-form articles, official account content |
-| Qiita | `youmind-qiita-article` | REST v2 | Bearer Token | Japanese developers | Technical articles, tutorials, knowledge sharing |
+| Platform | Skill | Audience | Best For |
+|----------|-------|----------|----------|
+| Dev.to | `youmind-devto-article` | Developers, OSS contributors | Technical tutorials, tool reviews, dev experience |
+| Hashnode | `youmind-hashnode-article` | Dev bloggers, tech writers | In-depth technical blogs, series, developer stories |
+| WordPress | `youmind-wordpress-article` | General audiences | Long-form articles, SEO-optimized content |
+| Ghost | `youmind-ghost-article` | Publishers, newsletter writers | Editorial content, premium publications |
+| LinkedIn | `youmind-linkedin-article` | Professionals, B2B | Thought leadership, industry insights, career advice |
+| X/Twitter | `youmind-x-article` | General, viral audiences | Hot takes, threads, breaking news commentary |
+| WeChat | `youmind-wechat-article` | Chinese audiences | Styled long-form articles, official account content |
+| Qiita | `youmind-qiita-article` | Japanese developers | Technical articles, tutorials, knowledge sharing |
 
-> **Note:** Each platform skill must be installed separately. Dispatch will check which skills are available before proceeding.
+> **Auth:** All 8 platforms use YouMind OpenAPI. You need only a `youmind.api_key` — platform credentials are stored encrypted in [YouMind Connector Settings](https://youmind.com/settings/connector). No local platform keys.
+>
+> **Note:** Each platform skill must be installed separately. Dispatch checks your roster (`dispatch-roster.yaml`) on each run.
 
 ## Dispatch Pipeline
 
-### Step 1: Parse Request
+### Step 1: Parse Request + Load Roster
 - Extract topic/brief from user input
-- Identify target platforms (explicit list, "all", or ask user to choose)
-- Check which platform skills are actually installed:
-  ```
-  ls skills/ | grep youmind-.*-article
-  ```
-- If a requested platform skill is not installed, warn the user and skip it
+- Load `dispatch-roster.yaml` for the user's active platform list
+- Resolve target platforms:
+  - User says "帮我分发" / "publish everywhere" → use `active_platforms` from roster
+  - User specifies platforms explicitly → use those (even if not in roster)
+  - No roster exists → ask user which platforms (triggers onboarding)
+- For each target platform: verify skill installed + connection status from roster
+- Skip platforms that are not installed or not connected (with clear message + setup link)
 
-### Step 2: Generate Content Brief
-Create a standardized brief to pass to each platform skill (see `references/content-brief-format.md`):
+### Step 2: Load Author Profile + Generate Content Brief
+
+**2a — Load author profile** (if exists):
+If `author-profile.yaml` exists in this skill's directory, load it. This file captures the user's cross-platform writing DNA — voice, audience, content preferences, and per-platform overrides. See `references/author-profile-spec.md` for format.
+
+If no profile exists → skip this step; dispatch works without it (just less personalized). After the first successful dispatch, offer to help the user build one.
+
+**2b — Generate content brief** (see `references/content-brief-format.md`):
 
 ```yaml
 topic: "The core topic sentence"
 angle: "The specific angle or atomic insight"
 keywords: ["keyword1", "keyword2", "keyword3"]
-tone: "professional"  # or casual, technical, conversational
 language: "en"        # or zh, ja, etc.
 source_material: []   # from YouMind knowledge mining (if available)
+resolved_author: {}   # per-platform resolved profile (computed in Step 3)
 constraints: {}       # any user-specified constraints
 ```
 
 **YouMind knowledge mining:** If the user has a YouMind API key configured in any platform skill's config, run `mine-topics` ONCE and include the results in the brief. This avoids redundant YouMind calls across platform skills.
+
+**2c — Resolve author profile per platform:**
+For EACH target platform, merge the author profile with that platform's DNA using the rules in `references/content-adaptation-matrix.md`. This produces a **resolved per-platform profile** — NOT the raw author file. Each platform skill receives only the resolved, relevant fields for its platform. This prevents raw-profile leakage and irrelevant context bleed.
+
+If a depth mismatch is detected (e.g., author targets "expert" but platform audience is "general"), the merge triggers a mandatory outline adaptation step — not just a warning. See matrix Priority 5.
 
 ### Step 3: Dispatch to Platform Skills
 For each target platform, invoke the platform skill with the content brief as context.
@@ -171,7 +260,6 @@ Present a summary table to the user:
 | Dev.to | ✅ Published | "AI Agents: A Practical Guide" | https://dev.to/... |
 | LinkedIn | ✅ Published | "Why AI Agents Matter for..." | https://linkedin.com/... |
 | X/Twitter | ✅ Thread posted | "🧵 AI Agents are changing..." | https://x.com/... |
-| Reddit | ⚠️ Draft | "AI Agents - My Experience" | (draft, not yet submitted) |
 ```
 
 ## Resilience Rules
@@ -190,4 +278,8 @@ Present a summary table to the user:
 |------|---------|
 | `references/platform-registry.md` | Detailed platform capabilities, audience profiles, and constraints |
 | `references/dispatch-protocol.md` | Step-by-step dispatch workflow with examples |
-| `references/content-brief-format.md` | Standardized content brief format specification |
+| `references/content-brief-format.md` | Standardized content brief format specification (v2: includes resolved author profile) |
+| `references/author-profile-spec.md` | Author profile format, cold-start guide, evolution strategy |
+| `references/content-adaptation-matrix.md` | How author DNA × platform DNA merge (priority rules, merge algorithm) |
+| `references/profile-learning.md` | How author DNA accumulates from usage (5 learning sources, diff analysis, cadence) |
+| `author-profile.example.yaml` | Example author profile — copy to `author-profile.yaml` and customize |

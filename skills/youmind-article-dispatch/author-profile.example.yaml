@@ -1,0 +1,136 @@
+# Author Profile — Your cross-platform writing DNA
+#
+# This file captures preferences that travel WITH YOU across platforms.
+# Platform-specific rules (format constraints, register norms) live in each
+# platform skill's platform-dna.md. This file is about YOUR voice, YOUR
+# audience, YOUR content style.
+#
+# Copy to author-profile.yaml and customize. The dispatch skill reads this
+# before generating the content brief for each platform.
+#
+# Fields left as null or omitted → dispatch uses sensible defaults or asks.
+
+author:
+  # --- Voice DNA (how you write) ---
+  voice:
+    # Your default writing register across platforms.
+    # Platform DNA may adjust this (e.g., Qiita overrides to 丁寧語).
+    # Options: conversational | formal | academic | casual | editorial | conversational-technical
+    register: "conversational-technical"
+
+    # Point of view.
+    # Options: first-person | first-person-practitioner | third-person | team-voice
+    perspective: "first-person-practitioner"
+
+    # Patterns you ALWAYS want in your content (dispatch enforces these across platforms).
+    signature_patterns:
+      - "Show working code before explaining theory"
+      - "Include a gotchas/pitfalls section in every technical article"
+      - "Lead with the problem, not the solution"
+      # - "End with a specific call-to-action"
+
+    # Patterns you NEVER want (dispatch flags violations before publishing).
+    anti_patterns:
+      - "Never use 'revolutionary', 'game-changing', or 'cutting-edge'"
+      - "Never open with 'In today's rapidly evolving...'"
+      - "Never assume reader knows internal jargon without definition"
+
+    # Humor tolerance in content.
+    # Options: none | light | moderate | heavy
+    humor_level: "light"
+
+  # --- Audience DNA (who you write for) ---
+  audience:
+    # Primary reader persona — one sentence.
+    primary: "Mid-level developers building production systems"
+
+    # Secondary reader persona(s).
+    secondary: "Tech leads evaluating tools and architectural approaches"
+
+    # What you assume readers already know.
+    assumed_knowledge:
+      - "Basic programming in at least one language"
+      - "Git version control"
+      - "REST API concepts"
+      - "Command-line comfort"
+
+    # Default content depth.
+    # Options: beginner | intermediate | practitioner | expert
+    content_depth: "practitioner"
+
+  # --- Content preferences (what you produce) ---
+  content:
+    # Types you prefer writing.
+    preferred_types:
+      - "tutorial"
+      - "deep-dive"
+      - "experience-report"
+      # Options: tutorial | deep-dive | experience-report | opinion | comparison
+      #          listicle | news-recap | architecture | case-study | how-we-built
+
+    # Types you want to avoid (dispatch will warn if a platform favors these).
+    avoid_types:
+      - "listicle"
+      - "news-recap"
+
+    # How much code you typically include.
+    # Options: none | low | medium | high
+    code_density: "high"
+
+    # Do you prefer data/benchmarks to support claims?
+    data_driven: true
+
+    # Storytelling level in your content.
+    # Options: none | light | moderate | heavy
+    storytelling: "moderate"
+
+    # Your typical article length range (word count). Platform DNA may override.
+    typical_length: "1500-2500"
+
+  # --- Language DNA ---
+  language:
+    # Primary writing language (ISO 639-1).
+    primary: "en"
+
+    # Additional languages you write in.
+    secondary:
+      - "zh"  # Chinese
+      - "ja"  # Japanese
+
+    # When content needs to cross languages, how should it be handled?
+    # translate: literal translation (fast, lower quality)
+    # transcreate: rebuild natively in target language (slower, higher quality)
+    # language-native: write separately in each language from scratch
+    bilingual_strategy: "transcreate"
+
+  # --- Platform-specific author overrides ---
+  # These are YOUR preferences per platform, not the platform's rules.
+  # Platform DNA hard limits always take priority.
+  platform_overrides:
+    x:
+      # Your preferred max thread length (platform allows more, but you prefer tighter)
+      max_thread_length: 10
+      # Your preferred hook style for X
+      # Options: contrarian | stat | story | checklist | curiosity
+      hook_style: "contrarian"
+
+    qiita:
+      # Your preferred register on Qiita (overrides your default if different)
+      register: "丁寧語"
+      # Always include environment section on Qiita
+      always_include_environment: true
+
+    wechat:
+      # If you have a client config in the wechat skill
+      style_client: "default"
+
+    ghost:
+      # Your default visibility for Ghost posts
+      default_visibility: "public"
+
+    wordpress:
+      # Your default category slug
+      default_category: "engineering"
+
+    # devto: {}      # no overrides — use author defaults
+    # hashnode: {}   # no overrides — use author defaults

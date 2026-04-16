@@ -29,7 +29,7 @@ Parsed:
 | ghost | ghost | youmind-ghost-article |
 | linkedin, li | linkedin | youmind-linkedin-article |
 | x, twitter | x | youmind-x-article |
-| reddit | reddit | youmind-reddit-article |
+| all, everywhere, 全部 | ALL | all active roster platforms |
 | wechat, 微信, 公众号 | wechat | youmind-wechat-article |
 | qiita | qiita | youmind-qiita-article |
 | all, everywhere, 全部 | ALL | all installed skills |
@@ -40,14 +40,41 @@ Before dispatching, verify which platform skills are installed:
 - Check the `skills/` directory for `youmind-{platform}-article/` directories
 - If a requested skill is missing, warn the user and offer to skip
 
-### 3. Content Brief Generation
+### 3. Author Profile Loading + Content Brief Generation
 
-Create a standardized brief (see `content-brief-format.md`):
+**3a. Load author profile:**
+```
+if file_exists("author-profile.yaml"):
+  authorProfile = load("author-profile.yaml")
+else:
+  authorProfile = null  # dispatch works without it
+```
 
+**3b. Generate content brief:**
 1. Extract topic and angle from user input
 2. If YouMind API is available, run `mine-topics` ONCE to gather knowledge base material
 3. Ask user for any constraints (tone, language, length preferences)
-4. Package into the standard brief format
+4. Package into the standard brief format (see `content-brief-format.md`)
+
+**3c. Resolve author profile per platform:**
+For each target platform:
+1. Load the platform's DNA (from the platform skill's `references/platform-dna.md`)
+2. Merge author profile with platform DNA using `content-adaptation-matrix.md` rules
+3. Output a **resolved per-platform profile** (not the raw author file)
+4. Attach to the content brief as `resolved_author`
+5. If depth mismatch detected → trigger mandatory outline adaptation (not just warning)
+
+```
+for each platform in target_platforms:
+  resolved = resolveProfileForPlatform(authorProfile, platformDNA[platform], platform)
+  briefs[platform] = {
+    ...baseBrief,
+    resolved_author: resolved.profile,
+    warnings: resolved.warnings
+  }
+  if resolved.warnings.length > 0:
+    surface warnings to user BEFORE dispatch
+```
 
 ### 4. Platform Dispatch
 

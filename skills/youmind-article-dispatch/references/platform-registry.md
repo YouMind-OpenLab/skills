@@ -107,25 +107,6 @@
   - Media (images) for higher reach
   - Thread splitting: split on paragraph boundaries, each tweet standalone
 
-## Reddit
-- **Skill:** `youmind-reddit-article`
-- **API:** Reddit API — `https://oauth.reddit.com/`
-- **Auth:** OAuth 2.0 (script app type)
-- **Rate Limit:** 60 requests/minute
-- **Audience:** Niche communities, highly engaged topic-specific readers
-- **Content format:** Reddit-flavored Markdown
-- **Constraints:** 40K chars for self posts, subreddit-specific rules + flairs
-- **Tone:** Authentic, no corporate-speak, self-deprecating humor works
-- **Best for:** In-depth discussions, experience sharing, technical deep-dives, AMAs
-- **Anti-patterns:** Self-promotion (10:1 rule), clickbait, corporate tone
-- **Adaptation rules:**
-  - Title: descriptive, NO clickbait
-  - TL;DR at top or bottom
-  - Match subreddit culture and rules
-  - Select appropriate flair
-  - Ask a question at the end for discussion
-  - Always draft mode (subreddit rules vary)
-
 ## WeChat
 - **Skill:** `youmind-wechat-article` (existing)
 - **API:** WeChat Official Account API

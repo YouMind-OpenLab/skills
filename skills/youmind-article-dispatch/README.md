@@ -14,24 +14,32 @@ One topic, every platform. AI-powered multi-platform content distribution hub.
 
 ---
 
-## Getting Credentials
+## Setup — One Key, All Platforms
 
-Dispatch calls each platform's sub-skill. Each sub-skill requires  its own credentials:
+All platform skills route through YouMind OpenAPI. You only need **one YouMind API key** — platform credentials (OAuth tokens, API keys, app passwords) are stored encrypted in YouMind after you connect each platform once.
 
-| Platform | Skill Name | Key Credential | Where to Get |
-|----------|------------|----------------|--------------|
-| Dev.to | youmind-devto-article | API Key | <https://dev.to/settings/extensions> |
-| Hashnode | youmind-hashnode-article | Personal Access Token | <https://hashnode.com/settings/developer> |
-| WordPress | youmind-wordpress-article | Application Password | WordPress Admin > Users > Profile |
-| Ghost | youmind-ghost-article | Admin API Key | Ghost Admin > Integrations |
-| LinkedIn | youmind-linkedin-article | OAuth 2.0 Access Token | <https://developer.linkedin.com/> |
-| X/Twitter | youmind-x-article | OAuth Token | <https://developer.x.com/en/portal> |
-| Reddit | youmind-reddit-article | Client ID/Secret | <https://www.reddit.com/prefs/apps> |
-| Medium | youmind-medium-article | Integration Token | <https://medium.com/me/settings/security> |
-| WeChat | youmind-wechat-article | AppID/Secret | <https://mp.weixin.qq.com/> |
-| Qiita | youmind-qiita-article | Personal Access Token | <https://qiita.com/settings/applications> |
+### Step 1: Get YouMind API Key
 
-> **Tip**: You only need to configure the platforms you use. Dispatch automatically skips unconfigured ones.
+1. Open [YouMind API Keys](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch)
+2. Create a key → copy the `sk-ym-xxxx` value
+3. Fill `youmind.api_key` in each platform skill's `config.yaml`
+
+### Step 2: Connect Platforms in YouMind
+
+Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-article-dispatch) and connect the platforms you use. Each platform has a one-click OAuth or credential paste flow — YouMind stores everything encrypted server-side.
+
+| Platform | Skill | Connect in YouMind |
+|----------|-------|--------------------|
+| Dev.to | youmind-devto-article | OAuth in Connector Settings |
+| Hashnode | youmind-hashnode-article | PAT in Connector Settings |
+| WordPress | youmind-wordpress-article | Site URL + App Password in Connector Settings |
+| Ghost | youmind-ghost-article | Site URL + Admin API Key in Connector Settings |
+| LinkedIn | youmind-linkedin-article | OAuth in Connector Settings |
+| X/Twitter | youmind-x-article | OAuth in Connector Settings |
+| WeChat | youmind-wechat-article | AppID/AppSecret in Connector Settings |
+| Qiita | youmind-qiita-article | OAuth in Connector Settings |
+
+> **You do NOT store platform credentials locally.** Each skill's `config.yaml` only needs `youmind.api_key`. YouMind proxies all platform API calls server-side.
 
 ---
 
@@ -79,7 +87,7 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_sourc
 ### Distribution Strategy
 
 - **Single platform**: Specify the platform name, e.g. `Write about X for Dev.to`
-- **Multiple platforms**: List platform names, e.g. `Publish on Dev.to, LinkedIn, and Medium`
+- **Multiple platforms**: List platform names, e.g. `Publish on Dev.to, LinkedIn, and Ghost`
 - **All platforms**: Say `Publish everywhere`
 
 ### Content Adaptation
@@ -88,7 +96,7 @@ Dispatch doesn't just copy-paste. Each sub-skill adapts content to the platform:
 
 - **Dev.to**: Technical depth, code examples, TL;DR at top
 - **LinkedIn**: Professional angle, industry insights, concise paragraphs
-- **Medium**: Narrative storytelling, elegant formatting, compelling hook
+- **Ghost**: Editorial newsletter content, member tiers, email-first distribution
 - **WeChat**: Chinese localization, styled formatting, cover images
 - **X/Twitter**: Distilled into tweet threads, hashtags
 - **Qiita**: Japanese developer focus, GFM Markdown, environment info, note boxes
