@@ -1,6 +1,6 @@
 ---
 name: youmind-x-article
-version: 1.0.0
+version: 1.0
 description: |
   Write and publish tweets to X (Twitter) with AI — topic research via YouMind knowledge base,
   280-char optimized writing, numbered multi-tweet sequences, and one-click publishing through

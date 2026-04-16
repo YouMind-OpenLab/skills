@@ -1,6 +1,6 @@
 ---
 name: youmind-devto-article
-version: 1.0.0
+version: 1.0
 description: |
   Write and publish Dev.to articles with AI — topic research via YouMind knowledge base,
   developer-audience adapted writing, Markdown with front matter formatting, and one-click publishing.

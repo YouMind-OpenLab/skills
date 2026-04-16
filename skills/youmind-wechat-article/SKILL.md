@@ -1,6 +1,6 @@
 ---
 name: youmind-wechat-article
-version: 1.0.1
+version: 2.0
 description: |
   Write and publish WeChat Official Account articles end-to-end with AI — trending topic mining, de-AI voice
   writing, themed formatting, AI cover via YouMind (Nano Banana Pro), one-click draft box publishing.

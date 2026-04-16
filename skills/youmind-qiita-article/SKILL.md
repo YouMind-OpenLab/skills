@@ -1,6 +1,6 @@
 ---
 name: youmind-qiita-article
-version: 1.0.0
+version: 1.0
 description: |
   Write and publish Qiita articles with AI — topic research via YouMind knowledge base,
   Japanese developer-audience adapted writing, GFM Markdown with Qiita extensions, and one-click publishing.

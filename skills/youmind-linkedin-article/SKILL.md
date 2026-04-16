@@ -1,6 +1,6 @@
 ---
 name: youmind-linkedin-article
-version: 1.0.0
+version: 1.0
 description: |
   Write and publish LinkedIn posts and articles with AI — topic research via YouMind knowledge base,
   professional-audience adapted writing, Unicode formatting, image uploads, and one-click publishing.
