@@ -90,6 +90,9 @@ Read files on demand.
 | `toolkit/src/hashnode-api.ts` | YouMind OpenAPI client for Hashnode |
 | `toolkit/src/publisher.ts` | High-level publish wrapper |
 | `toolkit/src/content-adapter.ts` | Hashnode title / subtitle / tag / SEO adaptation |
+| `references/platform-dna.md` | Hashnode audience, format constraints, community data |
+| `references/content-generation-playbook.md` | Idea → Hashnode-native draft workflow |
+| `references/content-adaptation-playbook.md` | Existing article → Hashnode-native workflow |
 | `references/pipeline.md` | Step-by-step execution flow |
 | `references/api-reference.md` | Hashnode and YouMind OpenAPI contract summary |
 | `output/` | Local adapted markdown output |
@@ -111,6 +114,27 @@ node dist/cli.js get-post <post_id>
 node dist/cli.js preview ../output/article.md
 node dist/cli.js search-tags typescript
 ```
+
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` to internalize Hashnode's deep-dive format (40K+ dev blogs, 1M+ monthly readers, 80% male 25–34 cohort, depth over frequency).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Idea, topic, or thesis only | Generate | `references/content-generation-playbook.md` |
+| Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
+| Short piece to expand for Hashnode | Localize (depth) | `content-adaptation-playbook.md` (localize mode) |
+| Old Hashnode post to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
+| Long piece → multi-post series | Condense/split | `content-adaptation-playbook.md` (condense mode) |
+
+### Quality gates (before publish)
+
+1. **Self-critique**: Pass all checklist items in the playbook's Step 6
+2. **Conformance report**: Generate and present to user (Step 7/8)
+3. **Canonical URL**: Set correctly for cross-posts (trailing slash matters)
+4. **User approval**: Do not auto-publish without confirmation
 
 ## Behavior Rules
 

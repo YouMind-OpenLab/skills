@@ -136,7 +136,10 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | Path | Purpose | When to read |
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution | When running the writing pipeline |
-| `references/content-adaptation.md` | Ghost writing rules, structure, tone | Step 4 |
+| `references/platform-dna.md` | Ghost audience, newsletter metrics, format constraints | Before any content work |
+| `references/content-generation-playbook.md` | Idea → Ghost-native draft workflow | When generating new content |
+| `references/content-adaptation-playbook.md` | Existing article → Ghost-native workflow | When adapting/cross-posting content |
+| `references/content-adaptation.md` | Ghost writing rules, structure, tone (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind Ghost OpenAPI endpoint documentation | When calling Ghost through YouMind |
 | `config.yaml` | API credentials (YouMind only) | Step 1 |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
@@ -154,6 +157,29 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`).
 
 The CLI preview command should also default to `output/` unless the user explicitly asks for another path.
+
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` to internalize Ghost's newsletter-first format (53% open rate, 6.3% free→paid conversion, 73% retention with weekly cadence).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Idea, topic, or thesis only | Generate | `references/content-generation-playbook.md` |
+| Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
+| Long article → newsletter version | Condense | `content-adaptation-playbook.md` (condense mode) |
+| Old Ghost post to update | Revive | `content-adaptation-playbook.md` (revive mode) |
+| Section → bookmark card content | Excerpt | `content-adaptation-playbook.md` (excerpt mode) |
+
+### Quality gates (before publish)
+
+1. **Self-critique**: Pass all checklist items in the playbook's Step 6
+2. **Conformance report**: Generate and present to user (Step 7/8)
+3. **Newsletter readiness**: Custom excerpt + email-safe HTML + CTA verified
+4. **User approval**: Do not auto-publish without confirmation
+
+---
 
 ## Pipeline Overview
 

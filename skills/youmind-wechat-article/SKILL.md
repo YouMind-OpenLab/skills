@@ -194,6 +194,9 @@ This skill is a folder. Read files on demand — do NOT load everything upfront.
 
 | Path | Purpose | When to read |
 |------|---------|-------------|
+| `references/platform-dna.md` | 公众号 audience + format constraints (index to core refs) | Before any content work |
+| `references/content-generation-playbook.md` | Idea → 公众号-native draft workflow | When generating new content |
+| `references/content-adaptation-playbook.md` | Existing article → 公众号-native workflow | When adapting/localizing content |
 | `references/pipeline.md` | Full step-by-step execution (Steps 1–8) | When running the writing pipeline |
 | `references/operations.md` | Post-publish commands, client onboarding, themes, first-run setup | When handling operational tasks |
 | `references/writing-guide.md` | Pre-writing framework, depth architecture, de-AI protocol, voice | Step 4 (writing) |
@@ -227,6 +230,29 @@ This skill is a folder. Read files on demand — do NOT load everything upfront.
 - Wrong: any path inside `references/`, `toolkit/`, `clients/`, `scripts/`, or the skill root
 
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-article.md`), and prefer descriptive slugs over timestamps.
+
+---
+
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` (index) which points to the core reference trio: `writing-guide.md`, `style-template.md`, and `wechat-constraints.md`. Internalize 公众号's mobile-first norms (1.4B WeChat MAU, 74% mobile, ≤14 汉字 title, 2–4 句 paragraphs).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Topic, angle, or idea only | Generate | `references/content-generation-playbook.md` |
+| English article → 公众号 中文 | Localize | `references/content-adaptation-playbook.md` (localize mode) |
+| Existing Markdown → 公众号 format | Cross-post | `references/content-adaptation-playbook.md` (cross-post mode) |
+| Long article → 公众号 length | Condense | `content-adaptation-playbook.md` (condense mode) |
+| Old article to republish | Revive | `content-adaptation-playbook.md` (revive mode) |
+
+### Quality gates (before publish)
+
+1. **De-AI pass**: Zero AI-sounding text (run `writing-guide.md` §de-AI protocol)
+2. **Self-critique**: Pass all checklist items in the playbook's Step 6
+3. **Conformance report**: Generate and present to user (Step 7/8)
+4. **Auto-publish to drafts**: Step 7 publishes to WeChat draft box (mandatory)
 
 ---
 

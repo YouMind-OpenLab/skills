@@ -134,6 +134,28 @@ cd toolkit && node dist/cli.js validate
 
 You should see `OK: Connected to WordPress site as <username>`.
 
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` to internalize WordPress + SEO norms (43.4% of web, Yoast/RankMath rubric, E-E-A-T, heading hierarchy, focus keyphrase discipline).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Idea, topic, or thesis only | Generate | `references/content-generation-playbook.md` |
+| Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
+| Old WordPress post to refresh | Revive | `content-adaptation-playbook.md` (revive mode, SEO freshness) |
+| Long piece → supporting posts | Condense/split | `content-adaptation-playbook.md` (condense mode) |
+| Article in another language | Translate | `content-adaptation-playbook.md` (translate mode) |
+
+### Quality gates (before publish)
+
+1. **SEO critique**: Pass the Yoast/RankMath rubric in the playbook's Step 6
+2. **Conformance report**: Generate and present to user (Step 7/8)
+3. **User approval**: Do not auto-publish without confirmation
+
+---
+
 ## Pipeline Overview
 
 Read `references/pipeline.md` for full execution details.
@@ -163,7 +185,10 @@ Every step has a fallback. If a step AND its fallback both fail, skip that step 
 | Path | Purpose | When to read |
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution | When running the writing pipeline |
-| `references/content-adaptation.md` | WordPress-specific writing rules | When adapting content |
+| `references/platform-dna.md` | WordPress audience, SEO rubric, format constraints | Before any content work |
+| `references/content-generation-playbook.md` | Idea → WordPress-native draft workflow | When generating new content |
+| `references/content-adaptation-playbook.md` | Existing article → WordPress-native workflow | When adapting/cross-posting content |
+| `references/content-adaptation.md` | WordPress-specific writing rules (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind /wordpress/* OpenAPI contract | When calling the proxy from the toolkit |
 | `config.yaml` | API credentials (YouMind only) | Step 1 (first-run check) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |

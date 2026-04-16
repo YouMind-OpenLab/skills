@@ -136,7 +136,10 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | Path | Purpose | When to read |
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution | When running the publishing pipeline |
-| `references/content-adaptation.md` | X content formatting rules | When adapting content |
+| `references/platform-dna.md` | X audience, format constraints, engagement data | Before any content work |
+| `references/content-generation-playbook.md` | Idea → X-native draft workflow | When generating new content |
+| `references/content-adaptation-playbook.md` | Existing article → X thread workflow | When adapting/condensing content |
+| `references/content-adaptation.md` | X content formatting rules (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind X OpenAPI endpoint documentation | When calling X through YouMind |
 | `config.yaml` | API credentials (YouMind only) | Step 1 |
 | `output/` | **Local tweet Markdown drafts (git-ignored)** | When writing the tweet/sequence |
@@ -152,6 +155,29 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 - Wrong: any path inside `references/`, `toolkit/`, or the skill root
 
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-thread.md`).
+
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` to internalize X's format constraints, discourse norms, and engagement patterns (557M MAU, thread 2–4% engagement vs single-tweet 0.5–1.5%).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Idea, topic, or talking points only | Generate | `references/content-generation-playbook.md` |
+| Existing article or draft | Adapt (condense) | `references/content-adaptation-playbook.md` |
+| Article in another language | Translate | `content-adaptation-playbook.md` (translate mode) |
+| Old thread to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
+| Section of a longer piece → teaser | Excerpt | `content-adaptation-playbook.md` (excerpt mode) |
+| Short blog post → thread | Cross-post | `content-adaptation-playbook.md` (cross-post mode) |
+
+### Quality gates (before publish)
+
+1. **Self-critique**: Pass all checklist items in the playbook's Step 6
+2. **Conformance report**: Generate and present to user (Step 7/8)
+3. **User approval**: Do not auto-publish without confirmation
+
+---
 
 ## Pipeline Overview
 

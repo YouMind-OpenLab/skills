@@ -136,7 +136,10 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | Path | Purpose | When to read |
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution (Steps 1-7) | When running the writing pipeline |
-| `references/content-adaptation.md` | Dev.to writing rules, structure, tone | Step 4 (content adaptation) |
+| `references/platform-dna.md` | Dev.to audience, format constraints, community data | Before any content work |
+| `references/content-generation-playbook.md` | Idea → Dev.to-native draft workflow | When generating new content |
+| `references/content-adaptation-playbook.md` | Existing article → Dev.to-native workflow | When adapting/cross-posting content |
+| `references/content-adaptation.md` | Dev.to writing rules, structure, tone (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind Dev.to OpenAPI endpoint documentation | When calling Dev.to through YouMind |
 | `config.yaml` | API credentials (YouMind only) | Step 1 (config load) |
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
@@ -152,6 +155,28 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 - Wrong: any path inside `references/`, `toolkit/`, or the skill root
 
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
+
+---
+
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` to internalize Dev.to's format constraints, discourse norms, and community patterns (12.4M monthly visits; backend content growing, beginner content declining).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Idea, topic, or talking points only | Generate | `references/content-generation-playbook.md` |
+| Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
+| Article in another language | Translate | `content-adaptation-playbook.md` (translate mode) |
+| Old Dev.to post to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
+| Long piece to trim | Condense | `content-adaptation-playbook.md` (condense mode) |
+
+### Quality gates (before publish)
+
+1. **Self-critique**: Pass all checklist items in the playbook's Step 6
+2. **Conformance report**: Generate and present to user (Step 7)
+3. **User approval**: Do not auto-publish without confirmation
 
 ---
 

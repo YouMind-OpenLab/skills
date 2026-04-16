@@ -135,7 +135,10 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | Path | Purpose | When to read |
 |------|---------|-------------|
 | `references/pipeline.md` | Full step-by-step execution (Steps 1-7) | When running the writing pipeline |
-| `references/content-adaptation.md` | Qiita writing rules, structure, tone | Step 4 (content adaptation) |
+| `references/platform-dna.md` | Qiita audience, format constraints, community data | Before any content work |
+| `references/content-generation-playbook.md` | Idea → Qiita-native draft workflow | When generating new content |
+| `references/content-adaptation-playbook.md` | Existing article → Qiita-native workflow | When adapting/translating content |
+| `references/content-adaptation.md` | Qiita writing rules, structure, tone (legacy) | Supplementary reference |
 | `references/api-reference.md` | YouMind Qiita OpenAPI endpoint documentation | When calling Qiita through YouMind |
 | `config.yaml` | API credentials (YouMind only) | Step 1 (config load) |
 | `output/` | **Drafts and published articles (git-ignored)** | Step 5 (write/save article) |
@@ -151,6 +154,29 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 - Wrong: any path inside `references/`, `toolkit/`, or the skill root
 
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `hono-zod-api.md`), and prefer descriptive slugs over timestamps.
+
+---
+
+## Content Modes
+
+Before writing any content, read `references/platform-dna.md` to internalize Qiita's platform norms (1.5M members, 50M PV/mo, 丁寧語 register, `:::note` callouts, 宣伝臭い = community rejection).
+
+### Intent routing
+
+| User's input | Operation | Playbook to load |
+|--------------|-----------|-----------------|
+| Idea, topic, or talking points only | Generate | `references/content-generation-playbook.md` |
+| English article → Qiita Japanese | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
+| Old Qiita article to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
+| Long piece to trim | Condense | `content-adaptation-playbook.md` (condense mode) |
+
+### Quality gates (before publish)
+
+1. **Self-critique**: Pass all checklist items in the playbook's Step 6
+2. **Conformance report**: Generate and present to user (Step 7/8)
+3. **Image check**: Zero `cdn.gooo.ai` URLs in final body
+4. **User approval**: Do not auto-publish without confirmation
 
 ---
 
