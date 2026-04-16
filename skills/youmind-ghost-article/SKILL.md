@@ -1,6 +1,6 @@
 ---
 name: youmind-ghost-article
-version: 1.0
+version: 1.0.0
 description: |
   Write and publish Ghost articles with AI — topic research via YouMind knowledge base,
   Ghost-oriented writing, Markdown-to-HTML conversion, feature image upload, and one-click publishing.

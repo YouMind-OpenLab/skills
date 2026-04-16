@@ -1,6 +1,6 @@
 ---
 name: youmind-hashnode-article
-version: 1.0
+version: 1.0.0
 description: |
   Write and publish Hashnode articles through YouMind OpenAPI. Supports draft-first
   publishing, published post listing, draft listing, tag lookup, and clear connector / pricing

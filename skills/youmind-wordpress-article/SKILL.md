@@ -1,6 +1,6 @@
 ---
 name: youmind-wordpress-article
-version: 1.0
+version: 1.0.0
 description: |
   Write and publish WordPress articles end-to-end with AI — topic mining via YouMind knowledge base,
   de-AI voice writing, Markdown-to-HTML conversion, featured image upload, and one-click publishing.
