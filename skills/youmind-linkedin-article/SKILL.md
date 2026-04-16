@@ -141,23 +141,23 @@ After configuration, say:
 | `toolkit/dist/oauth-helper.js` | One-click OAuth: get token & person URN | Setup step 4 |
 | `output/` | **Local post Markdown drafts (git-ignored)** | When writing the post |
 
-## Draft Location Rule (MANDATORY)
+## Draft Location Rule
 
-**All local post Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+**Canonical:** write local post Markdown files to `~/.youmind/articles/linkedin/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
 
-- Correct: `skills/youmind-linkedin-article/output/my-post.md`
-- Wrong: `skills/youmind-linkedin-article/my-post.md` (pollutes skill root)
-- Wrong: any new top-level `drafts/` directory (not git-ignored)
-- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+**Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-linkedin-article/output/<slug>.md`.
 
-The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
+- Correct: `~/.youmind/articles/linkedin/my-post.md`
+- Correct (legacy): `skills/youmind-linkedin-article/output/my-post.md`
+- Wrong: skill root directly, `references/`, `toolkit/`, or an ad-hoc `drafts/` directory
 
+Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmind/articles/linkedin`). Kebab-case filenames (`my-post.md`), descriptive slugs over timestamps.
 ## Dispatch Integration (Optional)
 
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a LinkedIn post about X"). Works with zero other YouMind skills installed.
-- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context (first-2-lines hook and no-body-links discipline stay native to this skill). Without such a brief, the skill runs its own pipeline normally.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares 3000-char limit, hashtag caps, and body-link ban for dispatch routing. Deleting it reverts to defaults; it never breaks this skill.
 - **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).

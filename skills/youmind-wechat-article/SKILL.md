@@ -114,9 +114,14 @@ Read files on demand — do NOT load everything upfront. Five always-relevant en
 | `references/writing-guide.md` | Step 4 (writing + de-AI) |
 | `references/skill-directory.md` | Full file inventory (Tier 2/3 + clients + toolkit) |
 
-## Draft Location Rule (MANDATORY)
+## Draft Location Rule
 
-**All local article Markdown files go in `output/` — nowhere else.** Not the skill root, not `drafts/`, not inside `references/` / `toolkit/` / `clients/` / `scripts/`. `output/` is `.gitignore`d. Create with `mkdir -p output` if missing. Kebab-case filenames (`my-article.md`), descriptive slugs over timestamps. (Local file ≠ WeChat draft box; the draft box is a server-side publish target, not a path.)
+**Canonical:** write local article Markdown files to `~/.youmind/articles/wechat/<client>/<slug>.md` (multi-client aware — see `/shared/YOUMIND_HOME.md`).
+**Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-wechat-article/output/<slug>.md`.
+
+Never the skill root, `drafts/`, `references/`, `toolkit/`, `clients/` (config only), or `scripts/`. Both locations are git-ignored. Kebab-case filenames (`my-article.md`), descriptive slugs. Client configs live at `~/.youmind/clients/<client>/{style.yaml,history.yaml,playbook.md}` — the legacy `clients/demo/` under this skill is a tracked template only.
+
+Local file ≠ WeChat draft box; the draft box is a server-side publish target, not a path.
 
 ---
 
@@ -124,7 +129,7 @@ Read files on demand — do NOT load everything upfront. Five always-relevant en
 
 **Self-contained standalone** ("帮我写一篇公众号文章" — full pipeline, zero other skills required). The `youmind-article-dispatch` hub is an optional companion — never a dependency.
 
-- If dispatch is installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` for voice preferences (no-op if file absent).
+- This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Independent of whether dispatch is installed.
 - If dispatch invokes this skill with a brief containing `resolved_author`, use it as extra context. De-AI protocol (`writing-guide.md`) is always mandatory regardless of invocation path.
 - Opt-in manifest: `dispatch-capabilities.yaml`. Optional interop protocol: [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
 

@@ -139,7 +139,7 @@ You should see `OK: Connected to WordPress site as <username>`.
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a WordPress article about X"). Works with zero other YouMind skills installed.
-- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. WordPress's SEO discipline — focus keyphrase, meta description, internal links, E-E-A-T — stays native to this skill regardless of invocation path.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` includes the Yoast/RankMath SEO requirements for dispatch routing. Deleting it reverts to defaults; it never breaks this skill.
 - **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
@@ -206,17 +206,17 @@ Every step has a fallback. If a step AND its fallback both fail, skip that step 
 | `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
 | `toolkit/dist/*.js` | Executable scripts | Various steps |
 
-## Draft Location Rule (MANDATORY)
+## Draft Location Rule
 
-**All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+**Canonical:** write local article Markdown files to `~/.youmind/articles/wordpress/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
 
-- Correct: `skills/youmind-wordpress-article/output/my-article.md`
-- Wrong: `skills/youmind-wordpress-article/my-article.md` (pollutes skill root)
-- Wrong: any new top-level `drafts/` directory (not git-ignored)
-- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+**Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-wordpress-article/output/<slug>.md`.
 
-The `output/` directory is listed in `.gitignore` (as `output/*.md` / `output/*.html`), so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
+- Correct: `~/.youmind/articles/wordpress/my-article.md`
+- Correct (legacy): `skills/youmind-wordpress-article/output/my-article.md`
+- Wrong: skill root directly, `references/`, `toolkit/`, or an ad-hoc `drafts/` directory
 
+Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmind/articles/wordpress`). Kebab-case filenames (`my-article.md`), descriptive slugs over timestamps.
 ## References
 
 - YouMind API: see `references/api-reference.md`

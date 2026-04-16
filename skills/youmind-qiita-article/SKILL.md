@@ -144,17 +144,17 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | `output/` | **Drafts and published articles (git-ignored)** | Step 5 (write/save article) |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
-## Draft Location Rule (MANDATORY)
+## Draft Location Rule
 
-**All article drafts MUST be written to the `output/` directory of this skill, and nowhere else.**
+**Canonical:** write local article Markdown files to `~/.youmind/articles/qiita/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
 
-- Correct: `skills/youmind-qiita-article/output/my-article.md`
-- Wrong: `skills/youmind-qiita-article/my-article.md` (pollutes skill root)
-- Wrong: `skills/youmind-qiita-article/drafts/my-article.md` (not git-ignored)
-- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+**Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-qiita-article/output/<slug>.md`.
 
-The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `hono-zod-api.md`), and prefer descriptive slugs over timestamps.
+- Correct: `~/.youmind/articles/qiita/my-article.md`
+- Correct (legacy): `skills/youmind-qiita-article/output/my-article.md`
+- Wrong: skill root directly, `references/`, `toolkit/`, or an ad-hoc `drafts/` directory
 
+Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmind/articles/qiita`). Kebab-case filenames (`my-article.md`), descriptive slugs over timestamps.
 ---
 
 ## Dispatch Integration (Optional)
@@ -162,7 +162,7 @@ The `output/` directory is listed in `.gitignore`, so drafts stay out of version
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Qiita に記事を投稿する" / "Write a Qiita article about X"). Works with zero other YouMind skills installed.
-- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. Qiita's 丁寧語 register and CDN hotlink handling stay native to this skill regardless of invocation path.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares the `cdn_hotlink` flag so dispatch can warn about cdn.gooo.ai image URLs. Deleting the file reverts to defaults; it never breaks this skill.
 - **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).

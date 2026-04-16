@@ -145,23 +145,23 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 | `output/` | **Local tweet Markdown drafts (git-ignored)** | When writing the tweet/sequence |
 | `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
 
-## Draft Location Rule (MANDATORY)
+## Draft Location Rule
 
-**All local tweet Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.**
+**Canonical:** write local tweet Markdown files to `~/.youmind/articles/x/<slug>.md`. This shared home directory is available to all YouMind skills — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md).
 
-- Correct: `skills/youmind-x-article/output/my-thread.md`
-- Wrong: `skills/youmind-x-article/my-thread.md` (pollutes skill root)
-- Wrong: any new top-level `drafts/` directory
-- Wrong: any path inside `references/`, `toolkit/`, or the skill root
+**Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-x-article/output/<slug>.md`.
 
-The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-thread.md`).
+- Correct: `~/.youmind/articles/x/my-thread.md`
+- Correct (legacy): `skills/youmind-x-article/output/my-thread.md`
+- Wrong: skill root directly, `references/`, `toolkit/`, or an ad-hoc `drafts/` directory
 
+Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmind/articles/x`). Kebab-case filenames (`my-thread.md`), descriptive slugs over timestamps.
 ## Dispatch Integration (Optional)
 
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a tweet about X" / "Write a thread about Y"). Works with zero other YouMind skills installed.
-- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` for voice preferences (preferred hook style, max thread length). Uninstalling dispatch has no effect.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences (hook style, max thread length). Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. X's 280-char discipline and thread decomposition stay native to this skill regardless of invocation path — particularly when adapting a long-form source.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares thread limits and hook-style defaults. Deleting it reverts to defaults; it never breaks this skill.
 - **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).

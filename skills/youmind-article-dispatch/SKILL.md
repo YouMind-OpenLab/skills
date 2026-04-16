@@ -179,7 +179,7 @@ Each `youmind-{platform}-article` skill is **independently installed, independen
 
 - **Discovery, not coupling.** Dispatch scans for installed `youmind-*-article` skills at runtime. It optionally reads a small `dispatch-capabilities.yaml` at each skill's root to learn what operations that skill supports (generate, adapt, condense, translate, etc.) and its hard limits. If a platform skill does not ship this file, dispatch falls back to sensible defaults and still invokes it normally.
 - **Brief is an optional extra, not a requirement.** When dispatch invokes a platform skill, it passes a content brief (topic, angle, keywords, optional `resolved_author` block). Platform skills that understand these fields use them as richer context; skills that don't simply ignore the extras and work as usual.
-- **Author profile lives in dispatch.** When a platform skill is invoked standalone ("Write a Dev.to article about X"), it MAY optionally read `../youmind-article-dispatch/author-profile.yaml` for voice preferences if the dispatch hub happens to be installed. This is a read-only lookup — uninstalling dispatch does not break any platform skill.
+- **Author profile lives in the user's home directory, not in this skill.** Both this hub and platform skills read `~/.youmind/author-profile.yaml` — the canonical shared location defined in [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md). Uninstalling dispatch does not remove the profile; platform skills continue to work standalone with full DNA support.
 - **Results flow back as a standardized shape** (status, URL, title, conformance_report) so dispatch can aggregate multi-platform runs. Each platform skill publishes this same result shape regardless of whether dispatch is present — it's a clean output API, not a contract with dispatch.
 
 ### Zero coupling obligations for platform skills
@@ -224,7 +224,7 @@ The optional integration protocol is documented at [`/shared/DISPATCH_CONTRACT.m
 ### Step 2: Load Author Profile + Generate Content Brief
 
 **2a — Load author profile** (if exists):
-If `author-profile.yaml` exists in this skill's directory, load it. This file captures the user's cross-platform writing DNA — voice, audience, content preferences, and per-platform overrides. See `references/author-profile-spec.md` for format.
+Read `~/.youmind/author-profile.yaml` (canonical shared location — see `/shared/YOUMIND_HOME.md`). This file captures the user's cross-platform writing DNA — voice, audience, content preferences, and per-platform overrides. See `references/author-profile-spec.md` for format. Fallback: if the `~/.youmind/` path is missing but `skills/youmind-article-dispatch/author-profile.yaml` exists (legacy), offer to migrate.
 
 If no profile exists → skip this step; dispatch works without it (just less personalized). After the first successful dispatch, offer to help the user build one.
 
@@ -303,6 +303,7 @@ Present a summary table to the user:
 | `references/author-profile-spec.md` | Author profile format, cold-start guide, evolution strategy |
 | `references/content-adaptation-matrix.md` | How author DNA × platform DNA merge (priority rules, merge algorithm) |
 | `references/profile-learning.md` | How author DNA accumulates from usage (5 learning sources, diff analysis, cadence) |
-| `/shared/DISPATCH_CONTRACT.md` | **Formal contract** between this hub and all platform skills (v1.0) |
+| [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) | **User-home directory convention** (`~/.youmind/` — shared across ALL YouMind skills) |
+| [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) | **Optional** interop protocol between this hub and platform skills (v1.0) |
 | `skills/youmind-{platform}-article/dispatch-capabilities.yaml` | Per-platform capability manifest (dispatch reads dynamically) |
 | `author-profile.example.yaml` | Example author profile — copy to `author-profile.yaml` and customize |

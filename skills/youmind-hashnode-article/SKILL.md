@@ -120,7 +120,7 @@ node dist/cli.js search-tags typescript
 This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
 
 - **Primary mode — standalone:** Invoke directly ("Write a Hashnode article about X"). Works with zero other YouMind skills installed.
-- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `/shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Works whether or not dispatch is installed.
 - **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. Without such a brief, the skill runs its own pipeline normally. Hashnode's depth-first DNA stays native to this skill.
 - **Capability manifest (opt-in):** `dispatch-capabilities.yaml` is metadata that lets dispatch route intelligently. Deleting it reverts to defaults; it never breaks this skill.
 - **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).

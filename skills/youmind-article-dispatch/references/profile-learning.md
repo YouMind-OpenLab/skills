@@ -133,7 +133,7 @@ Parse the instruction, map to profile fields, update `author-profile.yaml`. Conf
 
 ## Learning Log
 
-All learning signals are recorded in `learning-log.yaml` (append-only) for transparency and rollback.
+All learning signals are recorded in `~/.youmind/learning-log.yaml` (append-only) for transparency and rollback. This is a shared location — see [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md). Dispatch is the primary writer; other skills may append observations but dispatch owns interpretation.
 
 ```yaml
 # learning-log.yaml — append-only record of profile learning signals

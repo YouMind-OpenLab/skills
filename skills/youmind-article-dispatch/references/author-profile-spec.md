@@ -14,11 +14,13 @@ Platform DNA controls what the PLATFORM rewards. Author DNA controls what the AU
 
 ## Profile Location
 
-```
-skills/youmind-article-dispatch/author-profile.yaml
-```
+**Canonical:** `~/.youmind/author-profile.yaml`
 
-Copy from `author-profile.example.yaml` and customize. The dispatch skill reads this at Step 2 (Content Brief Generation) before dispatching to platform skills.
+This is a shared home directory that any YouMind skill can read, not a dispatch-owned file. See [`/shared/YOUMIND_HOME.md`](/shared/YOUMIND_HOME.md) for the full convention.
+
+**Why not inside the dispatch skill?** Because Author DNA is user-level, not skill-level. A user who installs only one platform skill (without dispatch) still has a writing voice — their profile must still be accessible. `~/.youmind/` ensures the profile survives regardless of which YouMind skills are installed.
+
+Copy from `author-profile.example.yaml` (dispatch ships a template) and customize. Dispatch reads/writes the canonical `~/.youmind/` location at Step 2 (Content Brief Generation) before dispatching to platform skills. Platform skills also read it directly at their own Step 3 (Apply platform DNA).
 
 ## Profile Dimensions
 
