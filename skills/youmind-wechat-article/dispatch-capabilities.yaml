@@ -1,0 +1,55 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: /shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "wechat"
+skill_name: "youmind-wechat-article"
+display_name: "WeChat (公众号)"
+
+tagline: "Chinese mobile-first rich-text articles, 公众号 draft box"
+audience: "Chinese-reading WeChat users, Official Account followers"
+
+best_for:
+  - "long-form styled articles"
+  - "brand content"
+  - "knowledge sharing"
+  - "AI-generated cover images"
+  - "themed formatting"
+
+supported_operations:
+  - generate
+  - adapt
+  - localize                              # primary use case (English → Chinese)
+  - transcreate
+  - condense
+  - revive
+
+hard_limits:
+  title_hard_chars: 64
+  title_mobile_optimal_chars: 14          # 汉字 count
+  digest_utf8_bytes: 120                  # ≈54 汉字
+  paragraph_sentence_max: 4
+  typical_word_count: "1500-2500"         # 字
+  cover_image_required: true
+  external_links_in_body: false           # only via 阅读原文
+
+defaults:
+  publish_mode: "draft"                   # to 公众号 draft box (mandatory)
+  language: "zh"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  de_ai_required: "Every WeChat article MUST pass the de-AI protocol in references/writing-guide.md. Zero AI-sounding text."
+  rich_reference_set: "This skill has 20+ existing references (writing-guide.md, style-template.md, wechat-constraints.md, etc.). Dispatch should NOT duplicate; platform-dna.md is an index to those."
+  multi_client: "Supports per-client style via clients/{client}/style.yaml"
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

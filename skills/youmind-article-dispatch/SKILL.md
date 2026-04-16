@@ -171,6 +171,27 @@ User wants maximum reach → dispatch to all installed platform skills.
 "全平台发布：AI 编程的未来"
 ```
 
+## Platform Skills Are Independent
+
+Each `youmind-{platform}-article` skill is **independently installed, independently published, and fully self-contained**. They work without this dispatch hub. Dispatch is an **optional orchestration layer** — not a dependency, not a framework that platform skills must fit into.
+
+### How dispatch connects to platform skills (when both are installed)
+
+- **Discovery, not coupling.** Dispatch scans for installed `youmind-*-article` skills at runtime. It optionally reads a small `dispatch-capabilities.yaml` at each skill's root to learn what operations that skill supports (generate, adapt, condense, translate, etc.) and its hard limits. If a platform skill does not ship this file, dispatch falls back to sensible defaults and still invokes it normally.
+- **Brief is an optional extra, not a requirement.** When dispatch invokes a platform skill, it passes a content brief (topic, angle, keywords, optional `resolved_author` block). Platform skills that understand these fields use them as richer context; skills that don't simply ignore the extras and work as usual.
+- **Author profile lives in dispatch.** When a platform skill is invoked standalone ("Write a Dev.to article about X"), it MAY optionally read `../youmind-article-dispatch/author-profile.yaml` for voice preferences if the dispatch hub happens to be installed. This is a read-only lookup — uninstalling dispatch does not break any platform skill.
+- **Results flow back as a standardized shape** (status, URL, title, conformance_report) so dispatch can aggregate multi-platform runs. Each platform skill publishes this same result shape regardless of whether dispatch is present — it's a clean output API, not a contract with dispatch.
+
+### Zero coupling obligations for platform skills
+
+- Platform skills do NOT import from dispatch.
+- Platform skills do NOT require dispatch to be installed.
+- Platform skills do NOT break if dispatch is uninstalled.
+- Platform skills do NOT need to be updated when dispatch changes.
+- `dispatch-capabilities.yaml` is **opt-in metadata** that lets dispatch route more intelligently. Removing it reverts to defaults; it never breaks the platform skill.
+
+The optional integration protocol is documented at [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0). Platform skills that want richer dispatch integration may follow it; those that don't, don't.
+
 ## Platform Registry
 
 | Platform | Skill | Audience | Best For |
@@ -282,4 +303,6 @@ Present a summary table to the user:
 | `references/author-profile-spec.md` | Author profile format, cold-start guide, evolution strategy |
 | `references/content-adaptation-matrix.md` | How author DNA × platform DNA merge (priority rules, merge algorithm) |
 | `references/profile-learning.md` | How author DNA accumulates from usage (5 learning sources, diff analysis, cadence) |
+| `/shared/DISPATCH_CONTRACT.md` | **Formal contract** between this hub and all platform skills (v1.0) |
+| `skills/youmind-{platform}-article/dispatch-capabilities.yaml` | Per-platform capability manifest (dispatch reads dynamically) |
 | `author-profile.example.yaml` | Example author profile — copy to `author-profile.yaml` and customize |

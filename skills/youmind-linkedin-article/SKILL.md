@@ -152,6 +152,18 @@ After configuration, say:
 
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-post.md`), and prefer descriptive slugs over timestamps.
 
+## Dispatch Integration (Optional)
+
+This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
+
+- **Primary mode — standalone:** Invoke directly ("Write a LinkedIn post about X"). Works with zero other YouMind skills installed.
+- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context (first-2-lines hook and no-body-links discipline stay native to this skill). Without such a brief, the skill runs its own pipeline normally.
+- **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares 3000-char limit, hashtag caps, and body-link ban for dispatch routing. Deleting it reverts to defaults; it never breaks this skill.
+- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+
+---
+
 ## Pipeline Overview
 
 | Step | Action |

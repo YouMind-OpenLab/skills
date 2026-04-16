@@ -158,6 +158,18 @@ The `output/` directory is listed in `.gitignore`, so drafts stay out of version
 
 ---
 
+## Dispatch Integration (Optional)
+
+This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
+
+- **Primary mode — standalone:** Invoke directly ("Write a Dev.to article about X"). Works with zero other YouMind skills installed.
+- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect — the skill falls back to its defaults.
+- **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. Without such a brief, the skill runs its own pipeline normally.
+- **Capability manifest (opt-in):** `dispatch-capabilities.yaml` is metadata that lets dispatch route intelligently. Deleting it reverts to defaults; it never breaks this skill.
+- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+
+---
+
 ## Content Modes
 
 Before writing any content, read `references/platform-dna.md` to internalize Dev.to's format constraints, discourse norms, and community patterns (12.4M monthly visits; backend content growing, beginner content declining).

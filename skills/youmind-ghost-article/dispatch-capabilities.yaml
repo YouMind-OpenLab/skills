@@ -1,0 +1,49 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: /shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "ghost"
+skill_name: "youmind-ghost-article"
+display_name: "Ghost"
+
+tagline: "Editorial newsletters, member-gated content, email-first"
+audience: "Newsletter subscribers, premium publication readers, editorial audiences"
+
+best_for:
+  - "editorial newsletters"
+  - "member-gated premium content"
+  - "curated weekly briefings"
+  - "thought leadership with paid tier"
+  - "journalism-style reporting"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - translate
+  - localize
+  - revive
+  - excerpt
+
+hard_limits:
+  title_soft_ceiling_chars: 60           # doubles as email subject
+  excerpt_chars: "150-300"
+  recommended_feature_image: "1200x630"
+  typical_word_count: "800-2500"
+  h1_in_body_allowed: false              # Ghost uses title field
+
+defaults:
+  publish_mode: "draft"
+  visibility: "public"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

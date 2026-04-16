@@ -1,0 +1,45 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: /shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "linkedin"
+skill_name: "youmind-linkedin-article"
+display_name: "LinkedIn"
+
+tagline: "Professional thought leadership, B2B, career-oriented"
+audience: "Professionals, B2B decision-makers, career-focused readers"
+
+best_for:
+  - "industry insights"
+  - "career advice"
+  - "company updates"
+  - "professional storytelling"
+  - "thought leadership posts"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - translate
+  - localize
+  - revive
+
+hard_limits:
+  max_post_chars: 3000
+  hook_visible_lines: 2                  # before "see more" fold
+  max_hashtags: 5
+  external_links_in_body: false          # kills algorithm reach
+
+defaults:
+  publish_mode: "draft"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+references:
+  platform_dna: null                     # legacy skill — may not have platform-dna.md yet
+  content_adaptation: "references/content-adaptation.md"

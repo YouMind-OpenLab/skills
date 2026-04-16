@@ -158,6 +158,18 @@ The `output/` directory is listed in `.gitignore`, so drafts stay out of version
 
 The CLI preview command should also default to `output/` unless the user explicitly asks for another path.
 
+## Dispatch Integration (Optional)
+
+This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
+
+- **Primary mode — standalone:** Invoke directly ("Write a Ghost article about X"). Works with zero other YouMind skills installed.
+- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context (custom excerpt + email-safe HTML discipline stay native to this skill). Without such a brief, the skill runs its own pipeline normally.
+- **Capability manifest (opt-in):** `dispatch-capabilities.yaml` is metadata that lets dispatch route intelligently. Deleting it reverts to defaults; it never breaks this skill.
+- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+
+---
+
 ## Content Modes
 
 Before writing any content, read `references/platform-dna.md` to internalize Ghost's newsletter-first format (53% open rate, 6.3% free→paid conversion, 73% retention with weekly cadence).

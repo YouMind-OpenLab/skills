@@ -134,6 +134,18 @@ cd toolkit && node dist/cli.js validate
 
 You should see `OK: Connected to WordPress site as <username>`.
 
+## Dispatch Integration (Optional)
+
+This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
+
+- **Primary mode — standalone:** Invoke directly ("Write a WordPress article about X"). Works with zero other YouMind skills installed.
+- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` to pick up cross-platform voice preferences. Uninstalling dispatch has no effect.
+- **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. WordPress's SEO discipline — focus keyphrase, meta description, internal links, E-E-A-T — stays native to this skill regardless of invocation path.
+- **Capability manifest (opt-in):** `dispatch-capabilities.yaml` includes the Yoast/RankMath SEO requirements for dispatch routing. Deleting it reverts to defaults; it never breaks this skill.
+- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+
+---
+
 ## Content Modes
 
 Before writing any content, read `references/platform-dna.md` to internalize WordPress + SEO norms (43.4% of web, Yoast/RankMath rubric, E-E-A-T, heading hierarchy, focus keyphrase discipline).

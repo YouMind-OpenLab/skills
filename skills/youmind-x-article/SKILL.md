@@ -156,6 +156,18 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 
 The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-thread.md`).
 
+## Dispatch Integration (Optional)
+
+This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
+
+- **Primary mode — standalone:** Invoke directly ("Write a tweet about X" / "Write a thread about Y"). Works with zero other YouMind skills installed.
+- **Optional author voice lookup:** If the dispatch hub happens to be installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` for voice preferences (preferred hook style, max thread length). Uninstalling dispatch has no effect.
+- **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. X's 280-char discipline and thread decomposition stay native to this skill regardless of invocation path — particularly when adapting a long-form source.
+- **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares thread limits and hook-style defaults. Deleting it reverts to defaults; it never breaks this skill.
+- **Optional interop protocol:** [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
+
+---
+
 ## Content Modes
 
 Before writing any content, read `references/platform-dna.md` to internalize X's format constraints, discourse norms, and engagement patterns (557M MAU, thread 2–4% engagement vs single-tweet 0.5–1.5%).

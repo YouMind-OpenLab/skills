@@ -1,0 +1,51 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: /shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "qiita"
+skill_name: "youmind-qiita-article"
+display_name: "Qiita"
+
+tagline: "Japanese developer knowledge sharing, :::note callouts, 丁寧語"
+audience: "Japanese-reading developers, engineering teams, tech learners"
+
+best_for:
+  - "technical tutorials"
+  - "development notes"
+  - "tool reviews with environment info"
+  - "learning memos"
+  - "team knowledge sharing"
+
+supported_operations:
+  - generate
+  - adapt
+  - translate                             # primary use case (English → Qiita Japanese)
+  - transcreate
+  - condense
+  - revive
+  - excerpt
+
+hard_limits:
+  max_tags: 5
+  tags_case_sensitive: true               # Python ≠ python
+  primary_language: "ja"
+  image_hosting: "qiita-native-required"  # cdn.gooo.ai blocked by Referer check
+
+defaults:
+  publish_mode: "private"                 # "limited sharing" mode for safety
+  register: "丁寧語"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  cdn_hotlink: "Images from cdn.gooo.ai must be re-hosted via Qiita image store before publishing. See references/content-adaptation-playbook.md Step 4."
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"
