@@ -1,14 +1,8 @@
 /**
- * AI image generation — YouMind-only routing + Nano Banana Pro library search + CDN fallback covers.
+ * AI image generation via YouMind chat API (Nano Banana Pro).
  *
- * This file is NOT a mock. It does real work today: image generation is
- * routed exclusively through YouMind's chat API (`youmind-api.ts` →
- * `chatGenerateImage`), which uses the user's `youmind.api_key` server-side.
- * Direct provider keys (Gemini / OpenAI / Doubao) have been removed —
- * YouMind is the single entry point for AI image generation from this skill.
- *
- * Fallback chain: YouMind chat → Nano Banana Pro library match → CDN
- * predefined covers → prompt-only output.
+ * Fallback chain: YouMind chat → Nano Banana Pro library match →
+ * CDN predefined covers → prompt-only output.
  *
  * Usage:
  *   npx tsx src/image-gen.ts --prompt "..." --output cover.jpg --size cover
@@ -112,7 +106,7 @@ async function httpRetry(
 }
 
 // ---------------------------------------------------------------------------
-// Providers — YouMind only. Direct Gemini/OpenAI/Doubao paths removed.
+// Image generation
 // ---------------------------------------------------------------------------
 
 type GenerateFn = (prompt: string, apiKey: string, sizeOrRatio: string, model?: string, baseUrl?: string) => Promise<Buffer>;

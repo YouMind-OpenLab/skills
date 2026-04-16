@@ -141,6 +141,41 @@ clients/demo/
 
 ---
 
+## 项目结构
+
+### Toolkit scripts (TypeScript, 在 `toolkit/src/` 下)
+
+| 文件 | 作用 | 对应 npm script |
+|------|------|---------------|
+| `cli.ts` | 主 CLI 入口（preview / publish / validate / list / themes） | `npm run preview` / `publish` 等 |
+| `image-gen.ts` | YouMind 图像生成 + Nano Banana Pro 库 + CDN 降级 | `npm run image-gen` |
+| `youmind-api.ts` | YouMind OpenAPI 客户端（知识库、搜索、chat、公众号代理） | `npm run youmind-api` |
+| `fetch-stats.ts` | 拉公众号历史文章互动数据做分析 | `npm run fetch-stats` |
+| `build-playbook.ts` | 喂历史语料生成客户专属写作手册 | `npm run build-playbook` |
+| `learn-edits.ts` | 从人工改稿差异中提取风格经验 | `npm run learn-edits` |
+
+### Scripts (Python, 在 `scripts/` 下)
+
+| 文件 | 作用 |
+|------|------|
+| `scripts/fetch_hotspots.py` | 抓微博 / 知乎等热点榜单 |
+| `scripts/seo_keywords.py` | 关键词评分 + 去重 |
+| `scripts/validate_skill.py` | 结构校验（`npm run validate-skill` 调用） |
+
+### Agent config
+
+`agents/openai.yaml` — OpenAI / Codex agent 的 skill 接入清单。
+
+### Client templates
+
+`clients/demo/` 是客户配置模板（`style.yaml` + `history.yaml`）。复制到 `clients/{your-client}/` 并改写即可新建一个客户。
+
+### 验证
+
+跑 `npm run validate-skill` 检查目录结构、必需文件、必需 headings 是否完整。
+
+---
+
 ## 许可证
 
 MIT

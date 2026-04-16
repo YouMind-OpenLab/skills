@@ -1,0 +1,72 @@
+# Demo client — template style config
+#
+# Copy this directory (clients/demo/) to clients/{your-client}/ and customize.
+# The youmind-wechat-article skill reads this file at pipeline Step 1 to
+# determine brand voice, topic preferences, and blacklist.
+
+# Client identity
+client:
+  name: "Demo Client"
+  account: "demo_wechat_oa"          # WeChat Official Account handle (display only; real credentials live in YouMind connector)
+  author_display_name: "Demo Editor"  # byline that appears in published articles
+
+# Brand voice — informs the writing-guide.md register selection
+voice:
+  register: "conversational-authoritative"  # conversational | formal | editorial
+  perspective: "first-person-team"           # first-person | third-person | team-voice
+  humor_level: "light"                       # none | light | moderate
+  signature_patterns:
+    - "开头用痛点/反差/故事钩子，不要'在今天这个X时代'开场"
+    - "每段 2-4 句，移动端滚动友好"
+    - "结尾要有引导关注的 CTA"
+  anti_patterns:
+    - "不用'革命性、颠覆性、突破性'等营销词"
+    - "不写'AI 味'的总分总结构"
+    - "不搞无根据的排比句"
+
+# Target audience
+audience:
+  primary: "技术与内容行业的从业者"
+  secondary: "对 AI 与生产力感兴趣的泛科技读者"
+  assumed_knowledge:
+    - "了解 ChatGPT / Claude 等主流 LLM"
+    - "用过至少一款 AI 工具"
+
+# Topic preferences
+topics:
+  preferred:
+    - "AI 工具实战"
+    - "生产力方法论"
+    - "技术趋势深度分析"
+  avoid:
+    - "泛娱乐八卦"
+    - "纯情感鸡汤"
+
+# Content guardrails — checked before publishing
+blacklist:
+  words:
+    - "革命性"
+    - "颠覆性"
+    - "赋能"
+    - "抓手"
+    - "打通"
+    - "拉齐"
+  topics:
+    - "政治敏感话题"
+    - "股票投资建议"
+
+# Default theme (override with --theme flag)
+theme:
+  name: "simple"                 # simple | center | decoration | prominent
+  color: "#3498db"               # any HEX color
+
+# Cover image preferences
+cover:
+  style_hint: "minimalist tech abstract, blue-dominant"
+  mood: "professional"           # professional | warm | bold | quiet
+
+# Word count target (platform DNA constraint: 1500-2500 字)
+length:
+  target: 2000                   # 字 count
+  min: 1500
+  max: 2500

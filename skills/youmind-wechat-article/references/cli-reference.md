@@ -50,10 +50,10 @@ node dist/cli.js colors
 ## Image Generation
 
 ```bash
-# AI-generated image
+# AI-generated image (YouMind-only — uses youmind.api_key via chatGenerateImage)
 node dist/image-gen.js --prompt "{prompt}" \
   --output {output_path} --size {cover|article} \
-  [--color "{hex}"] [--mood "{mood}"] [--provider {youmind|gemini|openai|doubao}]
+  [--color "{hex}"] [--mood "{mood}"]
 
 # Search Nano Banana Pro library
 node dist/image-gen.js --search "{keywords}" --output {output_path}
@@ -62,7 +62,9 @@ node dist/image-gen.js --search "{keywords}" --output {output_path}
 node dist/image-gen.js --fallback-cover --color "{hex}" --output {output_path}
 ```
 
-Three-level fallback chain: API generation → Nano Banana library match → predefined covers from remote CDN → prompt-only output.
+Image generation uses YouMind's chat API (Nano Banana Pro) via `youmind.api_key`.
+
+Four-level fallback chain: YouMind generation → Nano Banana library match → predefined covers from remote CDN → prompt-only output.
 
 ---
 

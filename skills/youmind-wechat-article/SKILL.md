@@ -2,40 +2,23 @@
 name: youmind-wechat-article
 version: 1.0.1
 description: |
-  Write and publish WeChat Official Account articles end-to-end with AI — trending topic mining,
-  de-AI voice writing, beautiful theme formatting, cover image generation, and one-click draft box publishing.
-  Integrates YouMind knowledge base for source material and supports multiple image AI providers
-  (Nano Banana Pro, Gemini Imagen, GPT Image, Seedream).
-  Use when user wants to "写公众号文章", "微信推文", "发布到草稿箱", "微信排版",
-  "write WeChat article", "publish to WeChat drafts", "format for WeChat".
-  Do NOT trigger for: generic blog posts, emails/newsletters, PPT, short video scripts,
-  or non-WeChat SEO/content work.
+  Write and publish WeChat Official Account articles end-to-end with AI — trending topic mining, de-AI voice
+  writing, themed formatting, AI cover via YouMind (Nano Banana Pro), one-click draft box publishing.
+  Use when user says "写公众号文章" / "微信推文" / "发布到草稿箱" / "WeChat publish".
+  Do NOT trigger for: generic blogs, newsletters, PPT, short-video scripts, non-WeChat SEO work.
 triggers:
   - "公众号"
   - "微信公众号"
-  - "微信文章"
-  - "微信公众号文章"
-  - "推文"
+  - "写公众号"
+  - "微信推文"
   - "草稿箱"
   - "微信排版"
-  - "公众号排版"
-  - "公众号写作"
   - "选题"
   - "封面图"
   - "配图"
-  - "公众号配图"
-  - "文章复盘"
-  - "写公众号"
   - "WeChat article"
-  - "wechat article"
-  - "write WeChat"
-  - "WeChat format"
   - "WeChat publish"
   - "publish to WeChat"
-  - "WeChat drafts"
-  - "给公众号写文章"
-  - "发布到微信草稿箱"
-  - "公众号样式"
 platforms:
   - openclaw
   - claude-code
@@ -70,189 +53,92 @@ Write professional WeChat Official Account articles with AI that doesn't sound l
 
 ## Onboarding
 
-**⚠️ MANDATORY: When the user has just installed this skill, present this message IMMEDIATELY. Do NOT ask "do you want to know what this does?" — just show it. Translate to the user's language:**
+**⚠️ MANDATORY: When the user just installed this skill, show this message IMMEDIATELY. Translate to the user's language:**
 
 > **✅ AI WeChat Article Writer installed!**
 >
-> Tell me your topic and I'll write and publish a WeChat article for you.
+> Tell me a topic — I'll plan, write, format, and publish to your WeChat draft box.
 >
 > **Try it now:** "帮我写一篇关于 AI 编程的公众号文章"
 >
-> **What it does:**
-> - Plan topics from trending hotspots and SEO keywords
-> - Write professional articles with de-AI voice
-> - Format with beautiful WeChat-optimized themes
-> - Generate cover images with AI (4 providers supported)
-> - Publish directly to your WeChat draft box
+> **What it does:** trending-topic mining → de-AI writing → themed formatting → AI cover → one-click draft publish.
 >
 > **Setup (one-time):**
-> 1. Install & configure: `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt && cp config.example.yaml config.yaml`
-> 2. Get [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) → fill `youmind.api_key` in `config.yaml`
-> 3. Bind your WeChat Official Account in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article) — paste your AppID, AppSecret, and (optionally) author byline. YouMind stores them encrypted and proxies all WeChat calls server-side. The skill never sees your secrets, and there is **no IP whitelist** to manage.
+> 1. `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt && cp config.example.yaml config.yaml`
+> 2. Get a [YouMind API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) → fill `youmind.api_key` in `config.yaml`
+> 3. Bind your WeChat Official Account in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article) (paste AppID + AppSecret; YouMind encrypts + proxies, no IP whitelist needed)
 >
-> Want to write locally first? The `preview` and `themes` commands work without any WeChat connection.
->
-> See the **Setup** section below for detailed step-by-step instructions with screenshots.
->
-> **Need help?** Just ask!
+> `preview` and `themes` work without WeChat connection. **Need help?** Just ask.
 
-For first-run setup and client onboarding details, see [references/operations.md](references/operations.md).
+For first-run setup and client onboarding details, see [`references/operations.md`](references/operations.md).
 
 ## Usage
 
-Provide a topic, brand/client name, or raw Markdown for publishing.
+Provide a topic, brand/client name, or raw Markdown:
 
-**Write from a topic:**
-> 帮我写一篇关于 AI 编程趋势的公众号文章
-
-**Write for a specific client:**
-> 给 demo 客户写一篇推文，主题是远程办公最佳实践
-
-**Format and publish raw Markdown:**
-> 把这篇 Markdown 排版成公众号样式并发布到草稿箱
-
-**Interactive mode:**
-> 用交互模式帮我写一篇公众号文章，我想自己选题和框架
+- `帮我写一篇关于 AI 编程趋势的公众号文章` — full pipeline from topic
+- `给 demo 客户写一篇推文，主题是远程办公` — client-scoped run
+- `把这篇 Markdown 排版成公众号样式并发布到草稿箱` — skip writing, publish only
+- `用交互模式…` — pause at topic / framework / image / theme decisions
 
 ## Setup
 
-> Prerequisites: Node.js ≥ 18, Python ≥ 3.9, a verified WeChat Official Account with API access.
-
-### Step 1 — Install Dependencies
+> Prerequisites: Node.js ≥ 18, Python ≥ 3.9, a verified WeChat Official Account bound in YouMind Connector Settings.
 
 ```bash
 cd toolkit && npm install && npm run build && cd ..
 pip install -r requirements.txt
-```
-
-### Step 2 — Create Config File
-
-```bash
 cp config.example.yaml config.yaml
+# Fill youmind.api_key in config.yaml — that's the only required field
+node toolkit/dist/cli.js validate
 ```
 
-### Step 3 — Get YouMind API Key (Recommended)
+Expected: `OK: Connected to WeChat Official Account wxxxxxxxxxx` + token 剩余秒数.
 
-YouMind API Key 用于知识库语义搜索、联网搜索、文章归档、AI 生图（Nano Banana Pro）。不配也能跑，但会丧失这些增强能力。
+**Full walkthrough with screenshots:** [README.md §安装](README.md) — covers YouMind API key creation, WeChat Connector binding, rotation procedure.
 
-1. 打开 [YouMind API Keys 页面](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article)
-2. 登录后点击 **「Create API Key」** 创建新密钥
-3. 复制生成的 `sk-ym-xxxx` 格式密钥
-4. 填入 `config.yaml` 的 `youmind.api_key` 字段
+**Image generation:** routes through YouMind chat API (Nano Banana Pro). Fallback chain: YouMind → Nano Banana Pro library match → CDN predefined cover → prompt-only. See `references/cli-reference.md` §Image Generation.
 
-```yaml
-youmind:
-  api_key: "sk-ym-xxxxxxxxxxxxxxxxxxxx"
-```
-
-### Step 4 — Bind WeChat Official Account in YouMind (一次性，在 YouMind UI 操作)
-
-WeChat 凭据**不再存在 skill 本地** —— 全部加密保存在 YouMind 后端，由 YouMind 服务端管理 access_token 缓存（2 小时复用）+ 代理所有 cgi-bin 请求。Skill 只持有 `youmind.api_key`，**无需 IP 白名单**（YouMind 出口 IP 已配置在 WeChat 平台白名单里）。
-
-1. 打开 [微信公众平台](https://mp.weixin.qq.com)，进入 **设置与开发 → 基本配置**
-2. 复制 **AppID** 和 **AppSecret**（AppSecret 重置后只展示一次）
-3. 打开 [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article)
-4. 选择 **WeChat**，粘贴 AppID / AppSecret / Author 三个字段，保存
-5. YouMind 立即调 `cgi-bin/token` 验证凭据 — 绿勾代表绑定成功
-
-YouMind 把 secret 加密落库，access_token 缓存在内存（2hr TTL，命中时省去每次请求重新换 token 的开销）。需要轮换密钥就在 WeChat 平台重置 secret，回到 connector 重新粘贴即可。
-
-### 验证设置
-
-```bash
-cd toolkit && node dist/cli.js validate
-```
-
-期望输出：`OK: Connected to WeChat Official Account wxxxxxxxxxx` + token 剩余秒数。
-
-### Step 6 — Image Provider Keys (Optional)
-
-配图使用降级链：AI 生图 → 图库搜索 → CDN 预制封面下载 → 仅输出 prompt。不配任何 key 也不影响发布。
-
-| Provider | 获取方式 | `config.yaml` 字段 |
-|----------|----------|---------------------|
-| **YouMind (Nano Banana Pro)** | 使用 Step 3 的 YouMind API Key，无需额外配置 | `image.providers.youmind.api_key`（留空则自动使用 `youmind.api_key`） |
-| **Google Gemini (Imagen)** | [Google AI Studio](https://aistudio.google.com/apikey) 创建 API key | `image.providers.gemini.api_key` |
-| **OpenAI (GPT Image)** | [OpenAI Platform](https://platform.openai.com/api-keys) 创建 API key | `image.providers.openai.api_key` |
-| **豆包 (Seedream)** | [火山引擎控制台](https://console.volcengine.com/ark) 创建 API key | `image.providers.doubao.api_key` |
-
-在 `config.yaml` 中设置 `image.default_provider` 指定首选 provider，或留空让 Skill 自动选第一个有 key 的。
-
-### Verify Setup
-
-配置完成后，对 Agent 说一句试试：
-
-> "帮我写一篇关于 AI 编程的公众号文章"
-
-如果配置有问题，Skill 会在对应步骤报错并给出修复提示——不会整体卡死。
-
-For client onboarding and post-setup operations, see [references/operations.md](references/operations.md).
+For client onboarding, multi-client setup, and post-setup operations, see [`references/operations.md`](references/operations.md).
 
 ## Skill Directory
 
-This skill is a folder. Read files on demand — do NOT load everything upfront.
+Read files on demand — do NOT load everything upfront. Five always-relevant entries below; full inventory in [`references/skill-directory.md`](references/skill-directory.md).
 
-| Path | Purpose | When to read |
-|------|---------|-------------|
-| `references/platform-dna.md` | 公众号 audience + format constraints (index to core refs) | Before any content work |
-| `references/content-generation-playbook.md` | Idea → 公众号-native draft workflow | When generating new content |
-| `references/content-adaptation-playbook.md` | Existing article → 公众号-native workflow | When adapting/localizing content |
-| `references/pipeline.md` | Full step-by-step execution (Steps 1–8) | When running the writing pipeline |
-| `references/operations.md` | Post-publish commands, client onboarding, themes, first-run setup | When handling operational tasks |
-| `references/writing-guide.md` | Pre-writing framework, depth architecture, de-AI protocol, voice | Step 4 (writing) |
-| `references/frameworks.md` | 5 article frameworks with execution detail | Step 3.5 (framework selection) |
-| `references/topic-selection.md` | 4-dimension topic evaluation model | Step 3 (topic generation) |
-| `references/seo-rules.md` | Title optimization, keyword density, digest, tags | Step 5 (SEO pass) |
-| `references/visual-prompts.md` | Cover and inline image design, prompt engineering | Step 6 (visual AI) |
-| `references/theme-dsl.md` | Custom theme design language (integrates [Impeccable](https://impeccable.style/) if installed) | When creating custom themes — auto-detects & offers to install Impeccable |
-| `references/youmind-integration.md` | Knowledge base API, search, archiving | When using YouMind features |
-| `references/cli-reference.md` | All CLI command syntax | When running toolkit commands |
-| `references/wechat-constraints.md` | WeChat platform technical limits, safe CSS, size caps | When debugging rendering or format issues |
-| `references/style-template.md` | Client config template with field guide | When onboarding a new client |
-| `references/openapi-document.md` | YouMind OpenAPI full endpoint schemas | When calling YouMind API directly |
-| `references/skill-maintenance.md` | Skill self-maintenance, validation, architecture guardrails | When improving or refactoring this skill itself |
-| `references/builtin-themes.json` | CSS examples for 10 built-in themes | When customizing themes |
-| `clients/{client}/style.yaml` | Client brand voice, topics, blacklist, theme | Step 1 (load config) |
-| `clients/{client}/playbook.md` | Client-specific writing rules (if exists) | Step 4 (writing) |
-| `clients/{client}/history.yaml` | Published article history | Step 2.5 (dedup) |
-| `config.yaml` | API credentials (WeChat, YouMind, image providers) | Step 1 (first-run check) |
-| `output/` | **Local article Markdown drafts (git-ignored)** | When writing the article |
-| `toolkit/dist/*.js` | Executable scripts (run from `toolkit/`) | Various steps |
-| `scripts/*.py` | Python scripts (trending topics, SEO keywords) | Steps 2, 2.5 |
+| Path | When to read |
+|------|-------------|
+| `references/platform-dna.md` | Before any content work |
+| `references/content-generation-playbook.md` | Generating from a topic/idea |
+| `references/content-adaptation-playbook.md` | Adapting existing article |
+| `references/pipeline.md` | Running the writing pipeline |
+| `references/writing-guide.md` | Step 4 (writing + de-AI) |
+| `references/skill-directory.md` | Full file inventory (Tier 2/3 + clients + toolkit) |
 
 ## Draft Location Rule (MANDATORY)
 
-**All local article Markdown files MUST be written to the `output/` directory of this skill, and nowhere else.** This is separate from the WeChat draft box (which is a server-side publishing target, not a file location).
+**All local article Markdown files go in `output/` — nowhere else.** Not the skill root, not `drafts/`, not inside `references/` / `toolkit/` / `clients/` / `scripts/`. `output/` is `.gitignore`d. Create with `mkdir -p output` if missing. Kebab-case filenames (`my-article.md`), descriptive slugs over timestamps. (Local file ≠ WeChat draft box; the draft box is a server-side publish target, not a path.)
 
-- Correct: `skills/youmind-wechat-article/output/my-article.md`
-- Wrong: `skills/youmind-wechat-article/my-article.md` (pollutes skill root)
-- Wrong: any new top-level `drafts/` directory (not git-ignored)
-- Wrong: any path inside `references/`, `toolkit/`, `clients/`, `scripts/`, or the skill root
+---
 
-The `output/` directory is listed in `.gitignore`, so drafts stay out of version control. Create the directory if it doesn't exist (`mkdir -p output`). Use kebab-case for filenames (e.g. `my-article.md`), and prefer descriptive slugs over timestamps.
+## Dispatch Integration (Optional)
+
+**Self-contained standalone** ("帮我写一篇公众号文章" — full pipeline, zero other skills required). The `youmind-article-dispatch` hub is an optional companion — never a dependency.
+
+- If dispatch is installed, this skill MAY read `../youmind-article-dispatch/author-profile.yaml` for voice preferences (no-op if file absent).
+- If dispatch invokes this skill with a brief containing `resolved_author`, use it as extra context. De-AI protocol (`writing-guide.md`) is always mandatory regardless of invocation path.
+- Opt-in manifest: `dispatch-capabilities.yaml`. Optional interop protocol: [`/shared/DISPATCH_CONTRACT.md`](/shared/DISPATCH_CONTRACT.md) (v1.0).
 
 ---
 
 ## Content Modes
 
-Before writing any content, read `references/platform-dna.md` (index) which points to the core reference trio: `writing-guide.md`, `style-template.md`, and `wechat-constraints.md`. Internalize 公众号's mobile-first norms (1.4B WeChat MAU, 74% mobile, ≤14 汉字 title, 2–4 句 paragraphs).
+Before writing, read [`references/platform-dna.md`](references/platform-dna.md) (index → `writing-guide.md`, `style-template.md`, `wechat-constraints.md`).
 
-### Intent routing
+**Intent routing:**
+- Topic/idea only → [`content-generation-playbook.md`](references/content-generation-playbook.md)
+- Existing article (any source) → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) — sub-modes: localize / cross-post / condense / revive
 
-| User's input | Operation | Playbook to load |
-|--------------|-----------|-----------------|
-| Topic, angle, or idea only | Generate | `references/content-generation-playbook.md` |
-| English article → 公众号 中文 | Localize | `references/content-adaptation-playbook.md` (localize mode) |
-| Existing Markdown → 公众号 format | Cross-post | `references/content-adaptation-playbook.md` (cross-post mode) |
-| Long article → 公众号 length | Condense | `content-adaptation-playbook.md` (condense mode) |
-| Old article to republish | Revive | `content-adaptation-playbook.md` (revive mode) |
-
-### Quality gates (before publish)
-
-1. **De-AI pass**: Zero AI-sounding text (run `writing-guide.md` §de-AI protocol)
-2. **Self-critique**: Pass all checklist items in the playbook's Step 6
-3. **Conformance report**: Generate and present to user (Step 7/8)
-4. **Auto-publish to drafts**: Step 7 publishes to WeChat draft box (mandatory)
+**Quality gates before publish:** (1) de-AI pass per `writing-guide.md`, (2) playbook Step 6 self-critique, (3) Step 7/8 conformance report, (4) auto-publish to draft box (mandatory).
 
 ---
 
@@ -268,38 +154,25 @@ Before writing any content, read `references/platform-dna.md` (index) which poin
 
 Non-negotiable. Violating any one means the article has failed:
 
-1. **Read `references/writing-guide.md` BEFORE writing.** The pre-writing framework and de-AI protocol are mandatory.
-2. **Zero AI-sounding text.** Run the full 4-level de-AI protocol from writing-guide.md.
-3. **H1 title: 20–28 Chinese characters.** The converter extracts H1 as the WeChat title.
-4. **Digest: ≤54 Chinese characters.** WeChat enforces a 120 UTF-8 byte limit.
-5. **Word count: 1,500–2,500.** Sweet spot for completion rate is 1,500–2,000.
-6. **Specificity over abstraction.** Every claim must be grounded in concrete detail.
-7. **Depth over polish.** Run the Depth Checklist (writing-guide.md) before the De-AI pass. If the article's core thesis is something from the top 3 Google results, it needs a rewrite, not a polish.
-8. **Obey the client's `blacklist`** — both words and topics. No exceptions.
-9. **Playbook overrides writing-guide.** If `playbook.md` exists for this client, it takes priority for voice and style decisions.
-10. **Before generating visuals, proactively ask about image scope and style.** Do not silently assume. If the host supports `AskUserQuestion`, use it. Otherwise ask a concise plain-text question.
-11. **Always publish to drafts.** Step 7 publishes directly to WeChat draft box. Do NOT ask — this is mandatory and automatic.
+1. **Read `references/writing-guide.md` BEFORE writing** — pre-writing framework + de-AI protocol are mandatory.
+2. **Zero AI-sounding text** — run the full 4-level de-AI pass from writing-guide.md.
+3. **H1 title: 20–28 汉字** — converter extracts H1 as WeChat title.
+4. **Digest: ≤54 汉字** (120 UTF-8 byte limit).
+5. **Word count: 1,500–2,500 字** — sweet spot for completion is 1,500–2,000.
+6. **Specificity over abstraction** — every claim grounded in concrete detail.
+7. **Depth over polish** — run the Depth Checklist; if thesis is in top-3 Google results, rewrite don't polish.
+8. **Obey client `style.yaml` blacklist** (words AND topics). No exceptions.
+9. **Playbook overrides writing-guide** when `clients/{client}/playbook.md` exists.
+10. **Ask about image scope before Step 6** — use `AskUserQuestion` if available, plain text otherwise.
+11. **Always publish to drafts** — Step 7 is mandatory and automatic; do NOT ask.
 
 ---
 
 ## Pipeline Overview
 
-Read `references/pipeline.md` for full execution details of each step.
+12-step flow: **Load config → Mine KB → Trending topics → Dedup + SEO → Topic select → Framework select → Write → SEO + de-AI → Generate images → Publish to drafts → Archive → Report.**
 
-| Step | Action | Key reference |
-|------|--------|--------------|
-| 1 | Load client `style.yaml` + routing | — |
-| 1.5 | Mine YouMind knowledge base for source material | `youmind-integration.md` |
-| 2 | Fetch trending topics via `fetch_hotspots.py` | — |
-| 2.5 | Dedup against `history.yaml` + SEO keyword scoring | — |
-| 3 | Generate 10 topics, score, select best | `topic-selection.md` |
-| 3.5 | Generate 5 framework proposals, select best | `frameworks.md` |
-| 4 | Write article with pre-writing thinking + depth check | `writing-guide.md` |
-| 5 | SEO optimization + full de-AI pass | `seo-rules.md` |
-| 6 | Design and generate cover + inline images | `visual-prompts.md` |
-| 7 | **Publish to WeChat drafts** (mandatory, automatic) | `cli-reference.md` |
-| 7.5 | Append to history + archive to YouMind | `youmind-integration.md` |
-| 8 | Report results: title, digest, tags, media_id | — |
+Full per-step detail: [`references/pipeline.md`](references/pipeline.md).
 
 **Routing shortcuts:**
 
@@ -310,18 +183,9 @@ Read `references/pipeline.md` for full execution details of each step.
 
 ## Resilience: Never Stop on a Single-Step Failure
 
-Every step has a fallback. If a step AND its fallback both fail, skip that step and note it in the final output.
+Every pipeline step has a fallback. If a step AND its fallback both fail, skip that step, note it in the final output, and continue. **Never halt the whole pipeline on a single-step failure.**
 
-| Step | Fallback |
-|------|----------|
-| 1.5 Knowledge mining | Skip, empty knowledge_context |
-| 2 Trending topics | YouMind web-search → WebSearch → ask user |
-| 2.5 SEO scoring | Self-estimate, mark "estimated" |
-| 3 Topic generation | Ask user for a manual topic |
-| 6 Image generation | Output prompts, skip images |
-| 7 Publishing | Generate local HTML preview |
-| 7.5 History/Archive | Warn, continue |
-| Python/Node missing | Tell user install command |
+See [`references/resilience.md`](references/resilience.md) for the full per-step fallback chain and environmental failure recovery.
 
 ---
 
@@ -335,30 +199,16 @@ If the request is about improving this skill itself, refactoring its structure, 
 
 ## Gotchas — Common Failure Patterns
 
-**"The AI Essay":** The article reads like a well-organized explainer piece — correct, comprehensive, boring. Fix: re-read writing-guide.md's voice architecture and pre-writing framework. The article needs a PERSON behind it, not an information system.
+Six named anti-patterns observed across real dispatches. Call them out by name instead of re-deriving the problem.
 
-**"The Generic Hot Take":** Writing about a trending topic without adding any insight beyond what is already in the top 10 search results. If you cannot identify your unique angle in one sentence, pick a different topic.
+- **The AI Essay** — correct, comprehensive, boring; no person behind it
+- **The Generic Hot Take** — summary of other summaries; no unique angle
+- **The Word-Count Pad** — verbose instead of deep
+- **The Pretty But Empty Article** — styling without substance
+- **The Blacklist Miss** — forbidden words slip past the final scan
+- **The Broken Pipeline Halt** — one step fails, whole run aborts (never do this)
 
-**"The Word-Count Pad":** Hitting 2,000 words by being verbose instead of being deep. Every paragraph should survive the test: "if I delete this, does the article lose something specific?" If not, delete it.
-
-**"The Pretty But Empty Article":** Beautiful formatting, nice images, zero substance. Visual quality cannot compensate for thin content. Get the writing right first.
-
-**"The Blacklist Miss":** Forgetting to check `style.yaml` blacklist against the final article. Always do a final scan before publishing.
-
-**"The Broken Pipeline Halt":** Stopping the entire flow because one step failed. NEVER do this. Use the fallback. If the fallback fails, skip and note it. The user can always fix individual pieces manually.
-
-## Comparison
-
-| Feature | This Skill | Manual Writing | 135 Editor | Xiumi |
-|---------|-----------|---------------|------------|-------|
-| AI topic mining | ✅ | ❌ | ❌ | ❌ |
-| De-AI voice protocol | ✅ | N/A | ❌ | ❌ |
-| AI cover generation | ✅ (4 providers) | ❌ | ❌ | ❌ |
-| One-click draft publishing | ✅ | ❌ | ❌ | ❌ |
-| YouMind knowledge base | ✅ | ❌ | ❌ | ❌ |
-| Learn from your edits | ✅ | N/A | ❌ | ❌ |
-| Multi-client management | ✅ | ❌ | ❌ | ❌ |
-| Custom themes | ✅ 4 built-in + DSL | N/A | ✅ | ✅ |
+Full explanation, fix, and detection method for each: [`references/gotchas.md`](references/gotchas.md).
 
 ## References
 

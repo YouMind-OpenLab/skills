@@ -101,7 +101,7 @@ If `config.yaml` does not exist when the skill triggers:
    - 登录后创建密钥，复制 `sk-ym-xxxx` 格式填入 `youmind.api_key`
    - 用于知识库搜索、联网搜索、文章归档、AI 生图，以及代理所有 WeChat 调用
 4. Confirm the WeChat Official Account is bound once in **YouMind → Connector Settings** (WeChat). YouMind stores the AppID/AppSecret encrypted server-side, caches `access_token` (2hr TTL), and proxies every cgi-bin call. The skill never sees the secret, and there is **no IP whitelist** to manage.
-5. Ask about optional **image provider keys** (Gemini / OpenAI / 豆包)
+5. Image generation routes exclusively through YouMind (Nano Banana Pro) — the Step 3 `youmind.api_key` covers it; no separate provider setup needed.
 6. Run `cd toolkit && node dist/cli.js validate` to verify the end-to-end wiring (calls YouMind `/wechat/validateConnection` — see "Validation" below).
 
 Store the configuration once; never ask again.
