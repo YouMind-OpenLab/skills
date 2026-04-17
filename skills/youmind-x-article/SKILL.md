@@ -181,10 +181,11 @@ Before writing any content, read `references/platform-dna.md` to internalize X's
 |--------------|-----------|-----------------|
 | Idea, topic, or talking points only | Generate | `references/content-generation-playbook.md` |
 | Existing article or draft | Adapt (condense) | `references/content-adaptation-playbook.md` |
-| Article in another language | Translate | `content-adaptation-playbook.md` (translate mode) |
-| Old thread to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
-| Section of a longer piece → teaser | Excerpt | `content-adaptation-playbook.md` (excerpt mode) |
-| Short blog post → thread | Cross-post | `content-adaptation-playbook.md` (cross-post mode) |
+| Article in another language | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Same-language article needing X-native angle | Localize | `references/content-adaptation-playbook.md` (localize mode) |
+| Old thread to refresh | Revive | `references/content-adaptation-playbook.md` (revive mode) |
+| Section of a longer piece → teaser | Excerpt | `references/content-adaptation-playbook.md` (excerpt mode) |
+| Short blog post → thread | Cross-post | `references/content-adaptation-playbook.md` (cross-post mode) |
 
 ### Quality gates (before publish)
 
@@ -212,8 +213,8 @@ Read `references/pipeline.md` for full execution details.
 | 1 | Load config and validate the YouMind API key | -- |
 | 2 | Mine YouMind knowledge base for source material | -- |
 | 3 | Research topic via web search | -- |
-| 4 | Adapt content: 280 char limit, split into sequence if long | `content-adaptation.md` |
-| 5 | Publish to X via YouMind X OpenAPI | `api-reference.md` |
+| 4 | Adapt content: 280 char limit, split into sequence if long | `references/content-adaptation.md` |
+| 5 | Publish to X via YouMind X OpenAPI | `references/api-reference.md` |
 | 6 | Report results: post IDs, X URLs, result links |  |
 
 **Routing shortcuts:**

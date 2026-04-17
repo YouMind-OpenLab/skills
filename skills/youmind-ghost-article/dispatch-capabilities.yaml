@@ -33,6 +33,8 @@ hard_limits:
   recommended_feature_image: "1200x630"
   typical_word_count: "800-2500"
   h1_in_body_allowed: false              # Ghost uses title field
+  custom_excerpt_required: true
+  body_html_mode: "simple-email-safe-html"
 
 defaults:
   publish_mode: "draft"
@@ -42,6 +44,11 @@ auth:
   type: "youmind-openapi"
   connector_url: "https://youmind.com/settings/connector"
   local_config_required: "youmind.api_key"
+
+special_notes:
+  newsletters: "Ghost posts should decide newsletter send intent and, when relevant, which newsletter/audience they belong to."
+  membership: "Public preview and visibility settings are core Ghost capabilities, not optional polish."
+  cards: "Bookmark, call-to-action, public-preview, and email-content cards are platform-native levers."
 
 references:
   platform_dna: "references/platform-dna.md"

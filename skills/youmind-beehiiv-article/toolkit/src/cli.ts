@@ -101,14 +101,8 @@ async function updateFromMarkdown(
     subtitle: typeof opts.subtitle === 'string' ? opts.subtitle : undefined,
     contentTags: parseCsv(typeof opts.tags === 'string' ? opts.tags : undefined),
     thumbnailImageUrl: typeof opts.thumbnailUrl === 'string' ? opts.thumbnailUrl : undefined,
-  });
-
-  const post = await updatePost(loadBeehiivConfig(), id, {
-    title: adapted.title,
-    bodyContent: adapted.html,
-    subtitle: adapted.subtitle,
     scheduledAt: typeof opts.scheduleAt === 'string' ? opts.scheduleAt : undefined,
-    customLinkTrackingEnabled: Boolean(opts.customLinkTracking),
+    customLinkTrackingEnabled: opts.customLinkTracking ? true : undefined,
     emailCaptureTypeOverride:
       typeof opts.emailCaptureType === 'string'
         ? (opts.emailCaptureType as 'none' | 'gated' | 'popup')
@@ -123,8 +117,6 @@ async function updateFromMarkdown(
             | 'top'
             | 'none')
         : undefined,
-    contentTags: adapted.contentTags.length ? adapted.contentTags : undefined,
-    thumbnailImageUrl: adapted.thumbnailImageUrl,
     emailSettings: parseJsonOption<BeehiivPostEmailSettings>(
       typeof opts.emailSettingsJson === 'string' ? opts.emailSettingsJson : undefined,
     ),
@@ -134,6 +126,22 @@ async function updateFromMarkdown(
     seoSettings: parseJsonOption<BeehiivPostSeoSettings>(
       typeof opts.seoSettingsJson === 'string' ? opts.seoSettingsJson : undefined,
     ),
+  });
+
+  const post = await updatePost(loadBeehiivConfig(), id, {
+    title: adapted.title,
+    bodyContent: adapted.html,
+    subtitle: adapted.subtitle,
+    scheduledAt: adapted.scheduledAt,
+    customLinkTrackingEnabled: adapted.customLinkTrackingEnabled,
+    emailCaptureTypeOverride: adapted.emailCaptureTypeOverride,
+    overrideScheduledAt: adapted.overrideScheduledAt,
+    socialShare: adapted.socialShare,
+    contentTags: adapted.contentTags.length ? adapted.contentTags : undefined,
+    thumbnailImageUrl: adapted.thumbnailImageUrl,
+    emailSettings: adapted.emailSettings,
+    webSettings: adapted.webSettings,
+    seoSettings: adapted.seoSettings,
   });
 
   console.log('\nUpdated successfully!');
@@ -176,7 +184,7 @@ program
       const result = await publish({
         input: resolve(input),
         isFile: true,
-        status: opts.confirm ? 'confirmed' : 'draft',
+        status: opts.confirm ? 'confirmed' : opts.draft ? 'draft' : undefined,
         scheduledAt: typeof opts.scheduleAt === 'string' ? opts.scheduleAt : undefined,
         contentTags: parseCsv(typeof opts.tags === 'string' ? opts.tags : undefined),
         thumbnailImageUrl:
@@ -185,7 +193,7 @@ program
         subtitle: typeof opts.subtitle === 'string' ? opts.subtitle : undefined,
         postTemplateId:
           typeof opts.postTemplateId === 'string' ? opts.postTemplateId : undefined,
-        customLinkTrackingEnabled: Boolean(opts.customLinkTracking),
+        customLinkTrackingEnabled: opts.customLinkTracking ? true : undefined,
         emailCaptureTypeOverride:
           typeof opts.emailCaptureType === 'string'
             ? (opts.emailCaptureType as 'none' | 'gated' | 'popup')

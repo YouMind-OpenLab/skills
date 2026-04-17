@@ -3,7 +3,7 @@ name: youmind-article-dispatch
 version: 1.0.0
 description: |
   Dispatch content to multiple platforms from a single topic — Dev.to, Hashnode, WordPress,
-  Ghost, X/Twitter, WeChat, Qiita. Each platform skill adapts
+  Tumblr, Ghost, Beehiiv, Kit, X/Twitter, WeChat, Qiita. Each platform skill adapts
   content independently for its audience and format. Pure orchestration, no publishing logic.
   Integrates YouMind knowledge base for topic research and content material mining.
   Use when user wants to "publish everywhere", "cross-post", "multi-platform publish",
@@ -67,10 +67,10 @@ The onboarding flow sets up TWO things in ONE conversation: **platform roster** 
 >
 > Quick setup — which platforms do you use?
 >
-> 1. Dev.to  2. Hashnode  3. WordPress  4. Ghost
-> 5. X/Twitter  6. WeChat (公众号)  7. Qiita
+> 1. Dev.to  2. Hashnode  3. WordPress  4. Tumblr  5. Ghost
+> 6. Beehiiv  7. Kit  8. X/Twitter  9. WeChat (公众号)  10. Qiita
 >
-> (list numbers, e.g. "1, 2, 6")
+> (list numbers, e.g. "1, 5, 8")
 
 After user selects:
 1. Save to `~/.youmind/dispatch-roster.yaml` → `active_platforms`
@@ -151,6 +151,9 @@ User specifies one platform → dispatch directly invokes the corresponding plat
 
 ```
 "Write about AI agents for Dev.to"         → invoke youmind-devto-article
+"Write a weekly issue for Beehiiv"         → invoke youmind-beehiiv-article
+"Write a Tumblr post about indie hacking"  → invoke youmind-tumblr-article
+"Draft a public creator post for Kit"      → invoke youmind-kit-article
 "Post a thread about startup culture on X" → invoke youmind-x-article
 "发布一篇技术文章到 WordPress"                → invoke youmind-wordpress-article
 ```
@@ -159,7 +162,7 @@ User specifies one platform → dispatch directly invokes the corresponding plat
 User specifies multiple platforms → dispatch invokes each platform skill sequentially with the same topic.
 
 ```
-"Write about AI agents and publish to Dev.to, Ghost, and X"
+"Write about AI agents and publish to Dev.to, Beehiiv, and Kit"
 "把这个话题发布到 Dev.to 和 Hashnode"
 ```
 
@@ -199,6 +202,7 @@ The optional integration protocol is documented at [`shared/DISPATCH_CONTRACT.md
 | Dev.to | `youmind-devto-article` | Developers, OSS contributors | Technical tutorials, tool reviews, dev experience |
 | Hashnode | `youmind-hashnode-article` | Dev bloggers, tech writers | In-depth technical blogs, series, developer stories |
 | WordPress | `youmind-wordpress-article` | General audiences | Long-form articles, SEO-optimized content |
+| Tumblr | `youmind-tumblr-article` | Blog followers, creator audiences | Voice-driven essays, build logs, creator notes |
 | Ghost | `youmind-ghost-article` | Publishers, newsletter writers | Editorial content, premium publications |
 | Beehiiv | `youmind-beehiiv-article` | Newsletter operators, creator teams | Growth updates, newsletter essays, operator notes |
 | Kit | `youmind-kit-article` | Creators, audience builders | Broadcasts, creator updates, public newsletter feed posts |

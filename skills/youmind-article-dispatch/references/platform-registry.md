@@ -52,6 +52,24 @@
   - Excerpt: 150-300 chars
   - Default to draft status
 
+## Tumblr
+- **Skill:** `youmind-tumblr-article`
+- **API:** YouMind OpenAPI -> Tumblr API v2
+- **Auth:** OAuth 2.0 handled in YouMind Connector Settings
+- **Rate Limit:** Tumblr-side, app-dependent
+- **Audience:** Blog followers, creator communities, mixed technical/general readers
+- **Content format:** Tumblr text post body; simple HTML preferred, Markdown accepted
+- **Constraints:** Current YouMind publishing path uses a legacy text post; title + one rich body works best
+- **Tone:** Personal, direct, voice-driven, less corporate than CMS blog writing
+- **Best for:** Creator notes, build logs, product updates, reflective essays, cross-posted blog pieces with personality
+- **Anti-patterns:** Stiff SEO intros, brittle embeds, over-corporate voice, giant documentation dumps
+- **Adaptation rules:**
+  - Keep one clear title and one clean body
+  - Optimize the first paragraph for dashboard preview
+  - Prefer simple HTML only: headings, paragraphs, lists, blockquotes, images, links
+  - Use tags as discovery hints, not hashtag stuffing
+  - Default to the primary Tumblr blog unless `blogIdentifier` explicitly overrides it
+
 ## Ghost
 - **Skill:** `youmind-ghost-article`
 - **API:** Admin API — `https://{site}/ghost/api/admin/`
@@ -74,17 +92,20 @@
 - **Skill:** `youmind-beehiiv-article`
 - **API:** YouMind OpenAPI -> Beehiiv REST
 - **Auth:** Beehiiv API Key + Publication ID stored in YouMind
+- **Rate Limit:** 180 requests/minute/organization (official docs)
 - **Audience:** Newsletter operators, creator businesses, editorial growth teams
-- **Content format:** HTML
-- **Constraints:** Subject-style headline, preview text, Send API access may gate createPost
-- **Tone:** Newsletter-native, direct, polished
-- **Best for:** Weekly updates, launch notes, operator essays, growth recaps
-- **Anti-patterns:** SEO sludge, giant intros, embed-heavy markup
+- **Content format:** HTML or Beehiiv blocks; prefer simple email-safe HTML
+- **Constraints:** Title + subtitle + subject/preview are distinct surfaces; templates matter; Send API access may gate `createPost`; `updatePost` is officially beta / Enterprise
+- **Tone:** Publication-direct, operator-editorial, clean
+- **Best for:** Weekly briefings, launch notes, operator essays, growth recaps, premium teasers, monetized publication updates
+- **Anti-patterns:** SEO sludge, giant intros, ignoring templates or audience tiers, embed-heavy markup
 - **Adaptation rules:**
-  - Strong title + compact subtitle
-  - HTML must stay simple and email-safe
-  - Default to draft
-  - Surface Send API caveat if publish must be guaranteed
+  - Write `title`, `subtitle`, `email subject`, and `preview text` intentionally instead of collapsing them into one field
+  - Decide `web`, `email`, or `both`, plus free/premium audience routing before publish
+  - Inspect `listPostTemplates` first when recurring layout or brand consistency matters
+  - Keep HTML simple and email-safe; avoid browser-only layout assumptions
+  - Default to draft and surface Send API / Enterprise caveats before promising confirmed publish
+  - Decide feed visibility and growth settings deliberately for public posts
 
 ## Kit
 - **Skill:** `youmind-kit-article`
@@ -92,15 +113,16 @@
 - **Auth:** Kit API Key stored in YouMind
 - **Audience:** Creators, newsletter operators, audience-building teams
 - **Content format:** HTML
-- **Constraints:** Subject + preview text matter as much as body, public/private mode, scheduled send supported
-- **Tone:** Creator-note style, concise, conversational but sharp
-- **Best for:** Broadcasts, weekly digests, creator updates, product notes
-- **Anti-patterns:** Over-designed blog layouts, bloated intros, hard-sell copy
+- **Constraints:** Subject + preview text matter as much as body, sender email must be confirmed, public/private mode changes visibility, API may not return a stable public URL
+- **Tone:** Creator-direct, concise, conversational but sharp
+- **Best for:** Broadcasts, weekly digests, creator updates, product notes, behind-the-scenes notes
+- **Anti-patterns:** Over-designed blog layouts, bloated intros, hard-sell copy, treating Creator Profile as irrelevant
 - **Adaptation rules:**
-  - Optimize first screen for feed + inbox scanning
-  - Keep sections compact
-  - Default to public web mode unless user asks otherwise
-  - Use clean HTML only
+  - Optimize the first screen for both inbox scanning and the public newsletter feed
+  - Keep sections compact and CTA count to one
+  - Choose public/private intentionally and return the best management path when URL is missing
+  - Point private review flows to `https://app.kit.com/campaigns`
+  - Use clean HTML only and avoid layout assumptions email clients flatten badly
 
 ## X/Twitter
 - **Skill:** `youmind-x-article`

@@ -24,6 +24,21 @@ const SKILL_ROOT_DIR = resolve(__dirname, '../..');
 const OUTPUT_DIR = resolve(SKILL_ROOT_DIR, 'output');
 const KIT_CAMPAIGNS_URL = 'https://app.kit.com/campaigns';
 
+function parseJsonOption<T>(value?: string): T | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const raw =
+    value.startsWith('@') && existsSync(resolve(value.slice(1)))
+      ? readFileSync(resolve(value.slice(1)), 'utf-8')
+      : existsSync(resolve(value))
+        ? readFileSync(resolve(value), 'utf-8')
+        : value;
+
+  return JSON.parse(raw) as T;
+}
+
 function getDefaultPreviewOutput(inputPath: string): string {
   const filename = basename(inputPath).replace(/\.md$/i, '') || 'article';
   mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -78,6 +93,7 @@ program
   .option('--thumbnail-alt <text>', 'Thumbnail alt text')
   .option('--email-template-id <n>', 'Email template ID')
   .option('--email-address <email>', 'Sender email address')
+  .option('--subscriber-filter-json <json-or-file>', 'Subscriber filter JSON or @file')
   .action(async (input: string, opts: Record<string, string | boolean | undefined>) => {
     try {
       const result = await publish({
@@ -86,9 +102,9 @@ program
         subject: typeof opts.subject === 'string' ? opts.subject : undefined,
         description: typeof opts.description === 'string' ? opts.description : undefined,
         previewText: typeof opts.previewText === 'string' ? opts.previewText : undefined,
-        isPublic: opts.private ? false : true,
+        isPublic: opts.private ? false : opts.public ? true : undefined,
         publishedAt: typeof opts.publishedAt === 'string' ? opts.publishedAt : undefined,
-        sendAt: typeof opts.sendAt === 'string' ? opts.sendAt : null,
+        sendAt: typeof opts.sendAt === 'string' ? opts.sendAt : undefined,
         thumbnailUrl:
           typeof opts.thumbnailUrl === 'string' ? opts.thumbnailUrl : undefined,
         thumbnailAlt:
@@ -99,6 +115,9 @@ program
             : undefined,
         emailAddress:
           typeof opts.emailAddress === 'string' ? opts.emailAddress : undefined,
+        subscriberFilter: parseJsonOption<Record<string, unknown>[]>(
+          typeof opts.subscriberFilterJson === 'string' ? opts.subscriberFilterJson : undefined,
+        ),
       });
 
       console.log('\nPublished successfully!');

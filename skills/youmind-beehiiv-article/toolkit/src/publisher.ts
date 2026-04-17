@@ -66,21 +66,13 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     subtitle: options.subtitle,
     contentTags: options.contentTags,
     thumbnailImageUrl: options.thumbnailImageUrl,
-  });
-
-  const post = await createPost(config, {
-    title: adapted.title,
-    bodyContent: adapted.html,
-    subtitle: adapted.subtitle,
-    postTemplateId: options.postTemplateId,
-    status: options.status ?? (options.scheduledAt ? 'confirmed' : 'draft'),
+    status: options.status,
     scheduledAt: options.scheduledAt,
+    postTemplateId: options.postTemplateId,
     customLinkTrackingEnabled: options.customLinkTrackingEnabled,
     emailCaptureTypeOverride: options.emailCaptureTypeOverride,
     overrideScheduledAt: options.overrideScheduledAt,
     socialShare: options.socialShare,
-    contentTags: adapted.contentTags.length ? adapted.contentTags : undefined,
-    thumbnailImageUrl: adapted.thumbnailImageUrl,
     recipients: options.recipients,
     emailSettings: options.emailSettings,
     webSettings: options.webSettings,
@@ -88,6 +80,28 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     headers: options.headers,
     customFields: options.customFields,
     newsletterListId: options.newsletterListId,
+  });
+
+  const post = await createPost(config, {
+    title: adapted.title,
+    bodyContent: adapted.html,
+    subtitle: adapted.subtitle,
+    postTemplateId: adapted.postTemplateId,
+    status: adapted.status ?? (adapted.scheduledAt ? 'confirmed' : 'draft'),
+    scheduledAt: adapted.scheduledAt,
+    customLinkTrackingEnabled: adapted.customLinkTrackingEnabled,
+    emailCaptureTypeOverride: adapted.emailCaptureTypeOverride,
+    overrideScheduledAt: adapted.overrideScheduledAt,
+    socialShare: adapted.socialShare,
+    contentTags: adapted.contentTags.length ? adapted.contentTags : undefined,
+    thumbnailImageUrl: adapted.thumbnailImageUrl,
+    recipients: adapted.recipients,
+    emailSettings: adapted.emailSettings,
+    webSettings: adapted.webSettings,
+    seoSettings: adapted.seoSettings,
+    headers: adapted.headers,
+    customFields: adapted.customFields,
+    newsletterListId: adapted.newsletterListId,
   });
 
   return {

@@ -31,6 +31,9 @@ These are absolute constraints. No author preference can override them.
 | Dev.to | 4 tags max, 30 chars/tag, lowercase only |
 | Qiita | 5 tags, case-sensitive, cdn.gooo.ai blocked |
 | Ghost | No H1 in body, HTML body via API |
+| Tumblr | Simple HTML only, one title + one body, legacy text-post mode |
+| Beehiiv | Send API access may gate confirmed create; update post is beta / Enterprise; email-safe HTML or blocks only |
+| Kit | Sender email must be confirmed; public/private materially changes visibility; API may omit stable public URL |
 | WordPress | H1 = title only, upload_max_filesize |
 | Hashnode | 5 tags, cover image for featured |
 | WeChat | ≤64 char title, HTML subset, no external links |
@@ -58,6 +61,8 @@ The most nuanced merge — author provides the baseline, platform adjusts.
 |----------------|--------------|--------|
 | conversational-technical | Qiita: 丁寧語 expected | Use author's technical style BUT in 丁寧語 form |
 | casual | Ghost: editorial polish expected | Casual-editorial hybrid: approachable but polished |
+| analytical | Beehiiv: publication-direct with growth/business context | Keep the analysis, but frame it like an edition with routing and payoff |
+| personal | Kit: creator-direct broadcast expected | Preserve first-person warmth, but compress it into inbox-friendly form |
 | formal | Dev.to: colleague-tone | Formal expertise in accessible language |
 | editorial | X: punchy/short | Editorial authority compressed to 280 chars |
 
@@ -71,6 +76,8 @@ Platform playbooks encode required structural elements (e.g., Dev.to requires TL
 |------------------|---------------------|--------|
 | story-first | Dev.to: TL;DR required | TL;DR first (platform required), THEN story flow (author preference in body) |
 | code-first | Ghost: excerpt + editorial opening required | Excerpt written separately; code example early in body (author preference after platform requirement met) |
+| deep-essay | Beehiiv: title/subtitle + subject/preview + audience routing required | Keep the thesis, but add the publication surfaces first, then adapt the body |
+| diary-like | Kit: subject + preview + compact sections required | Preserve the creator note voice, but compress to 2–4 sections and one CTA |
 | data-first | X: hook tweet required | Stat/data AS the hook tweet (natural merge — both satisfied) |
 | minimal headings | Hashnode: scannable H2/H3 expected | H2/H3 headings required for table of contents (platform wins); author controls heading STYLE |
 
@@ -83,7 +90,10 @@ If the author's depth preference mismatches the platform's audience expectation,
 | Author depth | Platform expectation | Result |
 |-------------|---------------------|--------|
 | beginner | Hashnode: deep-dive expected | 🔄 ADAPT: Expand outline with implementation detail, benchmarks, and gotchas to meet Hashnode depth. OR suggest Dev.to as a better fit and ask user. |
+| expert | Beehiiv: broad but committed publication readers | 🔄 ADAPT: Keep the thesis expert, but add issue framing, sharper summary sections, and a clearer why-now payoff. |
+| expert | Kit: creator/follower audience scanning inboxes | 🔄 ADAPT: Compress argument, cut side quests, and move details behind links or follow-up resources. |
 | expert | X: broad audience | 🔄 ADAPT: Rewrite outline — simplify jargon, add context sentences, use analogies. The THESIS stays expert; the LANGUAGE adapts. |
+| expert | Tumblr: mixed blog/dashboard readership | 🔄 ADAPT: Keep the thesis, but add a more human opening and clearer context before dense sections. |
 | practitioner | WordPress: SEO-general | ✅ Good match |
 | expert | WeChat: general mobile audience | 🔄 ADAPT: Add 背景 (context) paragraphs before deep sections; short-paragraph constraint helps — each paragraph is one idea at general depth. |
 
@@ -94,8 +104,11 @@ If the author's depth preference mismatches the platform's audience expectation,
 | Author code_density | Platform | Result |
 |--------------------|----------|--------|
 | high | Dev.to/Hashnode/Qiita | ✅ Natural match — code-native platforms |
+| high | Beehiiv | Summarize the lesson, keep only minimal code, and link out to the full tutorial |
+| high | Kit | Broadcast the insight, not the whole implementation; use short snippets or screenshots only if necessary |
 | high | X | Code → screenshots (X has no syntax highlighting) |
 | high | WeChat | Code → screenshots or minimal inline (公众号 renders code poorly) |
+| high | Tumblr | Keep one key snippet, summarize the rest, and maintain reading flow over completeness |
 | high | Ghost | Code blocks OK but test email rendering |
 | none | Qiita | ⚠️ WARN: Qiita strongly values code examples |
 

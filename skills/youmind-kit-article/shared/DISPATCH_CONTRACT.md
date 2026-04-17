@@ -140,10 +140,10 @@ auth:
 Platform skills MUST work in both modes:
 
 ### Standalone mode
-User invokes the platform skill directly (`"Write a Dev.to article about X"`):
+User invokes the platform skill directly (`"Write an article about X for this platform"`):
 - No content brief is provided
 - Skill follows its own pipeline from scratch
-- **Fallback for author DNA**: skill MAY read `../youmind-article-dispatch/author-profile.yaml` to apply user voice/preferences. If dispatch skill is not installed or profile doesn't exist, proceed with platform defaults.
+- **Fallback for author DNA**: skill MAY read `~/.youmind/author-profile.yaml` to apply user voice/preferences. If the shared profile does not exist, proceed with platform defaults. Legacy fallback paths are optional migration aids, not the canonical location.
 
 ### Dispatch mode
 Dispatch invokes the platform skill with a content brief:
@@ -170,8 +170,8 @@ Dispatch checks compatibility before dispatching. Mismatched versions produce a 
 | `shared/DISPATCH_CONTRACT.md` (this file) | Shared | The interface definition |
 | `skills/youmind-article-dispatch/SKILL.md` | Hub | Hub behavior, onboarding, dispatch pipeline |
 | `skills/youmind-article-dispatch/references/content-brief-format.md` | Hub | Brief schema detail |
-| `skills/youmind-article-dispatch/author-profile.yaml` | Hub | User's cross-platform author DNA |
-| `skills/youmind-article-dispatch/dispatch-roster.yaml` | Hub | User's active platform list |
+| `~/.youmind/author-profile.yaml` | Shared user home | User's cross-platform author DNA |
+| `~/.youmind/dispatch-roster.yaml` | Shared user home | User's active platform list |
 | `skills/youmind-{platform}-article/SKILL.md` | Platform | Platform skill behavior |
 | `skills/youmind-{platform}-article/references/platform-dna.md` | Platform | Platform behavior observable DNA |
 | `skills/youmind-{platform}-article/dispatch-capabilities.yaml` | Platform | Capability manifest (this file's spec) |

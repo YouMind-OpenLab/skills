@@ -22,7 +22,7 @@ supported_operations:
   - generate
   - adapt
   - translate                             # primary use case (English → Qiita Japanese)
-  - transcreate
+  - localize
   - condense
   - revive
   - excerpt

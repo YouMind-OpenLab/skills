@@ -1,138 +1,138 @@
 # Ghost Platform DNA
 
-> **Scope:** This file describes observable platform behavior — format constraints, discourse norms, newsletter engagement patterns, and content conventions derived from Ghost platform data and high-performing publications. It does NOT make claims about audience psychology, ethnicity, or cultural generalizations.
+> **Scope:** This file describes observable Ghost behavior from official docs: newsletters, post visibility, custom excerpts, feature images, editor cards, public previews, and email-safe publication design. It does NOT make claims about demographics or publication psychology.
 
-## Platform snapshot (2025)
+## Platform snapshot (2026)
 
-- 3 million+ installs globally; 18K active Ghost Pro licensees
-- Used by 1,200+ journalists (including independents from The Guardian and NYT)
-- Notable publications: Platformer, 404Media, Lever News, Tangle, The Browser, Stanford Review, Harvard International Review
-- 36% of Ghost users migrated from Substack or Medium in the past 2 years
-- Top markets: US, UK, Germany, Canada
-- Creator NPS: 72
-- **Newsletter metrics:** 53% average open rate, 11% CTR, 6.3% free→paid conversion
-- Average paid newsletter price: $6/month
-- Subscriber churn: 2.1% monthly average
-- Weekly publishing retains 73% of subscribers
+- Ghost is not just a blog CMS; it is a **publishing + membership + newsletter** product
+- A post can simultaneously matter to:
+  - the **website**
+  - the **email newsletter**
+  - **free vs paid members**
+  - **specific newsletters**
+  - **card-based editor surfaces**
+- Ghost newsletters can be scheduled and delivered to **free members, paid members, or segments**
+- Sites have one newsletter by default, but Ghost officially supports **multiple newsletters**
+- The product includes an official **customizable HTML newsletter template**
+
+If a draft only works as a generic web article, it is not yet Ghost-native.
+
+## Product surfaces that matter
+
+Ghost content often needs to work across several surfaces:
+
+1. **Inbox surface** — title, custom excerpt, email-safe first screen
+2. **Website surface** — post page, feature image, tags, access level
+3. **Membership surface** — public, members-only, paid-only, or tiered visibility
+4. **Newsletter surface** — newsletter selection, send timing, audience segments
+5. **Editor-card surface** — bookmark, callout, button, email-content, public-preview, and other cards
+
+Strong Ghost content is designed across these surfaces before publish.
 
 ## Format constraints
 
 | Element | Constraint |
 |---------|-----------|
-| Title | No hard limit; **≤60 chars recommended** (doubles as email subject line) |
-| Custom excerpt | 150–300 chars; drives email preview, social cards, post cards — **critical** |
-| Feature image | 1200×630px recommended (OG social sharing + email hero) |
-| Body | HTML via Koenig/Lexical editor; API accepts raw HTML with `?source=html` |
-| H1 in body | **Must be omitted** — Ghost uses the `title` field for H1 |
-| Word count | 800–2,500 words typical |
-| Tags | Flat system; first tag = primary (URL routing + template selection) |
-| Internal tags | `#prefix` convention for non-public tags |
-| Cards | Bookmark, callout, toggle, gallery, button, embed, HTML, markdown, code, image |
-| Visibility | `public` / `members` / `paid` / `tiers` (specific tier gating) |
-| Post types | Standard post, page, email-only post |
+| Title | Practical sweet spot **45–70 chars**; often doubles as the email subject |
+| Custom excerpt | High-priority summary field; drives previews and cards |
+| Feature image | Strongly recommended for post cards and social/share contexts |
+| Body | HTML via the editor/API; keep it clean and email-safe |
+| H1 in body | Omit it; Ghost uses the title as H1 |
+| Tags | Flat taxonomy; first tag acts as the primary tag |
+| Internal tags | `#` prefix for internal organization |
+| Visibility | `public`, `members`, `paid`, or `tiers` |
+| Newsletters | One default newsletter, with support for multiple newsletters |
+| Cards | Official cards include bookmark, email content, call to action, public preview, button, callout, toggle, gallery, and more |
 
 ## Discourse norms (observable)
 
 ### Register
 
-- **Editorial.** Ghost publications read like curated newsletters or magazine pieces — professional, authoritative, but with a personal voice
-- The email format rewards conversational authority: "Here's what I think and why"
-- Not blog-casual and not academic-formal — the sweet spot is informed newsletter voice
-- Ghost's journalist-heavy user base sets the tone: reporting + opinion + analysis
+- **Editorial-newsletter native.** Feels like a publication or operator note, not a generic CMS article
+- **Reader-trust first.** The strongest Ghost posts feel curated and intentional
+- **Email-aware.** Openings and sections must survive inbox scanning
+- **Premium-capable.** Free and paid experiences can coexist in one post object
 
 ### Opening patterns
 
-- **Newsletter teaser:** First 2–3 sentences visible in email preview — must earn the open
-- **Contrarian analysis:** "The conventional wisdom about X is wrong. Here's why."
-- **Curated briefing:** "Three things worth knowing this week:"
-- **Personal stake:** "I've spent [time] investigating X. What I found surprised me."
+- quick editorial hook
+- why-now framing
+- concise briefing opening
+- personal authority or investigated insight
 
 ### Closing patterns
 
-- **Member CTA:** "If you're not yet a member, here's what you're missing:"
-- **Subscribe button:** Button card with clear value proposition
-- **Bookmark card:** Link to related post for deeper reading
-- **Reply prompt:** "Reply to this email" — drives engagement metrics and signals community
+- subscribe / upgrade / reply CTA
+- related-reading or bookmark suggestion
+- paid/member conversion cue when relevant
 
 ### Citation conventions
 
-- Inline hyperlinks (anchor text, not bare URLs)
-- Bookmark cards for key references (rich preview with title, excerpt, favicon)
-- Pull quotes for notable statements
-- Attribution to original reporting/sources
+- inline links are standard
+- bookmark cards are especially native for references/resources
+- callout cards work well for key takeaways
 
 ### Self-promo tolerance
 
-- **High** — the newsletter IS the product; promotion is expected and natural
-- Balance: substance must justify the subscription ("value-first, ask-second")
-- Cross-promotion between newsletters is common and welcomed
-- Product sponsors in newsletters are accepted when clearly labeled
-
-## Moderation & flagging patterns
-
-- Ghost is self-hosted or Ghost Pro — moderation is publication-level, not platform-level
-- No community downvoting or public flagging system
-- Quality enforcement comes from subscriber behavior: opens, clicks, unsubscribes, churn
-- Google E-E-A-T applies to SEO-discovered Ghost content
-- Ghost Pro has standard content policies (no hate speech, illegal content)
+- High when it is clearly part of the publication relationship
+- Sponsored or conversion-oriented cues can fit well, but they should follow real value
 
 ## Platform-native features to leverage
 
 | Feature | When / why |
 |---------|-----------|
-| Custom excerpt | **ALWAYS** — drives email open rate and social sharing |
-| Feature image | **ALWAYS** — email hero and post card visual |
-| Visibility tiers | Paywall strategy: public teaser + paid full content |
-| Email-only posts | Exclusive newsletter content not on website |
-| Bookmark cards | Rich-preview citations for key references |
-| Callout cards | Important notices, key takeaways, warnings |
-| Toggle cards | FAQ sections, expandable detail |
-| Button cards | CTA: subscribe, buy, visit |
-| Gallery cards | Image collections for visual stories |
-| Primary tag | URL routing + template selection — choose deliberately |
-| `#internal-tag` | Organization without public display |
-| Scheduled publishing | Consistent newsletter cadence (weekly = 73% retention) |
-| Newsletter segments | Send to specific subscriber groups |
-| Member analytics | Track engagement per subscriber |
+| Custom excerpt | High-priority metadata for previews and newsletter contexts |
+| Feature image | Important for post cards and share surfaces |
+| Public preview card | Lets free visitors preview paid/member content |
+| Email content card | Adds content visible only in the newsletter send |
+| Call to action card | Useful for subscriptions, sponsors, launches, and upgrade prompts |
+| Bookmark card | Rich citation / recommended-reading pattern |
+| Callout card | Highlight key takeaways or important notices |
+| Primary tag | Routing, organization, and template context |
+| `#internal-tag` | Internal ops / segmentation without public display |
+| Multiple newsletters | Match content to the right audience/product line |
+| Newsletter template settings | Brand consistency across the inbox |
 
 ## Hard limits (must not violate)
 
-- H1 must be omitted from body HTML — Ghost uses the `title` field
-- Custom excerpt is critical — missing excerpt = poor email preview (falls back to first N chars, often cuts mid-sentence)
-- HTML body via API: clean standard HTML; complex CSS may be stripped by Mobiledoc layer
-- No native series feature — use tag collections for series grouping
-- First tag = primary tag = URL routing (changing it after publishing can break URLs)
-- Email rendering: avoid multi-column layouts, custom fonts, complex CSS that breaks in Outlook/Gmail
+- H1 should not appear inside body HTML
+- Custom excerpt should be written intentionally; do not leave it to a weak fallback
+- Email rendering requires simple, email-safe HTML
+- The first tag is primary; choose it deliberately
+- Access level and public-preview placement must agree with the membership intent
+- Newsletter selection and sendability matter; Ghost is operationally more than a website post
 
 ## Anti-patterns
 
 | Anti-pattern | Why it fails |
 |-------------|-------------|
-| Long paragraphs | Breaks mobile email reading; subscribers skim and bounce |
-| Missing excerpt | Email preview = truncated garbage; open rate tanks |
-| Cards everywhere | Visual noise; callouts lose impact when overused |
-| Publishing without email send | Ghost's primary distribution is newsletter; web-only = low reach |
-| Inconsistent cadence | Weekly = 73% retention; irregular = subscriber drift + 2.1% monthly churn |
-| No paid tier option | 6.3% of free subscribers convert if offered — leaving money on the table |
-| Complex HTML layouts | Break in email clients (Outlook, Gmail strip custom CSS) |
-| Ignoring primary tag | Wrong primary tag = wrong URL structure and wrong template |
-| No feature image | Post cards and social shares show blank placeholder |
+| Writing as if Ghost is only a blog | Misses newsletter, members, and card surfaces |
+| Missing custom excerpt | Weak preview and distribution surfaces |
+| No access strategy on premium-like content | Misses Ghost's strongest product capability |
+| Complex layout/CSS assumptions | Email clients flatten or break it |
+| Cards used everywhere | Visual noise and weak hierarchy |
+| Ignoring email-content/public-preview cards | Misses native Ghost workflows |
+| Long wall-of-text paragraphs | Weak inbox and mobile reading behavior |
+| Random primary tag choice | Hurts route/template coherence |
 
 ## Example calibration patterns
 
-**High-engagement Ghost post structure:**
-1. Title: ≤60 chars, compelling as email subject line
-2. Custom excerpt: 150–250 chars, complete sentence, earns the open
-3. Feature image: 1200×630, relevant, clean
-4. Opening: Hook in first 2–3 sentences (email preview territory)
-5. Body: H2 sections, short paragraphs, bookmark cards for sources, callout for key insight
-6. Closing: Summary + member CTA button card + "Reply to this email" prompt
-7. Tags: Primary tag for routing, 2–3 secondary for organization
-8. Visibility: Consider paid tier for premium content
-9. Schedule: Same day/time each week for subscriber expectation
+**Strong Ghost post structure:**
+1. Title that can survive as an email subject
+2. Custom excerpt that earns the open
+3. Feature image if the post is meant to circulate
+4. Opening that works in both inbox and browser
+5. 2–5 compact sections
+6. Strategic use of bookmark/callout/button/public-preview/email-content cards
+7. Visibility and newsletter choices made explicitly
+8. Closing CTA for reply, subscribe, upgrade, or related reading
 
-**Newsletter benchmark targets:**
-- Open rate: ≥50% (Ghost average: 53%)
-- Click-through rate: ≥10% (Ghost average: 11%)
-- Free→paid conversion: ≥5% (Ghost average: 6.3%)
-- Monthly churn: ≤2.5% (Ghost average: 2.1%)
+**Best-fit content types:**
+
+| Type | Why it fits Ghost |
+|------|--------------------|
+| Editorial newsletter issues | Core Ghost behavior |
+| Member-gated essays | Visibility + preview tools are native |
+| Curated briefings | Newsletter + card patterns fit well |
+| Thought leadership with paid tier | Strong fit for membership publishing |
+| Journalistic / analysis notes | Editorial surface is a natural match |

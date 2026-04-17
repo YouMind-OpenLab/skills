@@ -130,7 +130,7 @@ This skill is **self-contained and fully usable standalone.** The `youmind-artic
 
 ## Content Modes
 
-Before writing any content, read `references/platform-dna.md` to internalize Hashnode's deep-dive format (40K+ dev blogs, 1M+ monthly readers, 80% male 25–34 cohort, depth over frequency).
+Before writing any content, read `references/platform-dna.md` to internalize Hashnode's real product surface: depth-first technical writing, subtitle + cover + canonical URL, series navigation, and developer-owned blog presentation.
 
 ### Intent routing
 
@@ -138,9 +138,11 @@ Before writing any content, read `references/platform-dna.md` to internalize Has
 |--------------|-----------|-----------------|
 | Idea, topic, or thesis only | Generate | `references/content-generation-playbook.md` |
 | Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
-| Short piece to expand for Hashnode | Localize (depth) | `content-adaptation-playbook.md` (localize mode) |
-| Old Hashnode post to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
-| Long piece → multi-post series | Condense/split | `content-adaptation-playbook.md` (condense mode) |
+| Article in another language | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Short piece to expand for Hashnode | Localize (depth) | `references/content-adaptation-playbook.md` (localize mode) |
+| Old Hashnode post to refresh | Revive | `references/content-adaptation-playbook.md` (revive mode) |
+| Long piece → multi-post series | Condense/split | `references/content-adaptation-playbook.md` (condense mode) |
+| Section from larger work → focused deep-dive | Excerpt | `references/content-adaptation-playbook.md` (excerpt mode) |
 
 ### Quality gates (before publish)
 

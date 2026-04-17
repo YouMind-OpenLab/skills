@@ -22,9 +22,10 @@ supported_operations:
   - generate
   - adapt
   - localize                              # primary use case (English → Chinese)
-  - transcreate
+  - translate
   - condense
   - revive
+  - excerpt
 
 hard_limits:
   title_hard_chars: 64

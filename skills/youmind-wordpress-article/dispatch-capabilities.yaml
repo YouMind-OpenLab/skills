@@ -49,6 +49,11 @@ auth:
   connector_url: "https://youmind.com/settings/connector"
   local_config_required: "youmind.api_key"
 
+special_notes:
+  taxonomy: "Categories are hierarchical and structural; tags are flat and optional grouping."
+  workflow: "WordPress posts should use excerpt, featured image, and post status intentionally, not only body HTML."
+  theme_variance: "Final rendering depends on theme and block/template setup."
+
 references:
   platform_dna: "references/platform-dna.md"
   generation_playbook: "references/content-generation-playbook.md"

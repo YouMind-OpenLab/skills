@@ -173,7 +173,7 @@ This skill is **self-contained and fully usable standalone.** The `youmind-artic
 
 ## Content Modes
 
-Before writing any content, read `references/platform-dna.md` to internalize Ghost's newsletter-first format (53% open rate, 6.3% free→paid conversion, 73% retention with weekly cadence).
+Before writing any content, read `references/platform-dna.md` to internalize Ghost's real product surfaces: newsletters, members visibility, custom excerpts, feature images, editor cards, email-safe HTML, and audience segmentation.
 
 ### Intent routing
 
@@ -181,9 +181,11 @@ Before writing any content, read `references/platform-dna.md` to internalize Gho
 |--------------|-----------|-----------------|
 | Idea, topic, or thesis only | Generate | `references/content-generation-playbook.md` |
 | Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
-| Long article → newsletter version | Condense | `content-adaptation-playbook.md` (condense mode) |
-| Old Ghost post to update | Revive | `content-adaptation-playbook.md` (revive mode) |
-| Section → bookmark card content | Excerpt | `content-adaptation-playbook.md` (excerpt mode) |
+| Article in another language | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Same-language article needing Ghost editorial register shift | Localize | `references/content-adaptation-playbook.md` (localize mode) |
+| Long article → newsletter version | Condense | `references/content-adaptation-playbook.md` (condense mode) |
+| Old Ghost post to update | Revive | `references/content-adaptation-playbook.md` (revive mode) |
+| Section → bookmark card content | Excerpt | `references/content-adaptation-playbook.md` (excerpt mode) |
 
 ### Quality gates (before publish)
 
@@ -212,9 +214,9 @@ Read `references/pipeline.md` for full execution details.
 | 1 | Load config and validate the YouMind API key, paid-plan access, and Ghost connection in YouMind | -- |
 | 2 | Mine YouMind knowledge base for source material | -- |
 | 3 | Research topic via web search | -- |
-| 4 | Adapt content for Ghost audience and HTML rendering | `content-adaptation.md` |
+| 4 | Adapt content for Ghost audience and HTML rendering | `references/content-adaptation.md` |
 | 5 | Write article in Markdown | -- |
-| 6 | Publish to Ghost via YouMind Ghost OpenAPI | `api-reference.md` |
+| 6 | Publish to Ghost via YouMind Ghost OpenAPI | `references/api-reference.md` |
 | 7 | Report results: post ID, status, public URL, Ghost Admin URL, result links | -- |
 
 **Routing shortcuts:**

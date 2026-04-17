@@ -26,6 +26,7 @@ Parsed:
 | dev.to, devto, dev | devto | youmind-devto-article |
 | hashnode | hashnode | youmind-hashnode-article |
 | wordpress, wp | wordpress | youmind-wordpress-article |
+| tumblr | tumblr | youmind-tumblr-article |
 | ghost | ghost | youmind-ghost-article |
 | beehiiv | beehiiv | youmind-beehiiv-article |
 | kit, convertkit | kit | youmind-kit-article |
@@ -45,8 +46,10 @@ Before dispatching, verify which platform skills are installed:
 
 **3a. Load author profile:**
 ```
-if file_exists("author-profile.yaml"):
-  authorProfile = load("author-profile.yaml")
+if file_exists("~/.youmind/author-profile.yaml"):
+  authorProfile = load("~/.youmind/author-profile.yaml")
+else if file_exists("skills/youmind-article-dispatch/author-profile.yaml"):
+  authorProfile = load("skills/youmind-article-dispatch/author-profile.yaml")  # legacy migration path
 else:
   authorProfile = null  # dispatch works without it
 ```
@@ -55,7 +58,8 @@ else:
 1. Extract topic and angle from user input
 2. If YouMind API is available, run `mine-topics` ONCE to gather knowledge base material
 3. Ask user for any constraints (tone, language, length preferences)
-4. Package into the standard brief format (see `content-brief-format.md`)
+4. If the target includes Beehiiv or Kit, optionally attach newsletter hints under `constraints.newsletter` (`visibility`, `subject_hint`, `preview_text_hint`, `template_preference`, `audience_mode`)
+5. Package into the standard brief format (see `content-brief-format.md`)
 
 **3c. Resolve author profile per platform:**
 For each target platform:

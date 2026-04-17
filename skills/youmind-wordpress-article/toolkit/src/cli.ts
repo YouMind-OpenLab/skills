@@ -8,7 +8,7 @@
 
 import { Command } from 'commander';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 import { adaptForWordPress, convertToHtml } from './content-adapter.js';
 import { publish } from './publisher.js';
@@ -106,10 +106,17 @@ program
   .option('--publish', 'Publish immediately')
   .option('--pending', 'Set status to pending review')
   .option('--private', 'Publish as private post')
+  .option('--future', 'Schedule as future post (requires --date)')
   .option('--category <names>', 'Comma-separated category names')
   .option('--tags <names>', 'Comma-separated tag names')
   .option('--featured-image <file>', 'Path to featured image file (auto-uploaded)')
+  .option('--featured-image-alt <text>', 'Featured image alt text')
+  .option('--featured-image-caption <text>', 'Featured image caption')
+  .option('--excerpt <text>', 'Override excerpt')
   .option('--title <title>', 'Override post title')
+  .option('--slug <slug>', 'Override post slug')
+  .option('--date <iso>', 'Publish or schedule date in ISO 8601 format')
+  .option('--format <format>', 'WordPress post format')
   .action(async (input: string, opts: Record<string, string | boolean | undefined>) => {
     const config = ensureConfig();
 
@@ -117,6 +124,7 @@ program
     if (opts.publish) status = 'publish';
     else if (opts.pending) status = 'pending';
     else if (opts.private) status = 'private';
+    else if (opts.future) status = 'future';
 
     const tags = parseCommaList(typeof opts.tags === 'string' ? opts.tags : undefined);
     const categories = parseCommaList(
@@ -135,7 +143,20 @@ program
         categories,
         featuredImage:
           typeof opts.featuredImage === 'string' ? opts.featuredImage : undefined,
+        featuredImageAlt:
+          typeof opts.featuredImageAlt === 'string' ? opts.featuredImageAlt : undefined,
+        featuredImageCaption:
+          typeof opts.featuredImageCaption === 'string'
+            ? opts.featuredImageCaption
+            : undefined,
+        excerpt: typeof opts.excerpt === 'string' ? opts.excerpt : undefined,
         title: typeof opts.title === 'string' ? opts.title : undefined,
+        slug: typeof opts.slug === 'string' ? opts.slug : undefined,
+        date: typeof opts.date === 'string' ? opts.date : undefined,
+        format:
+          typeof opts.format === 'string'
+            ? (opts.format as Parameters<typeof publish>[0]['format'])
+            : undefined,
       });
 
       console.log('\nPublished successfully!');
@@ -351,6 +372,48 @@ program
         const md = readFileSync(filePath, 'utf-8');
         const adapted = adaptForWordPress({ markdown: md });
         updates.content = adapted.html;
+        if (!('title' in updates) && adapted.title) {
+          updates.title = adapted.title;
+        }
+        if (!('excerpt' in updates) && adapted.excerpt) {
+          updates.excerpt = adapted.excerpt;
+        }
+        if (!('status' in updates) && adapted.status) {
+          updates.status = adapted.status;
+        }
+        if (!('slug' in updates) && adapted.slug) {
+          updates.slug = adapted.slug;
+        }
+        if (!('date' in updates) && adapted.date) {
+          updates.date = adapted.date;
+        }
+        if (!('format' in updates) && adapted.format) {
+          updates.format = adapted.format;
+        }
+        if (!('tags' in updates) && adapted.tags?.length) {
+          updates.tags = adapted.tags;
+        }
+        if (!('categories' in updates) && adapted.categories?.length) {
+          updates.categories = adapted.categories;
+        }
+        if (
+          typeof opts.featuredImage !== 'string' &&
+          adapted.featuredImage &&
+          existsSync(resolve(dirname(filePath), adapted.featuredImage))
+        ) {
+          try {
+            const media = await uploadMedia(config, {
+              filePath: resolve(dirname(filePath), adapted.featuredImage),
+              altText: adapted.featuredImageAlt,
+              caption: adapted.featuredImageCaption,
+            });
+            updates.featuredMedia = media.id;
+            console.log(`Featured image uploaded: ID=${media.id}, URL=${media.sourceUrl}`);
+          } catch (e) {
+            console.error(`Failed to upload featured image from body-file frontmatter: ${(e as Error).message}`);
+            process.exit(1);
+          }
+        }
       }
       if (typeof opts.excerpt === 'string') updates.excerpt = opts.excerpt;
       if (typeof opts.status === 'string') updates.status = opts.status as WPPostStatus;

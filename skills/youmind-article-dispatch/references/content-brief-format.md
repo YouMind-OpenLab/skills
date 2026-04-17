@@ -51,8 +51,14 @@ constraints:
   max_length: null      # null = let platform decide
   style: null           # null = let platform decide
   publish_mode: "draft" # draft | publish
+  visibility: null      # null = let platform decide; public | private | hidden
   custom_tags: []       # user-specified tags (platform skill may adapt)
   cover_image_url: null # pre-generated cover image URL
+  newsletter:
+    subject_hint: null
+    preview_text_hint: null
+    template_preference: null
+    audience_mode: null # all | free | premium | segmented
   override_depth_check: false  # true = skip mandatory depth adaptation
 ```
 
@@ -68,6 +74,7 @@ The specific perspective or "atomic insight" that makes this content unique. If 
 SEO/discovery keywords. Each platform skill maps these to its own tag/hashtag system:
 - Dev.to: tags (max 4)
 - Hashnode: tags (max 5)
+- Tumblr: flat tags (3-8 is usually enough)
 - X: hashtags (1-2)
 
 ### tone (optional, may be overridden by resolved_author.voice.register)
@@ -83,6 +90,14 @@ Pre-fetched from YouMind knowledge base by dispatch. This avoids each platform s
 
 ### constraints (optional)
 User-specified overrides. Fields left as `null` let the platform skill use its defaults.
+
+For newsletter/publication platforms such as Beehiiv and Kit, `constraints.newsletter` can carry extra hints:
+- `subject_hint`: optional subject-line direction
+- `preview_text_hint`: optional inbox-preview direction
+- `template_preference`: optional preferred template name/ID
+- `audience_mode`: optional routing hint like `all`, `free`, `premium`, or `segmented`
+
+Platform skills may ignore these fields when the platform does not support them.
 
 ## Usage
 

@@ -2,16 +2,13 @@
 
 > **Scope:** This file describes observable platform behavior — format constraints, discourse norms, moderation signals, and content patterns derived from platform data and high-performing posts. It does NOT make claims about audience psychology, ethnicity, or cultural generalizations. All guidance derives from what the platform's algorithm rewards and what its community tolerates.
 
-## Platform snapshot (2025)
+## Platform snapshot
 
-- 557 million monthly active users
-- Largest age cohort: 25–34 (37.5%), followed by 18–24 (32.1%) — together ~70% of users
-- 63.7% male / 36.3% female
-- Average daily usage: 28 minutes
-- 60% use X for news and breaking events (primary use case)
-- Higher-income skew: 29% of US users earn $100K+
-- Retweets up 35% year-over-year (2025); shareable atomic claims drive distribution
-- Thread engagement: 2–4% average vs single-tweet 0.5–1.5%
+- Primary surface is the public timeline: hooks, quote-worthy claims, and reply-thread continuation matter more than long-form completeness
+- Threads are the native way to serialize multi-claim arguments when one post cannot hold the idea cleanly
+- Quote tweets, communities, polls, and media attachments are separate distribution levers with distinct tradeoffs
+- External links are tolerated but should be delayed until the final tweet when the goal is distribution
+- Premium long posts exist, but the platform's default reading habit is still fast-scanning short posts
 
 ## Format constraints
 
@@ -66,7 +63,7 @@
 
 | Feature | When / why |
 |---------|-----------|
-| Threads (reply chain) | Content >280 chars; 2–4% engagement vs 0.5–1.5% single tweet |
+| Threads (reply chain) | Use when the idea genuinely needs a multi-claim chain instead of one self-contained post |
 | Quote tweets | Attribution + commentary; higher reach than reply-with-link |
 | Polls | Audience validation; high native completion rate |
 | Spaces (live audio) | Discussion / Q&A; notification push drives attendance |
@@ -109,8 +106,7 @@
 - Clear opinion + evidence in ≤200 chars + relevant image
 - Or: short personal story with specific outcome
 
-**Thread engagement benchmarks (2025):**
-- Threads: 2–4% engagement rate average
-- Single tweets: 0.5–1.5% engagement rate average
-- Text posts: 0.48% influencer engagement (slightly above average 0.39%)
-- Short-form video growing: 37% of users interact with brand video content
+**Distribution calibration:**
+- Threads outperform single posts when the thesis benefits from serialized claims and the hook earns continuation.
+- Single posts outperform threads when the idea is truly atomic.
+- Media should reinforce the claim, not decorate it.

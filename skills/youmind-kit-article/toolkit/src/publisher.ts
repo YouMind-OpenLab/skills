@@ -62,6 +62,12 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     previewText: options.previewText,
     thumbnailUrl: options.thumbnailUrl,
     thumbnailAlt: options.thumbnailAlt,
+    isPublic: options.isPublic,
+    publishedAt: options.publishedAt,
+    sendAt: options.sendAt,
+    emailTemplateId: options.emailTemplateId,
+    emailAddress: options.emailAddress,
+    subscriberFilter: options.subscriberFilter,
   });
 
   const broadcast = await createBroadcast(config, {
@@ -69,14 +75,14 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     content: adapted.html,
     description: adapted.description,
     previewText: adapted.previewText,
-    isPublic: options.isPublic ?? true,
-    publishedAt: options.publishedAt,
-    sendAt: options.sendAt ?? null,
+    isPublic: adapted.isPublic ?? false,
+    publishedAt: adapted.publishedAt,
+    sendAt: adapted.sendAt ?? null,
     thumbnailUrl: adapted.thumbnailUrl,
     thumbnailAlt: adapted.thumbnailAlt,
-    emailTemplateId: options.emailTemplateId,
-    emailAddress: options.emailAddress,
-    subscriberFilter: options.subscriberFilter,
+    emailTemplateId: adapted.emailTemplateId,
+    emailAddress: adapted.emailAddress,
+    subscriberFilter: adapted.subscriberFilter,
   });
 
   return {

@@ -2,16 +2,13 @@
 
 > **Scope:** This file describes observable platform behavior — format constraints, discourse norms, community signals, and content patterns derived from Hashnode platform data and high-performing articles. It does NOT make claims about audience psychology, ethnicity, or cultural generalizations.
 
-## Platform snapshot (2025–2026)
+## Platform snapshot
 
-- 40,000+ developer blogs hosted
-- 1 million+ monthly active readers
-- ~337K monthly visits (SimilarWeb, Dec 2025–Feb 2026)
-- Audience composition: ~80% male, 20% female; largest age cohort 25–34
-- Top traffic source: India, followed by US, UK
-- Ranked #507 globally in Programming & Developer Software
-- Positioning: developer-owned blog with built-in community distribution
-- Differentiator: custom domain support (your blog, Hashnode's infrastructure)
+- Positioning: developer-owned publication with built-in discovery, not a general-purpose CMS
+- Differentiator: custom domain support paired with Hashnode distribution, so posts must work for both owned-site SEO and native feed discovery
+- Deep technical posts are the clearest platform fit: subtitle, cover image, canonical URL, series, and code-block enrichment all matter
+- Table of contents, newsletter collection, and tag pages are meaningful product surfaces, not cosmetic extras
+- The platform rewards depth, implementation detail, and navigable multi-part writing more than posting frequency
 
 ## Format constraints
 
@@ -88,7 +85,7 @@
 | Table of Contents | Auto-generated for long posts |
 | Code blocks with filename | Show file context: ` ```ts:src/handler.ts ` |
 | Custom domain | Blog-as-personal-brand (myblog.dev → Hashnode) |
-| Newsletter integration | Built-in subscriber collection |
+| Newsletter integration | Built-in subscriber collection for developer-owned blogs |
 | OG meta customization | Control social sharing appearance precisely |
 
 ## Hard limits (must not violate)
@@ -129,7 +126,7 @@
 11. Series: If part of multi-article sequence
 12. Canonical URL: If cross-posted from another site
 
-**Word count benchmarks:**
+**Word count calibration:**
 
 | Type | Length |
 |------|--------|

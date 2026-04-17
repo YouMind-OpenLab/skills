@@ -147,7 +147,12 @@ Before writing, read [`references/platform-dna.md`](references/platform-dna.md) 
 
 **Intent routing:**
 - Topic/idea only → [`content-generation-playbook.md`](references/content-generation-playbook.md)
-- Existing article (any source) → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) — sub-modes: localize / cross-post / condense / revive
+- English article → Chinese 公众号 → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`localize` mode)
+- Japanese/other-language article → Chinese 公众号 → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`translate` mode)
+- Existing article from blog/other platform → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`cross-post` mode)
+- Western long-form / oversized draft → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`condense` mode)
+- Old 公众号 article → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`revive` mode)
+- Section from a larger work → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`excerpt` mode)
 
 **Quality gates before publish:** (1) de-AI pass per `writing-guide.md`, (2) playbook Step 6 self-critique, (3) Step 7/8 conformance report, (4) auto-publish to draft box (mandatory).
 

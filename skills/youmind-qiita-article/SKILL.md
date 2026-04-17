@@ -182,9 +182,11 @@ Before writing any content, read `references/platform-dna.md` to internalize Qii
 |--------------|-----------|-----------------|
 | Idea, topic, or talking points only | Generate | `references/content-generation-playbook.md` |
 | English article → Qiita Japanese | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Same-language article needing Qiita register shift | Localize | `references/content-adaptation-playbook.md` (localize mode) |
 | Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
-| Old Qiita article to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
-| Long piece to trim | Condense | `content-adaptation-playbook.md` (condense mode) |
+| Old Qiita article to refresh | Revive | `references/content-adaptation-playbook.md` (revive mode) |
+| Long piece to trim | Condense | `references/content-adaptation-playbook.md` (condense mode) |
+| Section from larger work → memo-style post | Excerpt | `references/content-adaptation-playbook.md` (excerpt mode) |
 
 ### Quality gates (before publish)
 
@@ -212,9 +214,9 @@ Read `references/pipeline.md` for full execution details of each step.
 | 1 | Load config and validate the YouMind API key and Qiita connection in YouMind | -- |
 | 2 | Mine YouMind knowledge base for source material | -- |
 | 3 | Research topic: web search, existing Qiita coverage | -- |
-| 4 | Content adaptation: structure for Qiita audience | `content-adaptation.md` |
+| 4 | Content adaptation: structure for Qiita audience | `references/content-adaptation.md` |
 | 5 | Write article with code examples, environment info, proper structure | -- |
-| 6 | Publish to Qiita (private or public) | `api-reference.md` |
+| 6 | Publish to Qiita (private or public) | `references/api-reference.md` |
 | 7 | Report results: title, URL, tags, published status, result links | -- |
 
 **Routing shortcuts:**

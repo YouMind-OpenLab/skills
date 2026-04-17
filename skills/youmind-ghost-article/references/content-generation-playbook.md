@@ -91,7 +91,7 @@ Write in Ghost's editorial voice. Not a "blog post" — a newsletter-grade publi
 - **First 2–3 sentences are sacred**: Email preview territory — hook earns the open
 - **Custom excerpt**: Write it separately, don't let Ghost auto-truncate
 - **Feature image**: Always include; 1200×630 for OG + email hero
-- **Schedule consideration**: Consistent day/time builds subscriber expectation (weekly = 73% retention)
+- **Schedule consideration**: Consistent day/time helps newsletter cadence and reader expectation
 
 ## Step 5 — Constraint conflict resolution
 

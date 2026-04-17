@@ -1,160 +1,160 @@
 # WordPress Platform DNA
 
-> **Scope:** This file describes observable platform behavior — format constraints, SEO conventions, discourse norms, and content patterns derived from WordPress ecosystem data and high-performing sites. It does NOT make claims about audience psychology, ethnicity, or cultural generalizations.
+> **Scope:** This file describes observable platform behavior from official WordPress editor, support, and REST API documentation: post fields, taxonomy, excerpt/featured-image behavior, scheduling, revisions, and site-level SEO conventions. It does NOT make claims about audience psychology or broad market stereotypes.
 
-## Platform snapshot (2025–2026)
+## Platform snapshot (2026)
 
-- 43.4% of all websites run WordPress; 59.9% CMS market share
-- 518 million+ websites powered by WordPress
-- 97% of bloggers prefer WordPress (among self-hosted/managed options)
-- Strong in: education (~75%), tech (~15%), eCommerce (~13%)
-- Notable users: BBC, TechCrunch, CNN, Sony Music, White House, Time
-- WooCommerce: 8.8% of all websites (dominant ecommerce plugin)
-- CMS market: $30.91B (2025), projected $45.71B by 2030
-- WordPress market share declining slightly (from 65.2% peak in 2022 to ~60% in 2025) — but still 9× larger than Shopify (#2)
+- WordPress is a **site CMS and publishing system**, not a feed algorithm or community network
+- A post is not just "body HTML" — it lives inside a larger object with:
+  - `title`
+  - `slug`
+  - `excerpt`
+  - `featured_media`
+  - `status`
+  - `categories`
+  - `tags`
+  - `template`
+  - optional `meta`
+- The editor stores **revisions** and **autosaves**
+- Posts can be **scheduled** for future publication
+- Final presentation is affected by the **theme** and, on modern sites, the **block editor / template system**
+
+If a draft only thinks about the body copy and ignores taxonomy, excerpt, featured image, and post status, it is not yet WordPress-native.
+
+## Product surfaces that matter
+
+WordPress posts typically have to work across several surfaces:
+
+1. **Editor surface** — title, excerpt, featured image, category/tag settings, scheduling, revisions
+2. **Theme surface** — post template, archive cards, search results, homepage modules
+3. **Search surface** — title, slug, excerpt/meta description, headings, links, structured content
+4. **Social preview surface** — featured image + title + excerpt
+5. **Site navigation surface** — categories, tags, related posts, internal links
+
+Strong WordPress content is written for these surfaces together, not just for the raw article body.
 
 ## Format constraints
 
 | Element | Constraint |
 |---------|-----------|
-| Title | **≤60 chars** for SERP snippet; keyphrase inclusion critical |
-| Slug | Separate from title; lowercase-hyphenated; stable (redirect on change) |
-| Excerpt | Separate field; meta description fallback; **≤155 chars** for SERP |
-| Featured image | Theme-dependent; **1200×630** safe default (OG social sharing) |
-| Categories | Hierarchical tree; 1–2 primary per post |
-| Tags | Flat taxonomy; 5–10 typical |
-| Body | Gutenberg blocks (modern WP) or Classic editor (HTML) |
-| Alt text | **Required** on every image (accessibility + SEO) |
-| Heading hierarchy | H1 = title only; H2 for sections; H3 for subsections |
-| Word count | 500–3,000; SEO pillar content often 2,000+ |
+| Title | Working sweet spot **50–65 chars** for search/share readability |
+| Slug | Separate post field; keep it short, stable, lowercase-hyphenated |
+| Excerpt | Separate summary field; if omitted, WordPress can fall back to the first **55 words** |
+| Featured image | Theme-dependent presentation; **1200×630** remains a safe social-preview default |
+| Categories | Hierarchical taxonomy; structure and navigation matter |
+| Tags | Flat taxonomy; optional, but useful for grouping/discovery |
+| Body | Usually block-editor content rendered as HTML |
+| Headings | H1 should remain the post title; use H2/H3 in the body |
+| Status | REST API supports `publish`, `future`, `draft`, `pending`, `private` |
+| Password | Optional per-post protection exists in the REST schema |
+| Template | Posts can declare a theme template in the REST schema |
 
 ## Discourse norms (observable)
 
 ### Register
 
-WordPress is a CMS, not a community — register varies by site type:
-- **SEO-driven content:** Professional, structured, scannable
-- **Personal blogs:** Conversational, first-person
-- **Business/corporate:** Formal, brand-aligned
-- **Common denominator:** Scannable structure (headings, bullets, short paragraphs)
+- **Site-native.** The voice should match the site or publication, not an imagined WordPress community
+- **Search-legible.** Readers often arrive from search or archive pages and need a fast orientation
+- **Structured and scannable.** Headings, lists, callouts, and concise paragraphs are rewarded by the medium
+- **Practical over ornamental.** WordPress articles usually perform best when they solve or explain something clearly
 
 ### Opening patterns
 
-- **Keyphrase in first paragraph** — SEO best practice enforced by Yoast/RankMath
-- **Problem framing:** "You've just deployed your app and..."
-- **Answer preview:** Tell readers what they'll learn before they scroll
-- **No filler openers:** "In today's rapidly evolving..." → penalized by readers and SEO
+- direct problem framing
+- answer-preview opening
+- key term in the first paragraph when search visibility matters
+- immediate clarification of who the article is for
 
 ### Closing patterns
 
-- **CTA block:** Subscribe, read related, download resource
-- **Related posts widget:** Usually auto-injected by theme/plugin
-- **Comment prompt:** "What's your experience with X?"
-- **Author bio:** E-E-A-T signal for Google
+- CTA to read related posts, subscribe, download, comment, or convert
+- internal link block or related resource suggestion
+- brief summary / next step section
 
 ### Citation conventions
 
-- Inline hyperlinks with keyword anchor text
-- `rel="nofollow"` for sponsored/affiliate links (Google policy)
-- Internal links: ≥1 to related posts (SEO signal)
-- Outbound links: ≥1 to authority source (E-E-A-T signal)
+- inline links are standard
+- internal links are valuable because WordPress is site-navigation-heavy
+- authority links matter when the article makes claims that need trust support
 
 ### Self-promo tolerance
 
-- **High** (site owner controls) — but Google penalizes thin affiliate content, keyword stuffing, doorway pages
-- E-E-A-T increasingly important: content must demonstrate Experience, Expertise, Authoritativeness, Trustworthiness
-- Product reviews need genuine, first-hand experience (Google Reviews Update)
-
-## Moderation & flagging patterns
-
-- WordPress itself has no platform-level moderation (it's a CMS, not a community)
-- Quality enforcement comes from:
-  - **Google rankings:** Core Updates penalize low-quality, thin, or AI-generated-without-value content
-  - **SEO plugin warnings:** Yoast/RankMath score and highlight issues in real time
-  - **User signals:** Bounce rate, time-on-page (indirect quality signals)
-- WordPress.com hosted sites have additional content policies
-
-## SEO plugin rubric (Yoast / RankMath)
-
-These are the observable "rules" that WordPress SEO plugins enforce — they function as de facto platform norms:
-
-| Check | Requirement |
-|-------|------------|
-| Focus keyphrase | In title, first paragraph, URL, ≥1 H2, meta description |
-| Meta description | ≤155 chars, contains keyphrase, is a complete thought |
-| Outbound links | ≥1 DoFollow to authority source |
-| Internal links | ≥1 to related post |
-| Alt text | On every image; keyphrase in ≥1 image alt |
-| Heading hierarchy | H1 once (title); H2 sections; H3 subsections |
-| Readability | Flesch score target; short paragraphs; transition words; passive voice ≤10% |
-| Keyphrase density | 0.5–2.5% (not stuffing) |
-| Previously used keyphrase | Warn if targeting same keyphrase as another post |
-| Content length | Flag if under ~300 words |
+- High, because the site owner controls the environment
+- But site quality still depends on usefulness, trust, and clear structure
+- Search-oriented sites especially suffer when content is thin, repetitive, or obviously keyword-stuffed
 
 ## Platform-native features to leverage
 
 | Feature | When / why |
 |---------|-----------|
-| Gutenberg blocks | Rich layout: columns, media, callouts, code, tables, cover |
-| Categories (hierarchical) | Site navigation; 1–2 per post |
-| Tags (flat) | Content grouping; 5–10 per post |
-| Featured image | Social sharing + post cards + SEO |
-| Excerpt field | Meta description + RSS summary |
-| Permalink structure | `/%postname%/` for SEO-friendly URLs |
-| Schema markup plugins | Article, HowTo, FAQ, Recipe → rich snippets |
-| Scheduled publish | Consistent cadence; set publish date |
-| Revisions | Version history for collaborative editing |
-| Redirects | SEO safety when changing slugs |
-| Custom fields | Structured metadata |
+| Excerpt field | Summary for archives, cards, search/share contexts, RSS-like surfaces |
+| Featured image | Used in blog listings, search results, and social previews depending on theme |
+| Categories | Hierarchical organization and archive routing |
+| Tags | Optional grouping and discovery aid |
+| Schedule / future status | Editorial cadence and staged publishing |
+| Revisions | Safe drafting, recovery, and update workflows |
+| Block editor | Cleaner structure via headings, media, callouts, tables, code blocks |
+| Template field | Matters on sites with multiple post templates |
+| Sticky posts | Useful for pinned editorial pieces |
+| Password/private status | Useful for controlled-access previews or internal posts |
+
+## SEO plugin rubric (Yoast / RankMath style)
+
+These are not WordPress core laws, but they are the de facto publishing rubric on many serious WordPress sites:
+
+| Check | Typical requirement |
+|-------|---------------------|
+| Focus keyphrase | In title, first paragraph, URL, and at least one section heading |
+| Meta/excerpt quality | Short, complete, useful, non-duplicative |
+| Internal links | At least one meaningful internal link |
+| Outbound links | At least one useful authority link when claims need support |
+| Alt text | Required on images for accessibility and often SEO workflows |
+| Heading hierarchy | Single H1 via title, then H2/H3 structure |
+| Readability | Short paragraphs, transition words, low clutter |
+| Thin content check | The post must be substantial enough for its query/goal |
 
 ## Hard limits (must not violate)
 
-- H1 should appear only once (= post title) — multiple H1 = SEO penalty
-- `upload_max_filesize`: server-dependent, typically 2–64MB
-- Theme-dependent rendering: Gutenberg blocks may render differently per theme
-- Plugins may restrict allowed HTML in body
-- WP REST API field names: `slug`, `excerpt`, `featured_media`, `categories`, `tags`, `status`, `meta`
-- Categories are hierarchical, tags are flat — do NOT confuse them
+- H1 belongs to the post title; do not duplicate it in the body
+- Theme rendering varies; block-heavy or complex layouts may display differently across themes
+- The REST API expects concrete post fields like `slug`, `excerpt`, `featured_media`, `status`, `categories`, and `tags`
+- Categories are hierarchical and tags are flat; they should not be used interchangeably
+- Featured-image presentation is theme-controlled, so one image may behave differently across sites
+- Revisions and scheduling are first-class features; changing publish timing should be deliberate
 
 ## Anti-patterns
 
 | Anti-pattern | Why it fails |
 |-------------|-------------|
-| Multiple H1 headings | SEO penalty; confuses document structure |
-| Keyword stuffing | Google penalizes; SEO plugins flag red |
-| Thin content for target keyphrase | Helpful Content Update penalizes |
-| Missing alt text | Accessibility violation + missed SEO signal |
-| Broken internal links | Crawl errors; user frustration |
-| Duplicate H2 text | Confuses search engines; looks lazy |
-| No featured image | Weak social sharing; post cards show placeholder |
-| Missing excerpt/meta description | SERP shows auto-generated snippet (often poor) |
-| Categories used as tags (or vice versa) | Breaks site structure and navigation |
-| Publish-and-forget | Stale content loses rankings; update/revive strategy critical |
-| Code blocks without language tags | No syntax highlighting; unprofessional appearance |
+| Treating WordPress as "HTML only" | Misses excerpt, featured image, taxonomy, status, and template surfaces |
+| Multiple H1 headings | Breaks document hierarchy and common SEO expectations |
+| No excerpt | Archive/search/social summary becomes weak or auto-generated |
+| No featured image | Cards and previews often look incomplete |
+| Categories used like tags | Damages site structure and archive quality |
+| Keyword-stuffed headings | Looks artificial and hurts readability |
+| No internal linking plan | Misses WordPress's site-navigation advantage |
+| Ignoring revisions/scheduling | Weak editorial workflow and update safety |
+| Theme-dependent layout assumptions | Breaks across templates or blocks |
 
 ## Example calibration patterns
 
-**High-ranking WordPress article structure:**
-1. Title: ≤60 chars, keyphrase front-loaded
-2. Slug: lowercase-hyphenated, matches keyphrase
-3. Featured image: 1200×630, alt text with keyphrase
-4. Excerpt/meta: ≤155 chars, keyphrase included, value proposition
-5. First paragraph: Problem statement + keyphrase
-6. H2 sections: 3–7 major sections, each addressing a sub-topic
-7. Code/examples: With language tags, runnable where applicable
-8. Internal links: 2–5 to related posts
-9. Outbound link: ≥1 to authority source
-10. Conclusion: Summary + CTA
-11. Categories: 1–2 primary
-12. Tags: 5–10 relevant
-13. Schema: Article or HowTo structured data
+**Strong WordPress post structure:**
+1. Clear title
+2. Short slug
+3. Intentional excerpt
+4. Featured image chosen for cards/social
+5. First paragraph that explains the problem and payoff
+6. H2-led body with scannable sections
+7. Internal links and at least one authority link where useful
+8. Categories and tags chosen intentionally
+9. Draft / future / publish state selected deliberately
 
-**Content types by WordPress SEO performance:**
+**Best-fit content types:**
 
-| Type | Word count | SEO power |
-|------|-----------|-----------|
-| Pillar / cornerstone | 2,000–4,000 | Highest (head keywords) |
-| Tutorial / how-to | 800–1,500 | High (long-tail) |
-| List post | 1,000–2,000 | Medium-high (shareable) |
-| Update / news | 300–800 | Medium (time-sensitive) |
-| FAQ | 500–1,200 | Medium (featured snippets) |
+| Type | Why it fits WordPress |
+|------|------------------------|
+| SEO tutorials | Search + archive + internal-link strengths |
+| Evergreen explainers | Strong fit for site-owned long-form content |
+| Company blog posts | Matches owned-brand publishing |
+| Documentation-lite guides | Block editor + taxonomy + revisions help a lot |
+| List posts / FAQs | Structured, scannable, archive-friendly |

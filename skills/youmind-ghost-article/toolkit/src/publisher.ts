@@ -7,7 +7,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import {
   type GhostConfig,
   loadGhostConfig,
@@ -29,12 +29,20 @@ export interface PublishOptions {
   status?: 'published' | 'draft' | 'scheduled';
   /** Tag names to assign (first is primary tag) */
   tags?: string[];
+  /** Internal Ghost tag names; prefixed with # automatically */
+  internalTags?: string[];
   /** Path to feature image file */
   featureImage?: string;
   /** Feature image URL (alternative to file upload) */
   featureImageUrl?: string;
+  /** Override custom excerpt */
+  customExcerpt?: string;
   /** Override title */
   title?: string;
+  visibility?: 'public' | 'members' | 'paid' | 'tiers';
+  slug?: string;
+  featured?: boolean;
+  publishedAt?: string;
   /** Ghost config (loaded from ~/.youmind/config.yaml when not provided) */
   config?: GhostConfig;
 }
@@ -62,8 +70,13 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
 
   // Read Markdown content
   let markdown: string;
-  if (options.isFile !== false && existsSync(resolve(options.input))) {
-    markdown = readFileSync(resolve(options.input), 'utf-8');
+  const resolvedInputPath = resolve(options.input);
+  const inputPath =
+    options.isFile !== false && existsSync(resolvedInputPath) ? resolvedInputPath : undefined;
+  const inputDir = inputPath ? dirname(inputPath) : process.cwd();
+
+  if (inputPath) {
+    markdown = readFileSync(inputPath, 'utf-8');
   } else {
     markdown = options.input;
   }
@@ -88,18 +101,47 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     markdown,
     title: options.title,
     tagNames: options.tags,
-    featureImage: featureImageUrl,
+    internalTagNames: options.internalTags,
+    featureImage: options.featureImage,
+    featureImageUrl,
+    customExcerpt: options.customExcerpt,
+    status: options.status,
+    visibility: options.visibility,
+    slug: options.slug,
+    featured: options.featured,
+    publishedAt: options.publishedAt,
   });
 
+  const adaptedFeatureImagePath = adapted.featureImagePath
+    ? resolve(inputDir, adapted.featureImagePath)
+    : undefined;
+
+  if (!featureImageUrl && adaptedFeatureImagePath && existsSync(adaptedFeatureImagePath)) {
+    try {
+      const image = await uploadImage(config, adaptedFeatureImagePath);
+      featureImageUrl = image.url;
+      console.log(`Feature image uploaded: ${image.url}`);
+    } catch (e) {
+      console.error(`Failed to upload feature image: ${(e as Error).message}`);
+      console.error('Continuing without feature image...');
+    }
+  }
+
+  featureImageUrl = featureImageUrl ?? adapted.featureImageUrl;
+
   // Create the post
-  const status = options.status || 'draft';
+  const status = adapted.status || 'draft';
   const post = await createPost(config, {
     title: adapted.title,
     html: adapted.html,
     custom_excerpt: adapted.excerpt,
     status,
     tags: adapted.tags.length ? adapted.tags : undefined,
-    feature_image: adapted.featureImage,
+    feature_image: featureImageUrl,
+    featured: adapted.featured,
+    visibility: adapted.visibility,
+    slug: adapted.slug,
+    published_at: adapted.publishedAt,
   });
 
   return {

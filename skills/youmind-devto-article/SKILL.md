@@ -176,7 +176,7 @@ This skill is **self-contained and fully usable standalone.** The `youmind-artic
 
 ## Content Modes
 
-Before writing any content, read `references/platform-dna.md` to internalize Dev.to's format constraints, discourse norms, and community patterns (12.4M monthly visits; backend content growing, beginner content declining).
+Before writing any content, read `references/platform-dna.md` to internalize Dev.to's real product surface: TL;DR-first openings, YAML frontmatter, canonical URL discipline, Liquid embeds, and tag-driven feed discovery.
 
 ### Intent routing
 
@@ -184,9 +184,11 @@ Before writing any content, read `references/platform-dna.md` to internalize Dev
 |--------------|-----------|-----------------|
 | Idea, topic, or talking points only | Generate | `references/content-generation-playbook.md` |
 | Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
-| Article in another language | Translate | `content-adaptation-playbook.md` (translate mode) |
-| Old Dev.to post to refresh | Revive | `content-adaptation-playbook.md` (revive mode) |
-| Long piece to trim | Condense | `content-adaptation-playbook.md` (condense mode) |
+| Article in another language | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Same-language article needing Dev.to-native voice | Localize | `references/content-adaptation-playbook.md` (localize mode) |
+| Old Dev.to post to refresh | Revive | `references/content-adaptation-playbook.md` (revive mode) |
+| Long piece to trim | Condense | `references/content-adaptation-playbook.md` (condense mode) |
+| Section from larger work | Excerpt | `references/content-adaptation-playbook.md` (excerpt mode) |
 
 ### Quality gates (before publish)
 
@@ -214,9 +216,9 @@ Read `references/pipeline.md` for full execution details of each step.
 | 1 | Load config and validate the YouMind API key and Dev.to connection in YouMind | -- |
 | 2 | Mine YouMind knowledge base for source material | -- |
 | 3 | Research topic: web search, trending discussions | -- |
-| 4 | Content adaptation: structure for Dev.to audience | `content-adaptation.md` |
+| 4 | Content adaptation: structure for Dev.to audience | `references/content-adaptation.md` |
 | 5 | Write article with code examples, TL;DR, proper structure | -- |
-| 6 | Publish to Dev.to (draft or public) | `api-reference.md` |
+| 6 | Publish to Dev.to (draft or public) | `references/api-reference.md` |
 | 7 | Report results: title, URL, tags, published status, result links | -- |
 
 **Routing shortcuts:**

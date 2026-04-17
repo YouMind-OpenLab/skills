@@ -151,7 +151,7 @@ This skill is **self-contained and fully usable standalone.** The `youmind-artic
 
 ## Content Modes
 
-Before writing any content, read `references/platform-dna.md` to internalize WordPress + SEO norms (43.4% of web, Yoast/RankMath rubric, E-E-A-T, heading hierarchy, focus keyphrase discipline).
+Before writing any content, read `references/platform-dna.md` to internalize WordPress's real publishing surfaces: block editor, excerpt, featured image, categories/tags, scheduling, revisions, REST post fields, and Yoast/RankMath-style SEO discipline.
 
 ### Intent routing
 
@@ -159,9 +159,11 @@ Before writing any content, read `references/platform-dna.md` to internalize Wor
 |--------------|-----------|-----------------|
 | Idea, topic, or thesis only | Generate | `references/content-generation-playbook.md` |
 | Existing article from blog/other platform | Cross-post | `references/content-adaptation-playbook.md` |
-| Old WordPress post to refresh | Revive | `content-adaptation-playbook.md` (revive mode, SEO freshness) |
-| Long piece → supporting posts | Condense/split | `content-adaptation-playbook.md` (condense mode) |
-| Article in another language | Translate | `content-adaptation-playbook.md` (translate mode) |
+| Old WordPress post to refresh | Revive | `references/content-adaptation-playbook.md` (revive mode, SEO freshness) |
+| Long piece → supporting posts | Condense/split | `references/content-adaptation-playbook.md` (condense mode) |
+| Article in another language | Translate | `references/content-adaptation-playbook.md` (translate mode) |
+| Same-language article needing SEO + site-voice adaptation | Localize | `references/content-adaptation-playbook.md` (localize mode) |
+| Section from a pillar article → supporting post | Excerpt | `references/content-adaptation-playbook.md` (excerpt mode) |
 
 ### Quality gates (before publish)
 
@@ -187,9 +189,9 @@ Read `references/pipeline.md` for full execution details.
 | Step | Action | Key reference |
 |------|--------|--------------|
 | 1 | Load config, validate `youmind.api_key`, and confirm WordPress is connected in YouMind | — |
-| 2 | Mine YouMind knowledge base for source material | `api-reference.md` |
+| 2 | Mine YouMind knowledge base for source material | `references/api-reference.md` |
 | 3 | Research topic via web search | — |
-| 4 | Adapt content structure for WordPress | `content-adaptation.md` |
+| 4 | Adapt content structure for WordPress | `references/content-adaptation.md` |
 | 5 | Write article in Markdown | — |
 | 6 | Convert to HTML and publish through YouMind `/wordpress/*` OpenAPI | `pipeline.md` |
 | 7 | Report results: title, URL, post ID, status, result links | — |

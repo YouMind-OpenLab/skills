@@ -79,9 +79,15 @@ program
   .option('--publish', 'Publish immediately')
   .option('--scheduled', 'Set status to scheduled')
   .option('--tags <names>', 'Comma-separated tag names (first is primary)')
+  .option('--internal-tags <names>', 'Comma-separated internal tag names (stored as #tags)')
   .option('--feature-image <file>', 'Path to feature image file')
   .option('--feature-image-url <url>', 'URL for feature image')
+  .option('--custom-excerpt <text>', 'Override Ghost custom excerpt')
   .option('--title <title>', 'Override post title')
+  .option('--visibility <public|members|paid|tiers>', 'Post visibility')
+  .option('--slug <slug>', 'Override post slug')
+  .option('--featured', 'Mark the post as featured')
+  .option('--published-at <iso>', 'Set published timestamp')
   .action(async (input: string, opts: Record<string, string | boolean | undefined>) => {
     try {
       // Determine status
@@ -92,6 +98,9 @@ program
       const tags = typeof opts.tags === 'string'
         ? opts.tags.split(',').map(t => t.trim()).filter(Boolean)
         : undefined;
+      const internalTags = typeof opts.internalTags === 'string'
+        ? opts.internalTags.split(',').map(t => t.trim()).filter(Boolean)
+        : undefined;
 
       console.log(`Publishing ${input} as ${status}...`);
 
@@ -100,9 +109,18 @@ program
         isFile: true,
         status,
         tags,
+        internalTags,
         featureImage: typeof opts.featureImage === 'string' ? opts.featureImage : undefined,
         featureImageUrl: typeof opts.featureImageUrl === 'string' ? opts.featureImageUrl : undefined,
+        customExcerpt: typeof opts.customExcerpt === 'string' ? opts.customExcerpt : undefined,
         title: typeof opts.title === 'string' ? opts.title : undefined,
+        visibility:
+          typeof opts.visibility === 'string'
+            ? (opts.visibility as 'public' | 'members' | 'paid' | 'tiers')
+            : undefined,
+        slug: typeof opts.slug === 'string' ? opts.slug : undefined,
+        featured: opts.featured ? true : undefined,
+        publishedAt: typeof opts.publishedAt === 'string' ? opts.publishedAt : undefined,
       });
 
       console.log('\nPublished successfully!');

@@ -2,15 +2,13 @@
 
 > **Scope:** This file describes observable platform behavior — format constraints, discourse norms, community signals, and content patterns derived from Dev.to platform data and high-performing articles. It does NOT make claims about audience psychology, ethnicity, or cultural generalizations.
 
-## Platform snapshot (2025)
+## Platform snapshot
 
-- ~12.4 million monthly visits
-- Built on Forem (open-source community platform)
-- Audience composition: ~60% aged 18–34, ~80% male
-- Mix of junior to senior developers, educators, open source contributors, DevRel
-- Reaction system: hearts (❤️), unicorns (🦄), bookmarks (saved)
-- Content trends (2025): backend catching up with frontend in article volume, Python surging (AI-driven), beginner-tagged content declining from 14% to ~5%, advanced topics growing
-- Profile-as-portfolio: articles serve as developer credential
+- Built on Forem, so article rendering is Markdown + Liquid-embed centric rather than arbitrary HTML/CSS
+- Feed discovery is heavily shaped by title, description, tags, cover image, and early community reactions
+- Canonical URL is a first-class field, which makes Dev.to unusually friendly to cross-posting
+- Series, organization profiles, and comments are all native distribution surfaces rather than afterthoughts
+- Articles also function as profile proof: readers often evaluate the author through code quality, honesty, and reply behavior
 
 ## Format constraints
 
@@ -95,7 +93,7 @@
 | Cover image (1000×420) | Significantly increases engagement and feed visibility |
 | Liquid embeds | Inline tweets, CodePens, YouTube, GitHub repos |
 | Frontmatter | Full control: title, tags, series, canonical, published state |
-| Reactions (❤️/🦄/bookmark) | Engagement signals that drive feed ranking algorithm |
+| Reactions (❤️/🦄/bookmark) | Early engagement signals that influence whether a post keeps surfacing |
 | `#discuss` tag | Conversational/opinion pieces with lower promo expectation |
 | Organization profile | Company-branded dev blog hosted on Dev.to |
 | Comments | Community engagement; authors expected to reply |
@@ -140,18 +138,18 @@
 10. Conclusion + reaction CTA
 11. Tags: 3–4 from popular taxonomy
 
-**Content type performance (2025 trends):**
+**Content type calibration:**
 
-| Type | Engagement | Trend direction |
-|------|-----------|----------------|
-| "How I built X" ship narrative | High | Stable |
-| Deep-dive architecture | High | Growing ↑ |
-| Tutorial with code | High | Stable |
-| Performance optimization | Medium-high | Growing ↑ |
-| Security / DevOps | Medium | Growing ↑ |
-| Beginner guides | Medium | Declining ↓ |
-| Opinion / #discuss | Medium | Stable |
-| "Top N" listicle | Low-medium | Declining ↓ |
+| Type | Typical fit |
+|------|-------------|
+| "How I built X" ship narrative | Strong |
+| Deep-dive architecture | Strong |
+| Tutorial with code | Strong |
+| Performance optimization | Strong |
+| Security / DevOps | Solid |
+| Beginner guides | Situational |
+| Opinion / #discuss | Situational |
+| "Top N" listicle | Weak |
 
 **Popular tag taxonomy:**
 `javascript`, `typescript`, `python`, `webdev`, `react`, `node`, `tutorial`, `beginners`, `productivity`, `devops`, `database`, `testing`, `opensource`, `ai`, `rust`, `go`

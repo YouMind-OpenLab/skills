@@ -26,7 +26,6 @@ supported_operations:
   - localize
   - revive
   - excerpt
-  - summarize
 
 hard_limits:
   max_tags: 4
