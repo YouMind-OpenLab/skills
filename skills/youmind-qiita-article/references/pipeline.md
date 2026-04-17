@@ -67,7 +67,7 @@ Read `content-adaptation.md` before this step.
 1. Run `cli.ts publish` with the markdown file
 2. Default to private mode (`private: true`) unless user explicitly requests public
 3. Include tags
-4. Report article ID, URL, and status
+4. Report article ID, URL, status, and result links
 
 **Fallback:** If Qiita publishing through YouMind fails, save the markdown locally. User can copy-paste into Qiita editor.
 
@@ -80,6 +80,9 @@ Article Published!
   Title: [title]
   URL: [url]
   Status: private / public
+  Result links:
+    - Direct Qiita item URL
+    - Best Qiita entry URL if no exact results page exists
   Tags: [tag1, tag2, tag3]
   ID: [item_id]
   Word count: ~[count]

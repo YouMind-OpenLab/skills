@@ -192,6 +192,15 @@ Before writing any content, read `references/platform-dna.md` to internalize X's
 2. **Conformance report**: Generate and present to user (Step 7/8)
 3. **User approval**: Do not auto-publish without confirmation
 
+### Result Links Rule
+
+After any tweet or thread publish action, always end with `Result links`.
+
+- Prefer the direct X post URL(s).
+- For threads, include the lead tweet URL plus any additional per-post URLs already available.
+- If no exact results page exists, return the best X platform entry URL instead.
+- Never leave the user with only raw post IDs.
+
 ---
 
 ## Pipeline Overview
@@ -205,7 +214,7 @@ Read `references/pipeline.md` for full execution details.
 | 3 | Research topic via web search | -- |
 | 4 | Adapt content: 280 char limit, split into sequence if long | `content-adaptation.md` |
 | 5 | Publish to X via YouMind X OpenAPI | `api-reference.md` |
-| 6 | Report results: post IDs, X URLs |  |
+| 6 | Report results: post IDs, X URLs, result links |  |
 
 **Routing shortcuts:**
 

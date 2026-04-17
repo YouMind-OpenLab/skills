@@ -7,6 +7,7 @@ This file captures shared publishing rules for YouMind skills that create drafts
 - Prefer draft mode first unless the user explicitly asks for direct publish.
 - Validate the remote connection before the first publish attempt.
 - Report the platform object ID and public URL when available.
+- Never stop at raw IDs. Always return the best clickable result links after draft/publish actions.
 
 ## Smoke Test Rules
 
@@ -28,8 +29,16 @@ A successful publish or draft operation should return enough information for fol
 - `title`
 - `status`
 - `url`
+- `result_links`
 - `post_id` or `draft_id`
 - `notes`
+
+`result_links` should be a labeled list of the best follow-up URLs for the user.
+
+- Prefer the direct public post URL when it exists.
+- Also include the draft/dashboard/admin/results URL when the platform exposes one.
+- If no precise analytics or management URL exists, include the best platform entry URL instead.
+- Never end the run with only opaque IDs when a clickable link is possible.
 
 ## Shared Config Rule
 

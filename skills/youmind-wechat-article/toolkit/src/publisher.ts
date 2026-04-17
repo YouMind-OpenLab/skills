@@ -11,6 +11,11 @@ import { createDraftFull } from './wechat-api.js';
 
 export interface DraftResult {
   mediaId: string;
+  resultLinks?: Array<{
+    label: string;
+    kind: string;
+    url: string;
+  }>;
 }
 
 export interface CreateDraftOptions {
@@ -44,5 +49,5 @@ export async function createDraft(options: CreateDraftOptions): Promise<DraftRes
       onlyFansCanComment: options.onlyFansCanComment,
     },
   ]);
-  return { mediaId: draft.mediaId };
+  return { mediaId: draft.mediaId, resultLinks: draft.resultLinks };
 }

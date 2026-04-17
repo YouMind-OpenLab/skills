@@ -67,6 +67,13 @@ After dispatch invokes a platform skill, the skill should produce a result that 
 platform: "devto"                # platform identifier (matches capability manifest)
 status: "published"              # published | draft | failed | skipped
 url: "https://dev.to/..."        # null if not available yet
+result_links:                    # best clickable result entry points
+  - label: "Published article"
+    kind: "public_post"
+    url: "https://dev.to/..."
+  - label: "Dashboard / results"
+    kind: "dashboard"
+    url: "https://dev.to/dashboard"
 title: "The final title used"    # may differ from brief due to platform adaptation
 post_id: "abc123"                # platform-specific ID
 error: null                      # populated only if status=failed
@@ -76,6 +83,8 @@ conformance_report:              # from playbook Step 7/8
   deliberate_deviations: [...]
   unresolved_mismatches: [...]
 ```
+
+`result_links` is the durable field dispatch should rely on when users want to check reads, likes, comments, or next-step actions after publish. If a platform cannot provide a direct analytics URL, return the best platform entry URL instead.
 
 ## Contract — Platform Capability Manifest
 

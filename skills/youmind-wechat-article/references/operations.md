@@ -39,6 +39,10 @@ When the user asks about article stats: fetch with `fetch-stats.js`, backfill hi
 2. **Underperformer:** Which article lagged? Root cause hypothesis.
 3. **Adjustments:** Specific changes for the next article's topic selection, title strategy, or framework choice.
 
+When reporting the review, also surface the best available **result links**:
+- Prefer the direct article URL when history/OpenAPI has it.
+- If no direct article/stats URL is available, return the WeChat Official Account backend link so the user can click through to publish management and data views.
+
 ---
 
 ## Client Onboarding

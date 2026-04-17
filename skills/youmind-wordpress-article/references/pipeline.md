@@ -51,6 +51,7 @@
   - Title
   - URL
   - Status (draft/published)
+  - result links (post URL first, WordPress admin/best entry URL as fallback)
   - Slug
   - Excerpt preview
 - If YouMind is configured, optionally archive the article to YouMind knowledge base.

@@ -193,6 +193,14 @@ Before writing any content, read `references/platform-dna.md` to internalize Qii
 3. **Image check**: Zero `cdn.gooo.ai` URLs in final body
 4. **User approval**: Do not auto-publish without confirmation
 
+### Result Links Rule
+
+After any private or public publish action, always end with `Result links`.
+
+- Prefer the direct Qiita item URL.
+- If no exact results page exists, return the best Qiita entry URL instead.
+- Never leave the user with only an item ID.
+
 ---
 
 ## Pipeline Overview
@@ -207,7 +215,7 @@ Read `references/pipeline.md` for full execution details of each step.
 | 4 | Content adaptation: structure for Qiita audience | `content-adaptation.md` |
 | 5 | Write article with code examples, environment info, proper structure | -- |
 | 6 | Publish to Qiita (private or public) | `api-reference.md` |
-| 7 | Report results: title, URL, tags, published status | -- |
+| 7 | Report results: title, URL, tags, published status, result links | -- |
 
 **Routing shortcuts:**
 

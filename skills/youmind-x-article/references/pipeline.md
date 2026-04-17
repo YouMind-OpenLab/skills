@@ -45,6 +45,7 @@ All publishing flows through YouMind's OpenAPI. The caller holds only a YouMind 
 
 ### Step 8 -- Report Results
 - Display post IDs and URLs
+- Include result links (lead tweet URL first, best platform entry URL as fallback)
 - Show character counts
 - List any warnings (adaptation truncation, rejected non-CDN media URLs, thread-chain degradation)
 - Provide engagement tips

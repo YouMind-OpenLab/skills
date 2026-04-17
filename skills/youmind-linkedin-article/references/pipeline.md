@@ -49,6 +49,7 @@
 ### Step 8: Report Results
 - Display:
   - Post ID
+  - result links (post URL first, best platform entry URL as fallback)
   - Character count
   - Extracted links (for first comment)
   - Any warnings from adaptation

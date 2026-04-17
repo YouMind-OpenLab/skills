@@ -149,6 +149,15 @@ Before writing any content, read `references/platform-dna.md` to internalize Has
 3. **Canonical URL**: Set correctly for cross-posts (trailing slash matters)
 4. **User approval**: Do not auto-publish without confirmation
 
+### Result Links Rule
+
+After any draft or publish action, always end with `Result links`.
+
+- Prefer the public Hashnode post URL for published posts.
+- For drafts, include the Hashnode dashboard URL when available.
+- If no exact results page exists, return the best platform entry URL instead.
+- Never leave the user with only a draft ID or post ID.
+
 ## Behavior Rules
 
 1. Default to draft creation unless the user explicitly asks to publish immediately.
@@ -164,8 +173,9 @@ Before writing any content, read `references/platform-dna.md` to internalize Has
 3. Adapt content with `content-adapter.ts`
 4. Use `publish --draft` by default
 5. If the user wants immediate publication, use `publish --publish`
-6. Report draft vs published state clearly
+6. Report draft vs published state clearly, including result links
 7. For drafts, show the Hashnode dashboard URL when available
+8. For published posts, include the public URL in result links
 
 ## Failure Handling
 

@@ -33,6 +33,7 @@ import {
   getAccessToken,
   listDrafts,
   listPublished,
+  type WeChatResultLink,
   uploadImage,
   uploadThumb,
   validateConnection,
@@ -57,6 +58,25 @@ function loadCustomTheme(jsonPath: string): Theme {
     color: raw.tokens?.color ?? DEFAULT_COLOR,
     styles,
   };
+}
+
+function printResultLinks(
+  resultLinks: WeChatResultLink[] | undefined,
+  options?: { indent?: string; skipUrls?: string[] },
+): void {
+  if (!resultLinks || resultLinks.length === 0) {
+    return;
+  }
+
+  const indent = options?.indent ?? '';
+  const filteredLinks = resultLinks.filter((link) => !options?.skipUrls?.includes(link.url));
+  if (filteredLinks.length === 0) {
+    return;
+  }
+  console.log(`${indent}Result links:`);
+  for (const link of filteredLinks) {
+    console.log(`${indent}  - ${link.label}: ${link.url}`);
+  }
 }
 
 // --- Commands ---
@@ -200,6 +220,7 @@ program
     });
 
     console.log(`\nDraft created! media_id: ${draft.mediaId}`);
+    printResultLinks(draft.resultLinks);
   });
 
 program
@@ -234,6 +255,7 @@ program
       for (const d of r.items) {
         const titles = d.articles.map((a) => a.title).join(' / ');
         console.log(`  [${d.mediaId}] ${titles || '(no title)'}`);
+        printResultLinks(d.resultLinks, { indent: '    ' });
       }
     } catch (e) {
       console.error(`list-drafts failed: ${(e as Error).message}`);
@@ -260,6 +282,7 @@ program
         const url = item.articles[0]?.url ?? '';
         console.log(`  [${item.articleId}] ${titles || '(no title)'}`);
         if (url) console.log(`         ${url}`);
+        printResultLinks(item.resultLinks, { indent: '    ', skipUrls: url ? [url] : [] });
       }
     } catch (e) {
       console.error(`list-published failed: ${(e as Error).message}`);

@@ -28,6 +28,12 @@ export interface WeChatConnectionResult {
   tokenExpiresIn: number;
 }
 
+export interface WeChatResultLink {
+  label: string;
+  kind: string;
+  url: string;
+}
+
 export interface WeChatArticleInput {
   title: string;
   content: string;
@@ -58,6 +64,7 @@ export interface WeChatDraft {
   mediaId: string;
   articles: WeChatArticle[];
   updateTime?: number;
+  resultLinks?: WeChatResultLink[];
 }
 
 export interface WeChatDraftListResponse {
@@ -70,6 +77,7 @@ export interface WeChatPublishedItem {
   articleId: string;
   articles: WeChatArticle[];
   updateTime?: number;
+  resultLinks?: WeChatResultLink[];
 }
 
 export interface WeChatPublishedListResponse {
@@ -81,6 +89,7 @@ export interface WeChatPublishedListResponse {
 export interface WeChatPublishSubmit {
   publishId: string;
   msgDataId?: string;
+  resultLinks?: WeChatResultLink[];
 }
 
 export interface WeChatPublishStatus {
@@ -89,6 +98,7 @@ export interface WeChatPublishStatus {
   articleId?: string;
   articles?: WeChatArticle[];
   failIdx?: number[];
+  resultLinks?: WeChatResultLink[];
 }
 
 // ---------------------------------------------------------------------------
@@ -289,7 +299,26 @@ function normalizeDraft(d: Record<string, unknown>): WeChatDraft {
       ? d.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
       : [],
     updateTime: typeof d.updateTime === 'number' ? d.updateTime : undefined,
+    resultLinks: normalizeResultLinks(d.resultLinks),
   };
+}
+
+function normalizeResultLinks(value: unknown): WeChatResultLink[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const links = value
+    .map((entry) => {
+      const item = entry as Record<string, unknown>;
+      const label = typeof item.label === 'string' ? item.label : '';
+      const kind = typeof item.kind === 'string' ? item.kind : '';
+      const url = typeof item.url === 'string' ? item.url : '';
+      return label && url ? { label, kind, url } : null;
+    })
+    .filter((entry): entry is WeChatResultLink => entry !== null);
+
+  return links.length > 0 ? links : undefined;
 }
 
 export async function createDraftFull(
@@ -355,7 +384,7 @@ export async function publishDraft(
   mediaId: string,
   config?: WeChatConfig,
 ): Promise<WeChatPublishSubmit> {
-  const r = await postJson<{ publishId?: string; msgDataId?: string }>(
+  const r = await postJson<{ publishId?: string; msgDataId?: string; resultLinks?: unknown[] }>(
     '/wechat/publishDraft',
     { mediaId },
     config,
@@ -363,6 +392,7 @@ export async function publishDraft(
   return {
     publishId: String(r.publishId ?? ''),
     msgDataId: r.msgDataId,
+    resultLinks: normalizeResultLinks(r.resultLinks),
   };
 }
 
@@ -383,6 +413,7 @@ export async function getPublishStatus(
       ? r.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
       : undefined,
     failIdx: Array.isArray(r.failIdx) ? (r.failIdx as number[]) : undefined,
+    resultLinks: normalizeResultLinks(r.resultLinks),
   };
 }
 
@@ -407,6 +438,7 @@ export async function listPublished(
               ? obj.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
               : [],
             updateTime: typeof obj.updateTime === 'number' ? obj.updateTime : undefined,
+            resultLinks: normalizeResultLinks(obj.resultLinks),
           };
         })
       : [],
@@ -430,6 +462,7 @@ export async function getPublished(
       ? r.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
       : [],
     updateTime: typeof r.updateTime === 'number' ? r.updateTime : undefined,
+    resultLinks: normalizeResultLinks(r.resultLinks),
   };
 }
 

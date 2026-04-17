@@ -169,6 +169,15 @@ Before writing any content, read `references/platform-dna.md` to internalize Wor
 2. **Conformance report**: Generate and present to user (Step 7/8)
 3. **User approval**: Do not auto-publish without confirmation
 
+### Result Links Rule
+
+After any draft or publish action, always end with `Result links`.
+
+- Prefer the direct WordPress post URL.
+- Include the best WordPress admin/posts URL when available for editing and result review.
+- If no exact results page exists, return the best platform entry URL instead.
+- Never leave the user with only a post ID or slug.
+
 ---
 
 ## Pipeline Overview
@@ -183,7 +192,7 @@ Read `references/pipeline.md` for full execution details.
 | 4 | Adapt content structure for WordPress | `content-adaptation.md` |
 | 5 | Write article in Markdown | — |
 | 6 | Convert to HTML and publish through YouMind `/wordpress/*` OpenAPI | `pipeline.md` |
-| 7 | Report results: title, URL, post ID, status | — |
+| 7 | Report results: title, URL, post ID, status, result links | — |
 
 ## Resilience: Never Stop on a Single-Step Failure
 

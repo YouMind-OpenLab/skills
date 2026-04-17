@@ -178,7 +178,15 @@ This skill is **self-contained and fully usable standalone.** The `youmind-artic
 | 5 | Upload images if provided |
 | 6 | Publish to LinkedIn |
 | 7 | Archive to YouMind (optional) |
-| 8 | Report results: post URL, engagement tips |
+| 8 | Report results: post URL, result links, engagement tips |
+
+## Result Links Rule
+
+After any publish action, always end with `Result links`.
+
+- Prefer the direct LinkedIn post URL.
+- If no exact post/results URL is available, return the best LinkedIn feed or platform entry URL instead.
+- Never leave the user with only a post ID.
 
 ## Content Rules
 

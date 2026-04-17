@@ -28,6 +28,8 @@ node dist/cli.js publish {markdown_path} \
   [--custom-theme {theme_json_path}]
 ```
 
+Successful runs print `media_id` plus `Result links`, so the user can click straight into the WeChat backend for draft review, publishing, and later stats checking.
+
 Parameter priority: `--custom-theme` > CLI args > `style.yaml` values > defaults
 
 ### Theme Comparison Preview

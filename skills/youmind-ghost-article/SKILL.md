@@ -192,6 +192,15 @@ Before writing any content, read `references/platform-dna.md` to internalize Gho
 3. **Newsletter readiness**: Custom excerpt + email-safe HTML + CTA verified
 4. **User approval**: Do not auto-publish without confirmation
 
+### Result Links Rule
+
+After any draft, scheduled, or published Ghost action, always end with `Result links`.
+
+- Prefer the public URL for live posts.
+- Include the Ghost Admin URL for draft/scheduled review and management.
+- If no exact results page exists, return the best Ghost admin entry URL instead.
+- Never leave the user with only a post ID or slug.
+
 ---
 
 ## Pipeline Overview
@@ -206,7 +215,7 @@ Read `references/pipeline.md` for full execution details.
 | 4 | Adapt content for Ghost audience and HTML rendering | `content-adaptation.md` |
 | 5 | Write article in Markdown | -- |
 | 6 | Publish to Ghost via YouMind Ghost OpenAPI | `api-reference.md` |
-| 7 | Report results: post ID, status, public URL, Ghost Admin URL | -- |
+| 7 | Report results: post ID, status, public URL, Ghost Admin URL, result links | -- |
 
 **Routing shortcuts:**
 

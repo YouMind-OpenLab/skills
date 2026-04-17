@@ -62,7 +62,7 @@ Read `content-adaptation.md` before this step.
 1. Run `cli.ts publish` with the markdown file
 2. Default to draft mode (`published: false`) unless user explicitly requests public
 3. Include tags, description, cover image URL, canonical URL, and series if provided
-4. Report article ID, URL, and status
+4. Report article ID, URL, status, and result links
 
 **Fallback:** If Dev.to publishing through YouMind fails, save the adapted markdown locally with front matter. User can paste it into the Dev.to editor.
 
@@ -75,6 +75,9 @@ Article Published!
   Title: [title]
   URL: [url]
   Status: draft / published
+  Result links:
+    - Public URL or draft/dashboard URL
+    - Best platform entry URL if no exact results page exists
   Tags: [tag1, tag2, tag3]
   ID: [article_id]
   Word count: ~[count]

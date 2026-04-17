@@ -67,11 +67,13 @@ For drafts:
 
 - clearly say it is a draft
 - show the dashboard URL when returned
+- include result links so the user can click straight into draft review
 
 For published posts:
 
 - show the public URL
 - include the post ID and slug
+- include result links with the public URL and any dashboard/admin entry you have
 
 For failures:
 

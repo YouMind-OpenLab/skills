@@ -179,9 +179,20 @@ Non-negotiable. Violating any one means the article has failed:
 
 ---
 
+## Result Links Rule
+
+After any draft, publish, list, or stats-review action, always end with `Result links`.
+
+- Prefer the direct article URL when the article page is available.
+- Always include the best WeChat backend entry URL when no direct stats page is available.
+- If the openapi only gives IDs or status fields, still surface the best clickable platform URL for follow-up.
+- Never leave the user with only `media_id`, article IDs, or status text.
+
+---
+
 ## Pipeline Overview
 
-12-step flow: **Load config → Mine KB → Trending topics → Dedup + SEO → Topic select → Framework select → Write → SEO + de-AI → Generate images → Publish to drafts → Archive → Report.**
+12-step flow: **Load config → Mine KB → Trending topics → Dedup + SEO → Topic select → Framework select → Write → SEO + de-AI → Generate images → Publish to drafts → Archive → Report with result links.**
 
 Full per-step detail: [`references/pipeline.md`](references/pipeline.md).
 

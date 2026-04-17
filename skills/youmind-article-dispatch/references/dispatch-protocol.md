@@ -84,7 +84,7 @@ for each platform in target_platforms:
   1. Load platform skill's SKILL.md
   2. Pass content brief as context
   3. Follow platform skill's pipeline
-  4. Record result (status, URL, title)
+  4. Record result (status, URL, result_links, title)
   5. Report progress to user
 ```
 
@@ -102,6 +102,7 @@ Present final summary table with:
 - Platform name and status icon (✅ published, ⚠️ draft, ❌ failed, ⏭️ skipped)
 - Final title (may differ per platform due to adaptation)
 - URL or link to published content
+- Result links for follow-up actions (post page / dashboard / stats entry)
 - Any errors or warnings
 
 ## Error Handling

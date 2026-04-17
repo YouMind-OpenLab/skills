@@ -194,6 +194,15 @@ Before writing any content, read `references/platform-dna.md` to internalize Dev
 2. **Conformance report**: Generate and present to user (Step 7)
 3. **User approval**: Do not auto-publish without confirmation
 
+### Result Links Rule
+
+After any draft or publish action, always end with `Result links`.
+
+- Prefer the direct Dev.to post URL when the post is public.
+- For drafts, explicitly surface `https://dev.to/dashboard`.
+- If no exact results page exists, return the best platform entry URL instead.
+- Never leave the user with only an article ID.
+
 ---
 
 ## Pipeline Overview
@@ -208,7 +217,7 @@ Read `references/pipeline.md` for full execution details of each step.
 | 4 | Content adaptation: structure for Dev.to audience | `content-adaptation.md` |
 | 5 | Write article with code examples, TL;DR, proper structure | -- |
 | 6 | Publish to Dev.to (draft or public) | `api-reference.md` |
-| 7 | Report results: title, URL, tags, published status | -- |
+| 7 | Report results: title, URL, tags, published status, result links | -- |
 
 **Routing shortcuts:**
 

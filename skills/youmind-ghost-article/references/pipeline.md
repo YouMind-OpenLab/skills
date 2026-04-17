@@ -54,6 +54,7 @@
   - Status (`draft` / `published` / `scheduled`)
   - Public URL
   - Ghost Admin URL
+  - result links (public/admin/best entry URL)
   - Slug
   - Excerpt preview
 - If YouMind article archiving is part of the flow, archive after publishing or draft creation

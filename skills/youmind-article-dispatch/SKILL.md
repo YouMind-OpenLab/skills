@@ -180,7 +180,7 @@ Each `youmind-{platform}-article` skill is **independently installed, independen
 - **Discovery, not coupling.** Dispatch scans for installed `youmind-*-article` skills at runtime. It optionally reads a small `dispatch-capabilities.yaml` at each skill's root to learn what operations that skill supports (generate, adapt, condense, translate, etc.) and its hard limits. If a platform skill does not ship this file, dispatch falls back to sensible defaults and still invokes it normally.
 - **Brief is an optional extra, not a requirement.** When dispatch invokes a platform skill, it passes a content brief (topic, angle, keywords, optional `resolved_author` block). Platform skills that understand these fields use them as richer context; skills that don't simply ignore the extras and work as usual.
 - **Author profile lives in the user's home directory, not in this skill.** Both this hub and platform skills read `~/.youmind/author-profile.yaml` — the canonical shared location defined in [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md). Uninstalling dispatch does not remove the profile; platform skills continue to work standalone with full DNA support.
-- **Results flow back as a standardized shape** (status, URL, title, conformance_report) so dispatch can aggregate multi-platform runs. Each platform skill publishes this same result shape regardless of whether dispatch is present — it's a clean output API, not a contract with dispatch.
+- **Results flow back as a standardized shape** (status, URL, `result_links`, title, conformance_report) so dispatch can aggregate multi-platform runs. Each platform skill publishes this same result shape regardless of whether dispatch is present — it's a clean output API, not a contract with dispatch.
 
 ### Zero coupling obligations for platform skills
 
@@ -267,6 +267,7 @@ Gather results from all platform dispatches:
 | platform | Platform name |
 | status | `published` / `draft` / `failed` / `skipped` |
 | url | URL of published content (if available) |
+| result_links | Best clickable links for post page / dashboard / stats entry |
 | title | Final title used |
 | error | Error message (if failed) |
 
@@ -282,6 +283,8 @@ Present a summary table to the user:
 | LinkedIn | ✅ Published | "Why AI Agents Matter for..." | https://linkedin.com/... |
 | X/Twitter | ✅ Thread posted | "🧵 AI Agents are changing..." | https://x.com/... |
 ```
+
+After the table, add a compact `Result links` section for each platform so the user can click straight into the post page, dashboard, or stats entry point. If a platform has no direct analytics URL, include the best platform entry URL instead.
 
 ## Resilience Rules
 
