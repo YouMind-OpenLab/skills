@@ -33,6 +33,7 @@ Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_sou
 | Dev.to | youmind-devto-article | OAuth in Connector Settings |
 | Hashnode | youmind-hashnode-article | PAT in Connector Settings |
 | WordPress | youmind-wordpress-article | Site URL + App Password in Connector Settings |
+| Tumblr | youmind-tumblr-article | OAuth in Connector Settings |
 | Ghost | youmind-ghost-article | Site URL + Admin API Key in Connector Settings |
 | Beehiiv | youmind-beehiiv-article | API Key + Publication ID in Connector Settings |
 | Kit | youmind-kit-article | API Key in Connector Settings |
@@ -98,6 +99,7 @@ Dispatch doesn't just copy-paste. Each sub-skill adapts content to the platform:
 
 - **Dev.to**: Technical depth, code examples, TL;DR at top
 - **Ghost**: Editorial newsletter content, member tiers, email-first distribution
+- **Tumblr**: Voice-driven long-form blogging, simple HTML, creator/build-log energy
 - **Beehiiv**: Newsletter-native long form, growth hooks, HTML tuned for web + email
 - **Kit**: Creator broadcast format, subject + preview text, public feed readability
 - **WeChat**: Chinese localization, styled formatting, cover images

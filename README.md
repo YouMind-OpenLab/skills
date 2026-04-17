@@ -15,6 +15,7 @@ AI agent skills powered by [YouMind](https://youmind.com?utm_source=github-skill
 | [youmind-blog-cover](skills/youmind-blog-cover/) | Generate blog cover images — clean 16:9 compositions with multi-model AI | [![Install](https://img.shields.io/badge/clawhub-install-blue)](https://clawhub.ai/skill/youmind-blog-cover) |
 | [youmind-webpage-generator](skills/youmind-webpage-generator/) | Generate webpages — landing pages, portfolios, event pages with one click | — |
 | [youmind-wechat-article](skills/youmind-wechat-article/) | Write and publish WeChat articles end-to-end — topic mining to draft box | — |
+| [youmind-tumblr-article](skills/youmind-tumblr-article/) | Write and publish Tumblr posts — long-form blogging with simple HTML adaptation | — |
 
 ## Quick Install
 
