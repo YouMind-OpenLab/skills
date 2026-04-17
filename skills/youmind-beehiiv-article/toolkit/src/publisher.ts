@@ -7,6 +7,10 @@ import { resolve } from 'node:path';
 import {
   createPost,
   loadBeehiivConfig,
+  type BeehiivPostEmailSettings,
+  type BeehiivPostRecipients,
+  type BeehiivPostSeoSettings,
+  type BeehiivPostWebSettings,
   type BeehiivConfig,
 } from './beehiiv-api.js';
 import { adaptForBeehiiv } from './content-adapter.js';
@@ -20,6 +24,18 @@ export interface PublishOptions {
   thumbnailImageUrl?: string;
   title?: string;
   subtitle?: string;
+  postTemplateId?: string;
+  customLinkTrackingEnabled?: boolean;
+  emailCaptureTypeOverride?: 'none' | 'gated' | 'popup';
+  overrideScheduledAt?: string;
+  socialShare?: 'comments_and_likes_only' | 'with_comments_and_likes' | 'top' | 'none';
+  recipients?: BeehiivPostRecipients;
+  emailSettings?: BeehiivPostEmailSettings;
+  webSettings?: BeehiivPostWebSettings;
+  seoSettings?: BeehiivPostSeoSettings;
+  headers?: Record<string, string>;
+  customFields?: Record<string, string>;
+  newsletterListId?: string;
   config?: BeehiivConfig;
 }
 
@@ -56,10 +72,22 @@ export async function publish(options: PublishOptions): Promise<PublishResult> {
     title: adapted.title,
     bodyContent: adapted.html,
     subtitle: adapted.subtitle,
+    postTemplateId: options.postTemplateId,
     status: options.status ?? (options.scheduledAt ? 'confirmed' : 'draft'),
     scheduledAt: options.scheduledAt,
+    customLinkTrackingEnabled: options.customLinkTrackingEnabled,
+    emailCaptureTypeOverride: options.emailCaptureTypeOverride,
+    overrideScheduledAt: options.overrideScheduledAt,
+    socialShare: options.socialShare,
     contentTags: adapted.contentTags.length ? adapted.contentTags : undefined,
     thumbnailImageUrl: adapted.thumbnailImageUrl,
+    recipients: options.recipients,
+    emailSettings: options.emailSettings,
+    webSettings: options.webSettings,
+    seoSettings: options.seoSettings,
+    headers: options.headers,
+    customFields: options.customFields,
+    newsletterListId: options.newsletterListId,
   });
 
   return {

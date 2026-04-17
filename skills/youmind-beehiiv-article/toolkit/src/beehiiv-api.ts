@@ -9,6 +9,46 @@ export interface BeehiivConfig {
   baseUrl: string;
 }
 
+export interface BeehiivPostRecipientsChannel {
+  tierIds?: string[];
+  includeSegmentIds?: string[];
+  excludeSegmentIds?: string[];
+}
+
+export interface BeehiivPostRecipients {
+  web?: BeehiivPostRecipientsChannel;
+  email?: BeehiivPostRecipientsChannel;
+}
+
+export interface BeehiivPostEmailSettings {
+  fromAddress?: string;
+  customLiveUrl?: string;
+  displayTitleInEmail?: boolean;
+  displayBylineInEmail?: boolean;
+  displaySubtitleInEmail?: boolean;
+  emailHeaderEngagementButtons?: string;
+  emailHeaderSocialShare?: string;
+  emailPreviewText?: string;
+  emailSubjectLine?: string;
+}
+
+export interface BeehiivPostWebSettings {
+  displayThumbnailOnWeb?: boolean;
+  hideFromFeed?: boolean;
+  paywallBreakPriceId?: string;
+  paywallId?: string;
+  slug?: string;
+}
+
+export interface BeehiivPostSeoSettings {
+  defaultDescription?: string;
+  defaultTitle?: string;
+  ogDescription?: string;
+  ogTitle?: string;
+  twitterDescription?: string;
+  twitterTitle?: string;
+}
+
 export interface BeehiivPost {
   id: string;
   title: string;
@@ -23,12 +63,34 @@ export interface BeehiivPost {
   platform?: string;
   contentTags?: string[];
   hiddenFromFeed?: boolean;
+  enforceGatedContent?: boolean;
+  emailCapturePopup?: boolean;
+  authors?: string[];
   created?: number;
   publishDate?: number;
+  displayedDate?: number;
+  metaDefaultDescription?: string;
+  metaDefaultTitle?: string;
+  newsletterListId?: string;
+  content?: Record<string, unknown>;
+  stats?: Record<string, unknown>;
+}
+
+export interface BeehiivPostTemplate {
+  id: string;
+  name: string;
 }
 
 export interface BeehiivPostListResponse {
   posts: BeehiivPost[];
+  limit: number;
+  page: number;
+  totalResults: number;
+  totalPages: number;
+}
+
+export interface BeehiivPostTemplateListResponse {
+  templates: BeehiivPostTemplate[];
   limit: number;
   page: number;
   totalResults: number;
@@ -46,12 +108,65 @@ export interface BeehiivConnectionResult {
 
 export interface CreateBeehiivPostOptions {
   title: string;
-  bodyContent: string;
+  bodyContent?: string;
+  blocks?: Record<string, unknown>[];
   subtitle?: string;
+  postTemplateId?: string;
   status?: 'draft' | 'confirmed';
   scheduledAt?: string;
+  customLinkTrackingEnabled?: boolean;
+  emailCaptureTypeOverride?: 'none' | 'gated' | 'popup';
+  overrideScheduledAt?: string;
+  socialShare?: 'comments_and_likes_only' | 'with_comments_and_likes' | 'top' | 'none';
   contentTags?: string[];
   thumbnailImageUrl?: string;
+  recipients?: BeehiivPostRecipients;
+  emailSettings?: BeehiivPostEmailSettings;
+  webSettings?: BeehiivPostWebSettings;
+  seoSettings?: BeehiivPostSeoSettings;
+  headers?: Record<string, string>;
+  customFields?: Record<string, string>;
+  newsletterListId?: string;
+}
+
+export interface UpdateBeehiivPostOptions {
+  bodyContent?: string;
+  blocks?: Record<string, unknown>[];
+  title?: string;
+  subtitle?: string;
+  scheduledAt?: string;
+  customLinkTrackingEnabled?: boolean;
+  emailCaptureTypeOverride?: 'none' | 'gated' | 'popup';
+  overrideScheduledAt?: string;
+  socialShare?: 'comments_and_likes_only' | 'with_comments_and_likes' | 'top' | 'none';
+  contentTags?: string[];
+  thumbnailImageUrl?: string;
+  emailSettings?: BeehiivPostEmailSettings;
+  webSettings?: BeehiivPostWebSettings;
+  seoSettings?: BeehiivPostSeoSettings;
+}
+
+export interface ListBeehiivPostsOptions {
+  page?: number;
+  limit?: number;
+  status?: 'draft' | 'confirmed' | 'archived' | 'all';
+  audience?: 'free' | 'premium' | 'all';
+  platform?: 'web' | 'email' | 'both' | 'all';
+  contentTags?: string[];
+  slugs?: string[];
+  authors?: string[];
+  premiumTiers?: string[];
+  expand?: string[];
+  orderBy?: 'created' | 'publish_date' | 'displayed_date' | 'publishDate' | 'displayedDate';
+  direction?: 'asc' | 'desc';
+  hiddenFromFeed?: 'all' | 'true' | 'false';
+}
+
+export interface ListBeehiivPostTemplatesOptions {
+  page?: number;
+  limit?: number;
+  order?: 'asc' | 'desc';
+  orderBy?: string;
 }
 
 interface OpenApiErrorDetail {
@@ -138,6 +253,18 @@ function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string
   return parts.join(' | ') || rawText.slice(0, 300);
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const items = value.filter((item): item is string => typeof item === 'string');
+  return items.length ? items : undefined;
+}
+
 function normalizePost(post: Record<string, unknown>): BeehiivPost {
   return {
     id: String(post.id ?? ''),
@@ -158,17 +285,26 @@ function normalizePost(post: Record<string, unknown>): BeehiivPost {
     webUrl: (post.webUrl as string | undefined) ?? (post.web_url as string | undefined),
     audience: (post.audience as string | undefined) ?? undefined,
     platform: (post.platform as string | undefined) ?? undefined,
-    contentTags: Array.isArray(post.contentTags)
-      ? post.contentTags.filter((tag): tag is string => typeof tag === 'string')
-      : Array.isArray(post.content_tags)
-        ? post.content_tags.filter((tag): tag is string => typeof tag === 'string')
-        : undefined,
+    contentTags: normalizeStringArray(post.contentTags) ?? normalizeStringArray(post.content_tags),
     hiddenFromFeed:
       typeof post.hiddenFromFeed === 'boolean'
         ? post.hiddenFromFeed
         : typeof post.hidden_from_feed === 'boolean'
           ? post.hidden_from_feed
           : undefined,
+    enforceGatedContent:
+      typeof post.enforceGatedContent === 'boolean'
+        ? post.enforceGatedContent
+        : typeof post.enforce_gated_content === 'boolean'
+          ? post.enforce_gated_content
+          : undefined,
+    emailCapturePopup:
+      typeof post.emailCapturePopup === 'boolean'
+        ? post.emailCapturePopup
+        : typeof post.email_capture_popup === 'boolean'
+          ? post.email_capture_popup
+          : undefined,
+    authors: normalizeStringArray(post.authors),
     created: typeof post.created === 'number' ? post.created : undefined,
     publishDate:
       typeof post.publishDate === 'number'
@@ -176,6 +312,30 @@ function normalizePost(post: Record<string, unknown>): BeehiivPost {
         : typeof post.publish_date === 'number'
           ? post.publish_date
           : undefined,
+    displayedDate:
+      typeof post.displayedDate === 'number'
+        ? post.displayedDate
+        : typeof post.displayed_date === 'number'
+          ? post.displayed_date
+          : undefined,
+    metaDefaultDescription:
+      (post.metaDefaultDescription as string | undefined) ??
+      (post.meta_default_description as string | undefined),
+    metaDefaultTitle:
+      (post.metaDefaultTitle as string | undefined) ??
+      (post.meta_default_title as string | undefined),
+    newsletterListId:
+      (post.newsletterListId as string | undefined) ??
+      (post.newsletter_list_id as string | undefined),
+    content: isPlainObject(post.content) ? post.content : undefined,
+    stats: isPlainObject(post.stats) ? post.stats : undefined,
+  };
+}
+
+function normalizePostTemplate(template: Record<string, unknown>): BeehiivPostTemplate {
+  return {
+    id: String(template.id ?? ''),
+    name: String(template.name ?? ''),
   };
 }
 
@@ -200,7 +360,7 @@ export async function createPost(
 export async function updatePost(
   config: BeehiivConfig,
   id: string,
-  options: Partial<CreateBeehiivPostOptions>,
+  options: UpdateBeehiivPostOptions,
 ): Promise<BeehiivPost> {
   const post = await postJson<Record<string, unknown>>(
     '/beehiiv/updatePost',
@@ -224,25 +384,62 @@ export async function deletePost(
 
 export async function listPosts(
   config: BeehiivConfig,
-  page = 1,
-  limit = 10,
-  status?: string,
+  options: ListBeehiivPostsOptions = {},
 ): Promise<BeehiivPostListResponse> {
+  const normalizedOrderBy =
+    options.orderBy === 'publishDate'
+      ? 'publish_date'
+      : options.orderBy === 'displayedDate'
+        ? 'displayed_date'
+        : options.orderBy;
+
   const response = await postJson<BeehiivPostListResponse>(
     '/beehiiv/listPosts',
     {
-      page,
-      limit,
-      ...(status ? { status } : {}),
+      ...(options.page !== undefined ? { page: options.page } : {}),
+      ...(options.limit !== undefined ? { limit: options.limit } : {}),
+      ...(options.status ? { status: options.status } : {}),
+      ...(options.audience ? { audience: options.audience } : {}),
+      ...(options.platform ? { platform: options.platform } : {}),
+      ...(options.contentTags?.length ? { contentTags: options.contentTags } : {}),
+      ...(options.slugs?.length ? { slugs: options.slugs } : {}),
+      ...(options.authors?.length ? { authors: options.authors } : {}),
+      ...(options.premiumTiers?.length ? { premiumTiers: options.premiumTiers } : {}),
+      ...(options.expand?.length ? { expand: options.expand } : {}),
+      ...(normalizedOrderBy ? { orderBy: normalizedOrderBy } : {}),
+      ...(options.direction ? { direction: options.direction } : {}),
+      ...(options.hiddenFromFeed ? { hiddenFromFeed: options.hiddenFromFeed } : {}),
     },
     config,
   );
 
   return {
-    posts: response.posts.map((post) => normalizePost(post as unknown as Record<string, unknown>)),
-    limit: response.limit,
-    page: response.page,
-    totalResults: response.totalResults,
-    totalPages: response.totalPages,
+    ...response,
+    posts: response.posts.map((post) =>
+      normalizePost(post as unknown as Record<string, unknown>),
+    ),
+  };
+}
+
+export async function listPostTemplates(
+  config: BeehiivConfig,
+  options: ListBeehiivPostTemplatesOptions = {},
+): Promise<BeehiivPostTemplateListResponse> {
+  const response = await postJson<BeehiivPostTemplateListResponse>(
+    '/beehiiv/listPostTemplates',
+    {
+      ...(options.page !== undefined ? { page: options.page } : {}),
+      ...(options.limit !== undefined ? { limit: options.limit } : {}),
+      ...(options.order ? { order: options.order } : {}),
+      ...(options.orderBy ? { orderBy: options.orderBy } : {}),
+    },
+    config,
+  );
+
+  return {
+    ...response,
+    templates: response.templates.map((template) =>
+      normalizePostTemplate(template as unknown as Record<string, unknown>),
+    ),
   };
 }
