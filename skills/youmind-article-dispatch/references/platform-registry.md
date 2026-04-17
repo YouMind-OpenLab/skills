@@ -70,24 +70,37 @@
   - Upload feature image to Ghost CDN
   - Default to draft status
 
-## LinkedIn
-- **Skill:** `youmind-linkedin-article`
-- **API:** Posts API — `https://api.linkedin.com/v2/`
-- **Auth:** OAuth 2.0 (3-legged), access token required
-- **Rate Limit:** 100 requests/day for posts
-- **Audience:** Professionals, B2B decision makers, career-focused individuals
-- **Content format:** Plain text with Unicode formatting (no Markdown support)
-- **Constraints:** 3,000 chars for posts, first 2 lines visible before "see more"
-- **Tone:** Professional, thought-leadership, personal-experience-driven
-- **Best for:** Industry insights, career advice, company updates, professional storytelling
-- **Anti-patterns:** External links in post body (kills reach), excessive hashtags
+## Beehiiv
+- **Skill:** `youmind-beehiiv-article`
+- **API:** YouMind OpenAPI -> Beehiiv REST
+- **Auth:** Beehiiv API Key + Publication ID stored in YouMind
+- **Audience:** Newsletter operators, creator businesses, editorial growth teams
+- **Content format:** HTML
+- **Constraints:** Subject-style headline, preview text, Send API access may gate createPost
+- **Tone:** Newsletter-native, direct, polished
+- **Best for:** Weekly updates, launch notes, operator essays, growth recaps
+- **Anti-patterns:** SEO sludge, giant intros, embed-heavy markup
 - **Adaptation rules:**
-  - Hook: first 2 lines must be compelling (before "see more" fold)
-  - Short paragraphs (1-3 sentences), lots of white space
-  - 3-5 relevant hashtags at the end
-  - No external links in body — put link in first comment
-  - CTA: encourage comments ("What's your experience with...?")
-  - Single image for higher engagement
+  - Strong title + compact subtitle
+  - HTML must stay simple and email-safe
+  - Default to draft
+  - Surface Send API caveat if publish must be guaranteed
+
+## Kit
+- **Skill:** `youmind-kit-article`
+- **API:** YouMind OpenAPI -> Kit v4 REST
+- **Auth:** Kit API Key stored in YouMind
+- **Audience:** Creators, newsletter operators, audience-building teams
+- **Content format:** HTML
+- **Constraints:** Subject + preview text matter as much as body, public/private mode, scheduled send supported
+- **Tone:** Creator-note style, concise, conversational but sharp
+- **Best for:** Broadcasts, weekly digests, creator updates, product notes
+- **Anti-patterns:** Over-designed blog layouts, bloated intros, hard-sell copy
+- **Adaptation rules:**
+  - Optimize first screen for feed + inbox scanning
+  - Keep sections compact
+  - Default to public web mode unless user asks otherwise
+  - Use clean HTML only
 
 ## X/Twitter
 - **Skill:** `youmind-x-article`

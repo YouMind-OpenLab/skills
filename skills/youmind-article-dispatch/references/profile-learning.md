@@ -70,7 +70,7 @@ Which platforms the user publishes to (and which they skip) reveals platform aff
 
 | Pattern | What it teaches | Profile field affected |
 |---------|-----------------|----------------------|
-| Always publishes to Dev.to, skips LinkedIn | Author is developer-focused, not professional-network | `content.preferred_types` |
+| Always publishes to Dev.to, skips X | Author is developer-focused, not short-form-social-first | `content.preferred_types` |
 | Always includes Qiita | Author writes for Japanese audience | `language.secondary` |
 | Skips X consistently | Author doesn't value short-form | `platform_overrides.x` |
 | Always publishes to Ghost as paid | Author has premium content strategy | `platform_overrides.ghost` |
@@ -154,7 +154,7 @@ entries:
   - date: "2026-04-16T14:30:00Z"
     source: "platform_selection"
     dispatch_id: "dispatch-001"
-    observation: "User published to Dev.to and Hashnode, skipped X and LinkedIn"
+    observation: "User published to Dev.to and Hashnode, skipped X and Ghost"
     proposed_change: null  # no change yet (need 5+ data points)
     status: "logged"
 

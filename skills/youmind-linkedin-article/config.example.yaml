@@ -1,9 +1,0 @@
-# Obsolete skill-local example.
-#
-# Canonical shared config now lives at ~/.youmind/config.yaml.
-# LinkedIn-specific overrides belong in ~/.youmind/config/youmind-linkedin-article.yaml.
-# Article skills no longer read this repo-local file.
-
-youmind:
-  api_key: ""
-  base_url: "https://youmind.com/openapi/v1"

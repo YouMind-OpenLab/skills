@@ -1,0 +1,40 @@
+contract_version: "1.0"
+
+platform: "kit"
+skill_name: "youmind-kit-article"
+display_name: "Kit"
+
+tagline: "Creator broadcasts, newsletter feed posts, public web editions"
+audience: "Creators, newsletter operators, audience-building teams"
+
+best_for:
+  - "creator updates"
+  - "newsletter feed posts"
+  - "weekly digests"
+  - "product change logs"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - revive
+  - excerpt
+
+hard_limits:
+  subject_soft_ceiling_chars: 80
+  preview_text_chars: "80-160"
+  typical_word_count: "600-1800"
+  h1_in_body_allowed: false
+
+defaults:
+  publish_mode: "public"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

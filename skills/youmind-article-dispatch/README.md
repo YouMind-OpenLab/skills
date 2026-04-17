@@ -8,7 +8,7 @@ One topic, every platform. AI-powered multi-platform content distribution hub.
 
 | You say | Skill does |
 |---------|------------|
-| `Publish about AI agents on Dev.to, LinkedIn, and X` | Generates content brief, adapts for each platform, publishes to all three |
+| `Publish about AI agents on Dev.to, Ghost, and X` | Generates content brief, adapts for each platform, publishes to all three |
 | `Write about Docker best practices for Dev.to and Hashnode` | Research, write, adapt tone/format per platform, publish as drafts |
 | `Publish everywhere about the future of AI` | Dispatch to ALL configured platforms at once |
 
@@ -34,7 +34,8 @@ Open [YouMind Connector Settings](https://youmind.com/settings/connector?utm_sou
 | Hashnode | youmind-hashnode-article | PAT in Connector Settings |
 | WordPress | youmind-wordpress-article | Site URL + App Password in Connector Settings |
 | Ghost | youmind-ghost-article | Site URL + Admin API Key in Connector Settings |
-| LinkedIn | youmind-linkedin-article | OAuth in Connector Settings |
+| Beehiiv | youmind-beehiiv-article | API Key + Publication ID in Connector Settings |
+| Kit | youmind-kit-article | API Key in Connector Settings |
 | X/Twitter | youmind-x-article | OAuth in Connector Settings |
 | WeChat | youmind-wechat-article | AppID/AppSecret in Connector Settings |
 | Qiita | youmind-qiita-article | OAuth in Connector Settings |
@@ -88,7 +89,7 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_sourc
 ### Distribution Strategy
 
 - **Single platform**: Specify the platform name, e.g. `Write about X for Dev.to`
-- **Multiple platforms**: List platform names, e.g. `Publish on Dev.to, LinkedIn, and Ghost`
+- **Multiple platforms**: List platform names, e.g. `Publish on Dev.to, Ghost, and X`
 - **All platforms**: Say `Publish everywhere`
 
 ### Content Adaptation
@@ -96,8 +97,9 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_sourc
 Dispatch doesn't just copy-paste. Each sub-skill adapts content to the platform:
 
 - **Dev.to**: Technical depth, code examples, TL;DR at top
-- **LinkedIn**: Professional angle, industry insights, concise paragraphs
 - **Ghost**: Editorial newsletter content, member tiers, email-first distribution
+- **Beehiiv**: Newsletter-native long form, growth hooks, HTML tuned for web + email
+- **Kit**: Creator broadcast format, subject + preview text, public feed readability
 - **WeChat**: Chinese localization, styled formatting, cover images
 - **X/Twitter**: Distilled into tweet threads, hashtags
 - **Qiita**: Japanese developer focus, GFM Markdown, environment info, note boxes

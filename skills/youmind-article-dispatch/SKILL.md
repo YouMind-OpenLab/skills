@@ -3,7 +3,7 @@ name: youmind-article-dispatch
 version: 1.0.0
 description: |
   Dispatch content to multiple platforms from a single topic — Dev.to, Hashnode, WordPress,
-  Ghost, LinkedIn, X/Twitter, WeChat, Qiita. Each platform skill adapts
+  Ghost, X/Twitter, WeChat, Qiita. Each platform skill adapts
   content independently for its audience and format. Pure orchestration, no publishing logic.
   Integrates YouMind knowledge base for topic research and content material mining.
   Use when user wants to "publish everywhere", "cross-post", "multi-platform publish",
@@ -51,7 +51,7 @@ allowed-tools:
 
 # Content Dispatch Hub — One Topic, Every Platform
 
-Distribute your content to multiple platforms from a single topic. Each platform skill independently adapts content for its target audience — developers on Dev.to, professionals on LinkedIn, readers on Ghost, and more.
+Distribute your content to multiple platforms from a single topic. Each platform skill independently adapts content for its target audience — developers on Dev.to, newsletter readers on Ghost, and more.
 
 > [Get YouMind API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-article-dispatch) · [More Skills →](https://youmind.com/skills?utm_source=youmind-article-dispatch)
 
@@ -68,7 +68,7 @@ The onboarding flow sets up TWO things in ONE conversation: **platform roster** 
 > Quick setup — which platforms do you use?
 >
 > 1. Dev.to  2. Hashnode  3. WordPress  4. Ghost
-> 5. LinkedIn  6. X/Twitter  7. WeChat (公众号)  8. Qiita
+> 5. X/Twitter  6. WeChat (公众号)  7. Qiita
 >
 > (list numbers, e.g. "1, 2, 6")
 
@@ -140,7 +140,7 @@ After user answers:
 ### Roster + Profile updates after onboarding
 
 > "Add Ghost to my platforms" → update `~/.youmind/dispatch-roster.yaml`
-> "Remove LinkedIn" → update roster
+> "Remove X/Twitter" → update roster
 > "I want to write more beginner content" → update `~/.youmind/author-profile.yaml`
 > "Analyze my recent articles again" → re-run Path A bootstrap
 
@@ -151,7 +151,7 @@ User specifies one platform → dispatch directly invokes the corresponding plat
 
 ```
 "Write about AI agents for Dev.to"         → invoke youmind-devto-article
-"Post about startup culture on LinkedIn"   → invoke youmind-linkedin-article
+"Post a thread about startup culture on X" → invoke youmind-x-article
 "发布一篇技术文章到 WordPress"                → invoke youmind-wordpress-article
 ```
 
@@ -159,7 +159,7 @@ User specifies one platform → dispatch directly invokes the corresponding plat
 User specifies multiple platforms → dispatch invokes each platform skill sequentially with the same topic.
 
 ```
-"Write about AI agents and publish to Dev.to, LinkedIn, and X"
+"Write about AI agents and publish to Dev.to, Ghost, and X"
 "把这个话题发布到 Dev.to 和 Hashnode"
 ```
 
@@ -200,12 +200,13 @@ The optional integration protocol is documented at [`shared/DISPATCH_CONTRACT.md
 | Hashnode | `youmind-hashnode-article` | Dev bloggers, tech writers | In-depth technical blogs, series, developer stories |
 | WordPress | `youmind-wordpress-article` | General audiences | Long-form articles, SEO-optimized content |
 | Ghost | `youmind-ghost-article` | Publishers, newsletter writers | Editorial content, premium publications |
-| LinkedIn | `youmind-linkedin-article` | Professionals, B2B | Thought leadership, industry insights, career advice |
+| Beehiiv | `youmind-beehiiv-article` | Newsletter operators, creator teams | Growth updates, newsletter essays, operator notes |
+| Kit | `youmind-kit-article` | Creators, audience builders | Broadcasts, creator updates, public newsletter feed posts |
 | X/Twitter | `youmind-x-article` | General, viral audiences | Hot takes, threads, breaking news commentary |
 | WeChat | `youmind-wechat-article` | Chinese audiences | Styled long-form articles, official account content |
 | Qiita | `youmind-qiita-article` | Japanese developers | Technical articles, tutorials, knowledge sharing |
 
-> **Auth:** All 8 platforms use YouMind OpenAPI. You need only a `youmind.api_key` — platform credentials are stored encrypted in [YouMind Connector Settings](https://youmind.com/settings/connector). No local platform keys.
+> **Auth:** All platforms use YouMind OpenAPI. You need only a `youmind.api_key` — platform credentials are stored encrypted in [YouMind Connector Settings](https://youmind.com/settings/connector). No local platform keys.
 >
 > **Note:** Each platform skill must be installed separately. Dispatch checks your roster (`dispatch-roster.yaml`) on each run.
 
@@ -280,7 +281,7 @@ Present a summary table to the user:
 | Platform | Status | Title | URL |
 |----------|--------|-------|-----|
 | Dev.to | ✅ Published | "AI Agents: A Practical Guide" | https://dev.to/... |
-| LinkedIn | ✅ Published | "Why AI Agents Matter for..." | https://linkedin.com/... |
+| Ghost | ✅ Published | "Why AI Agents Matter for..." | https://newsletter.example.com/... |
 | X/Twitter | ✅ Thread posted | "🧵 AI Agents are changing..." | https://x.com/... |
 ```
 

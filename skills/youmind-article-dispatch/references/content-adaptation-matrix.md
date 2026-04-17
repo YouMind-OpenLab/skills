@@ -57,7 +57,7 @@ The most nuanced merge — author provides the baseline, platform adjusts.
 | Author register | Platform norm | Result |
 |----------------|--------------|--------|
 | conversational-technical | Qiita: 丁寧語 expected | Use author's technical style BUT in 丁寧語 form |
-| casual | LinkedIn: professional expected | Casual-professional hybrid: approachable but credible |
+| casual | Ghost: editorial polish expected | Casual-editorial hybrid: approachable but polished |
 | formal | Dev.to: colleague-tone | Formal expertise in accessible language |
 | editorial | X: punchy/short | Editorial authority compressed to 280 chars |
 

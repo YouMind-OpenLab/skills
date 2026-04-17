@@ -11,11 +11,11 @@ The dispatch protocol defines how the dispatch skill orchestrates content distri
 Parse the user's input to extract:
 
 ```
-Input: "Write about AI agents and publish to Dev.to, LinkedIn, and X"
+Input: "Write about AI agents and publish to Dev.to, Ghost, and X"
 
 Parsed:
   topic: "AI agents"
-  platforms: ["devto", "linkedin", "x"]
+  platforms: ["devto", "ghost", "x"]
   mode: "multi"
 ```
 
@@ -27,7 +27,8 @@ Parsed:
 | hashnode | hashnode | youmind-hashnode-article |
 | wordpress, wp | wordpress | youmind-wordpress-article |
 | ghost | ghost | youmind-ghost-article |
-| linkedin, li | linkedin | youmind-linkedin-article |
+| beehiiv | beehiiv | youmind-beehiiv-article |
+| kit, convertkit | kit | youmind-kit-article |
 | x, twitter | x | youmind-x-article |
 | all, everywhere, 全部 | ALL | all active roster platforms |
 | wechat, 微信, 公众号 | wechat | youmind-wechat-article |
@@ -126,12 +127,12 @@ Result: Article published/drafted on Dev.to
 
 ### Multi-Platform
 ```
-User: "Publish about AI coding assistants on Dev.to, LinkedIn, and X"
+User: "Publish about AI coding assistants on Dev.to, Beehiiv, and X"
 Dispatch:
   1. Generate brief: topic="AI coding assistants"
   2. Mine YouMind knowledge (once)
   3. Invoke youmind-devto-article → technical tutorial format
-  4. Invoke youmind-linkedin-article → professional insight format
+  4. Invoke youmind-beehiiv-article → newsletter long-form format
   5. Invoke youmind-x-article → tweet thread format
   6. Report: 3 platforms dispatched, show results table
 ```
@@ -140,7 +141,7 @@ Dispatch:
 ```
 User: "全平台发布：大模型 Agent 的实践经验"
 Dispatch:
-  1. Check installed skills → found 5 of 10
+  1. Check installed skills → found 5 installed platform skills
   2. Generate brief, mine YouMind
   3. Dispatch to all 5 installed platform skills
   4. Report results for each

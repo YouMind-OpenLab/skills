@@ -1,8 +1,8 @@
 # YouMind Shared Config — copy to ~/.youmind/config.yaml
 #
 # This file holds the credentials and endpoints that every YouMind skill needs.
-# Put it at ~/.youmind/config.yaml — you fill it ONCE and all 8+ YouMind skills
-# (dispatch + devto/ghost/hashnode/linkedin/qiita/wechat/wordpress/x) read from it.
+# Put it at ~/.youmind/config.yaml — you fill it ONCE and all 7+ YouMind skills
+# (dispatch + devto/ghost/hashnode/qiita/wechat/wordpress/x) read from it.
 #
 # Skill-specific knobs (e.g. WeChat theme) do NOT belong here — they live at
 # ~/.youmind/config/<skill-name>.yaml as small per-skill overrides.

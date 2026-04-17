@@ -1,0 +1,43 @@
+contract_version: "1.0"
+
+platform: "beehiiv"
+skill_name: "youmind-beehiiv-article"
+display_name: "Beehiiv"
+
+tagline: "Newsletter-first long-form posts, growth loops, web + email"
+audience: "Newsletter operators, creators, editorial growth teams"
+
+best_for:
+  - "weekly updates"
+  - "newsletter essays"
+  - "creator growth posts"
+  - "operator notes"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - revive
+  - excerpt
+
+hard_limits:
+  title_soft_ceiling_chars: 70
+  preview_text_chars: "80-160"
+  typical_word_count: "700-2000"
+  h1_in_body_allowed: false
+
+defaults:
+  publish_mode: "draft"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  send_api: "Beehiiv createPost may fail with 403 when the publication lacks Send API access."
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

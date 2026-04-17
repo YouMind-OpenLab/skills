@@ -68,12 +68,10 @@ The specific perspective or "atomic insight" that makes this content unique. If 
 SEO/discovery keywords. Each platform skill maps these to its own tag/hashtag system:
 - Dev.to: tags (max 4)
 - Hashnode: tags (max 5)
-- LinkedIn: hashtags (3-5)
 - X: hashtags (1-2)
 
 ### tone (optional, may be overridden by resolved_author.voice.register)
 Suggested tone. If `resolved_author` is present, the resolved register takes precedence. Otherwise platform skills apply their own defaults:
-- LinkedIn always leans professional
 - X always leans conversational
 - Qiita always leans formal-technical (丁寧語)
 

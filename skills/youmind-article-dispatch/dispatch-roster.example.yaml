@@ -14,7 +14,6 @@ active_platforms:
   - x
   # - ghost
   # - wordpress
-  # - linkedin
   # - wechat
   # - qiita
 
@@ -41,10 +40,6 @@ platform_status:
     connected: false
     last_validated: null
     skill_installed: true
-  linkedin:
-    connected: false
-    last_validated: null
-    skill_installed: false
   wechat:
     connected: false
     last_validated: null

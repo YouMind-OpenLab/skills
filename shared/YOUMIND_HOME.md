@@ -1,7 +1,7 @@
 # `~/.youmind/` — Shared YouMind Home Directory Convention
 
 > This document defines a user-home convention used by the YouMind family of skills
-> (`youmind-article-dispatch` + `youmind-{platform}-article` × 8). It is a cross-skill
+> (`youmind-article-dispatch` + `youmind-{platform}-article` × 7). It is a cross-skill
 > sharing point that makes every skill independently installable while still enabling
 > data sharing when multiple are installed.
 
@@ -47,7 +47,6 @@ Skills resolve this via `os.homedir()` + `.youmind` (Node) or `Path.home() / ".y
 │   ├── ghost/
 │   │   └── <slug>.md
 │   ├── hashnode/
-│   ├── linkedin/
 │   ├── qiita/
 │   ├── wechat/
 │   │   └── <client>/<slug>.md
@@ -59,7 +58,6 @@ Skills resolve this via `os.homedir()` + `.youmind` (Node) or `Path.home() / ".y
 │   ├── devto.yaml
 │   ├── ghost.yaml
 │   ├── hashnode.yaml
-│   ├── linkedin.yaml
 │   ├── qiita.yaml
 │   ├── wechat-<client>.yaml   # wechat is multi-client; one file per client
 │   ├── wordpress.yaml
