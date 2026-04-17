@@ -183,9 +183,10 @@ Non-negotiable. Violating any one means the article has failed:
 
 After any draft, publish, list, or stats-review action, always end with `Result links`.
 
-- Prefer the direct article URL when the article page is available.
-- Always include the best WeChat backend entry URL when no direct stats page is available.
-- If the openapi only gives IDs or status fields, still surface the best clickable platform URL for follow-up.
+- Preserve any `resultLinks` returned by the CLI / OpenAPI.
+- For drafts, also include the preview link from `articles[].url` when available.
+- Always include the WeChat Official Account backend entry `https://mp.weixin.qq.com/` so the user can finish publish/review manually.
+- Render result links as Markdown links such as `[Draft preview](...)` for cleaner output.
 - Never leave the user with only `media_id`, article IDs, or status text.
 
 ---

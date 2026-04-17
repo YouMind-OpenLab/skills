@@ -80,12 +80,6 @@ export interface WeChatPublishedItem {
   resultLinks?: WeChatResultLink[];
 }
 
-export interface WeChatPublishedListResponse {
-  items: WeChatPublishedItem[];
-  totalCount: number;
-  itemCount: number;
-}
-
 export interface WeChatPublishSubmit {
   publishId: string;
   msgDataId?: string;
@@ -100,6 +94,8 @@ export interface WeChatPublishStatus {
   failIdx?: number[];
   resultLinks?: WeChatResultLink[];
 }
+
+const WECHAT_PLATFORM_URL = 'https://mp.weixin.qq.com/';
 
 // ---------------------------------------------------------------------------
 // Config loading — canonical ~/.youmind shared config + skill override
@@ -293,13 +289,20 @@ function normalizeArticle(a: Record<string, unknown>): WeChatArticle {
 }
 
 function normalizeDraft(d: Record<string, unknown>): WeChatDraft {
+  const articles = Array.isArray(d.articles)
+    ? d.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
+    : [];
   return {
     mediaId: String(d.mediaId ?? ''),
-    articles: Array.isArray(d.articles)
-      ? d.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
-      : [],
+    articles,
     updateTime: typeof d.updateTime === 'number' ? d.updateTime : undefined,
-    resultLinks: normalizeResultLinks(d.resultLinks),
+    resultLinks: buildResultLinks({
+      upstream: d.resultLinks,
+      articles,
+      articleKind: 'preview_post',
+      articleLabel: 'Draft preview',
+      platformLabel: 'WeChat backend / draft box',
+    }),
   };
 }
 
@@ -319,6 +322,47 @@ function normalizeResultLinks(value: unknown): WeChatResultLink[] | undefined {
     .filter((entry): entry is WeChatResultLink => entry !== null);
 
   return links.length > 0 ? links : undefined;
+}
+
+function buildResultLinks(options: {
+  upstream?: unknown;
+  articles?: WeChatArticle[];
+  articleKind?: string;
+  articleLabel?: string;
+  platformLabel: string;
+}): WeChatResultLink[] | undefined {
+  const upstreamLinks = normalizeResultLinks(options.upstream) ?? [];
+  const articleUrls = Array.from(
+    new Set(
+      (options.articles ?? [])
+        .map((article) => article.url)
+        .filter((url): url is string => typeof url === 'string' && url.length > 0),
+    ),
+  );
+
+  const articleLinks = articleUrls.map((url, index) => ({
+    label:
+      articleUrls.length === 1
+        ? (options.articleLabel ?? 'Article link')
+        : `${options.articleLabel ?? 'Article link'} ${index + 1}`,
+    kind: options.articleKind ?? 'article',
+    url,
+  }));
+
+  const combined = [
+    ...upstreamLinks,
+    ...articleLinks,
+    {
+      label: options.platformLabel,
+      kind: 'dashboard',
+      url: WECHAT_PLATFORM_URL,
+    },
+  ];
+
+  const deduped = combined.filter(
+    (link, index, arr) => arr.findIndex((candidate) => candidate.url === link.url) === index,
+  );
+  return deduped.length > 0 ? deduped : undefined;
 }
 
 export async function createDraftFull(
@@ -392,7 +436,10 @@ export async function publishDraft(
   return {
     publishId: String(r.publishId ?? ''),
     msgDataId: r.msgDataId,
-    resultLinks: normalizeResultLinks(r.resultLinks),
+    resultLinks: buildResultLinks({
+      upstream: r.resultLinks,
+      platformLabel: 'WeChat backend / publish management',
+    }),
   };
 }
 
@@ -405,45 +452,22 @@ export async function getPublishStatus(
     { publishId },
     config,
   );
+  const articles = Array.isArray(r.articles)
+    ? r.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
+    : undefined;
   return {
     publishId: String(r.publishId ?? publishId),
     publishStatus: Number(r.publishStatus ?? 0),
     articleId: r.articleId as string | undefined,
-    articles: Array.isArray(r.articles)
-      ? r.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
-      : undefined,
+    articles,
     failIdx: Array.isArray(r.failIdx) ? (r.failIdx as number[]) : undefined,
-    resultLinks: normalizeResultLinks(r.resultLinks),
-  };
-}
-
-export async function listPublished(
-  offset = 0,
-  count = 20,
-  noContent = false,
-  config?: WeChatConfig,
-): Promise<WeChatPublishedListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wechat/listPublished',
-    { offset, count, noContent },
-    config,
-  );
-  return {
-    items: Array.isArray(r.items)
-      ? r.items.map((it) => {
-          const obj = it as Record<string, unknown>;
-          return {
-            articleId: String(obj.articleId ?? ''),
-            articles: Array.isArray(obj.articles)
-              ? obj.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
-              : [],
-            updateTime: typeof obj.updateTime === 'number' ? obj.updateTime : undefined,
-            resultLinks: normalizeResultLinks(obj.resultLinks),
-          };
-        })
-      : [],
-    totalCount: Number(r.totalCount ?? 0),
-    itemCount: Number(r.itemCount ?? 0),
+    resultLinks: buildResultLinks({
+      upstream: r.resultLinks,
+      articles,
+      articleKind: 'public_post',
+      articleLabel: 'Published article',
+      platformLabel: 'WeChat backend / publish management',
+    }),
   };
 }
 
@@ -456,13 +480,20 @@ export async function getPublished(
     { articleId },
     config,
   );
+  const articles = Array.isArray(r.articles)
+    ? r.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
+    : [];
   return {
     articleId: String(r.articleId ?? articleId),
-    articles: Array.isArray(r.articles)
-      ? r.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
-      : [],
+    articles,
     updateTime: typeof r.updateTime === 'number' ? r.updateTime : undefined,
-    resultLinks: normalizeResultLinks(r.resultLinks),
+    resultLinks: buildResultLinks({
+      upstream: r.resultLinks,
+      articles,
+      articleKind: 'public_post',
+      articleLabel: 'Published article',
+      platformLabel: 'WeChat backend / published articles',
+    }),
   };
 }
 

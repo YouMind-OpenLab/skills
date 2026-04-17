@@ -32,7 +32,6 @@ import {
   deleteDraft,
   getAccessToken,
   listDrafts,
-  listPublished,
   type WeChatResultLink,
   uploadImage,
   uploadThumb,
@@ -75,7 +74,7 @@ function printResultLinks(
   }
   console.log(`${indent}Result links:`);
   for (const link of filteredLinks) {
-    console.log(`${indent}  - ${link.label}: ${link.url}`);
+    console.log(`${indent}  - [${link.label}](${link.url})`);
   }
 }
 
@@ -259,33 +258,6 @@ program
       }
     } catch (e) {
       console.error(`list-drafts failed: ${(e as Error).message}`);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('list-published')
-  .description('List published WeChat articles (paginated)')
-  .option('--offset <n>', 'Skip first N items', '0')
-  .option('--count <n>', 'Items per page', '20')
-  .option('--no-content', 'Omit content body')
-  .action(async (opts: { offset: string; count: string; content?: boolean }) => {
-    try {
-      const r = await listPublished(
-        Number.parseInt(opts.offset, 10),
-        Number.parseInt(opts.count, 10),
-        opts.content === false,
-      );
-      console.log(`Published (${r.items.length}/${r.totalCount} total):\n`);
-      for (const item of r.items) {
-        const titles = item.articles.map((a) => a.title).join(' / ');
-        const url = item.articles[0]?.url ?? '';
-        console.log(`  [${item.articleId}] ${titles || '(no title)'}`);
-        if (url) console.log(`         ${url}`);
-        printResultLinks(item.resultLinks, { indent: '    ', skipUrls: url ? [url] : [] });
-      }
-    } catch (e) {
-      console.error(`list-published failed: ${(e as Error).message}`);
       process.exit(1);
     }
   });

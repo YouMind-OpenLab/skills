@@ -40,8 +40,10 @@ When the user asks about article stats: fetch with `fetch-stats.js`, backfill hi
 3. **Adjustments:** Specific changes for the next article's topic selection, title strategy, or framework choice.
 
 When reporting the review, also surface the best available **result links**:
-- Prefer the direct article URL when history/OpenAPI has it.
-- If no direct article/stats URL is available, return the WeChat Official Account backend link so the user can click through to publish management and data views.
+- Prefer the `resultLinks` returned by the CLI / OpenAPI.
+- Also include the preview link from `articles[].url` when available.
+- Always include `https://mp.weixin.qq.com/` so the user can continue in the Official Account backend.
+- Render these links as Markdown links so long preview URLs stay readable.
 
 ---
 

@@ -159,7 +159,9 @@ Use `cli.js publish` with theme and color from style.yaml (or user override). Fo
 Report the results: title (with 2 alternatives and their strategies), digest, tags, theme + color, media_id, and **result links**.
 
 - Always include every `resultLinks` URL returned by the CLI / OpenAPI at the end.
-- If a direct article or stats link is unavailable, include the platform entry link instead.
+- For draft results, also include the preview link from `articles[].url` when available.
+- Always include `https://mp.weixin.qq.com/` as the manual publish / review entry.
+- Render links in Markdown format, for example `[Draft preview](url)` and `[WeChat backend / draft box](https://mp.weixin.qq.com/)`.
 - Phrase them as action-oriented links such as `Draft box / publish / stats` or `Published article`.
 
 On partial success, list each step's status, include any fallback links that still help the user continue manually, and explain what needs manual completion.
