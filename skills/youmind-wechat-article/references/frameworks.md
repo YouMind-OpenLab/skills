@@ -104,7 +104,7 @@ Make the reader care about this person BEFORE the turning point:
 - Build tension through specific details: "所有人都在等他拍板。会议室里安静到能听见空调的嗡嗡声。"
 - Give the protagonist ONE recognizable human quality — not "he was brave," but show a moment of fear, hesitation, or stubbornness
 
-**NEVER info-dump background.** Weave context through the story. The reader learns about the person by watching them act, not by reading their LinkedIn profile.
+**NEVER info-dump background.** Weave context through the story. The reader learns about the person by watching them act, not by reading a dry social profile.
 
 ### Turn — The Moment (200–400 words)
 
