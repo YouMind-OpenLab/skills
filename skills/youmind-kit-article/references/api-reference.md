@@ -44,6 +44,6 @@ The skill only stores the YouMind API key locally. Kit credentials live in YouMi
 - `sendAt` can schedule the email send.
 - **Create vs update semantics**
   - `createBroadcast`: when `isPublic` / `sendAt` are omitted, YouMind fills sensible defaults for a brand-new broadcast — `isPublic=true`, `sendAt=null` (save as draft), and `publishedAt=now` if the broadcast is public.
-  - `updateBroadcast`: runs a strict partial update. Fields you do not pass are **left untouched** on Kit's side. If you want to flip visibility or cancel a scheduled send during an update, send the field explicitly (e.g. `isPublic: false` or `sendAt: null`). This prevents accidental public/schedule regressions when you only meant to tweak subject or content.
+  - `updateBroadcast`: behaves as a true partial update from the caller's perspective. Fields you do not pass are **left untouched**. Implementation note: Kit's native `PUT /v4/broadcasts/{id}` silently resets some omitted optional fields (observed on `send_at`), so YouMind first `GET`s the current broadcast, merges caller-supplied fields on top, and then forwards a complete payload to Kit. If you want to flip visibility or cancel a scheduled send during an update, send the field explicitly (`isPublic: false`, `sendAt: null`).
 - Private broadcasts usually do not return a public URL; inspect them in `https://app.kit.com/campaigns`.
 - Kit can reject create/update if the sender email address is not yet confirmed on the Kit side.
