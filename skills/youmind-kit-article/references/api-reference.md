@@ -42,6 +42,8 @@ The skill only stores the YouMind API key locally. Kit credentials live in YouMi
 - `content` must be HTML.
 - `isPublic` controls whether the post appears on the public web feed.
 - `sendAt` can schedule the email send.
-- When omitted, YouMind defaults to a public web post with no scheduled send.
+- **Create vs update semantics**
+  - `createBroadcast`: when `isPublic` / `sendAt` are omitted, YouMind fills sensible defaults for a brand-new broadcast — `isPublic=true`, `sendAt=null` (save as draft), and `publishedAt=now` if the broadcast is public.
+  - `updateBroadcast`: runs a strict partial update. Fields you do not pass are **left untouched** on Kit's side. If you want to flip visibility or cancel a scheduled send during an update, send the field explicitly (e.g. `isPublic: false` or `sendAt: null`). This prevents accidental public/schedule regressions when you only meant to tweak subject or content.
 - Private broadcasts usually do not return a public URL; inspect them in `https://app.kit.com/campaigns`.
 - Kit can reject create/update if the sender email address is not yet confirmed on the Kit side.
