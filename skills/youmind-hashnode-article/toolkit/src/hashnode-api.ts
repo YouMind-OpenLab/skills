@@ -295,6 +295,20 @@ export async function publishDraft(config: HashnodeConfig, id: string): Promise<
   return normalizePost(post);
 }
 
+export async function removeDraft(
+  config: HashnodeConfig,
+  id: string,
+): Promise<{ ok: boolean; id: string }> {
+  return postJson<{ ok: boolean; id: string }>('/hashnode/removeDraft', { id }, config);
+}
+
+export async function removePost(
+  config: HashnodeConfig,
+  id: string,
+): Promise<{ ok: boolean; id: string }> {
+  return postJson<{ ok: boolean; id: string }>('/hashnode/removePost', { id }, config);
+}
+
 export async function getDraft(config: HashnodeConfig, id: string): Promise<HashnodePost> {
   const post = await postJson<Record<string, unknown>>('/hashnode/getDraft', { id }, config);
   return normalizePost(post);

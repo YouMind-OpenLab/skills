@@ -289,6 +289,13 @@ export async function unpublishPost(config: GhostConfig, postId: string): Promis
   return normalizePost(post);
 }
 
+export async function deletePost(
+  config: GhostConfig,
+  postId: string,
+): Promise<{ ok: boolean; id: string }> {
+  return postJson<{ ok: boolean; id: string }>('/ghost/deletePost', { id: postId }, config);
+}
+
 export async function listPosts(
   config: GhostConfig,
   page = 1,

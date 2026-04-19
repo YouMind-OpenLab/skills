@@ -13,6 +13,8 @@ import {
   listPublishedPosts,
   loadHashnodeConfig,
   publishDraft,
+  removeDraft,
+  removePost,
   searchTags,
   type HashnodePost,
   validateConnection,
@@ -422,6 +424,42 @@ program
       printPost(post);
     } catch (error) {
       console.error(`Get draft failed: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete-draft <id>')
+  .description('Permanently delete a Hashnode draft by ID')
+  .option('-y, --yes', 'Confirm deletion (required)')
+  .action(async (id: string, opts: { yes?: boolean }) => {
+    try {
+      if (!opts.yes) {
+        console.error(`Refusing to delete draft ${id} without --yes. Re-run with -y to confirm.`);
+        process.exit(1);
+      }
+      const result = await removeDraft(loadHashnodeConfig(), id);
+      console.log(`Deleted Hashnode draft ${result.id} (ok=${result.ok}).`);
+    } catch (error) {
+      console.error(`Delete draft failed: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete-post <id>')
+  .description('Permanently delete a published Hashnode post by ID')
+  .option('-y, --yes', 'Confirm deletion (required)')
+  .action(async (id: string, opts: { yes?: boolean }) => {
+    try {
+      if (!opts.yes) {
+        console.error(`Refusing to delete post ${id} without --yes. Re-run with -y to confirm.`);
+        process.exit(1);
+      }
+      const result = await removePost(loadHashnodeConfig(), id);
+      console.log(`Deleted Hashnode post ${result.id} (ok=${result.ok}).`);
+    } catch (error) {
+      console.error(`Delete post failed: ${(error as Error).message}`);
       process.exit(1);
     }
   });

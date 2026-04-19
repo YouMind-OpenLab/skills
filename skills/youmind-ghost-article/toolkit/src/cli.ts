@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { publish } from './publisher.js';
 import { convertToHtml } from './content-adapter.js';
 import {
+  deletePost,
   getPost,
   listDraftPosts,
   listPublishedPosts,
@@ -399,6 +400,24 @@ program
       printPost(post);
     } catch (e) {
       console.error(`Unpublish post failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete <id>')
+  .description('Permanently delete a Ghost post or draft by ID')
+  .option('-y, --yes', 'Confirm deletion (required)')
+  .action(async (id: string, opts: { yes?: boolean }) => {
+    try {
+      if (!opts.yes) {
+        console.error(`Refusing to delete ${id} without --yes. Re-run with -y to confirm.`);
+        process.exit(1);
+      }
+      const result = await deletePost(loadGhostConfig(), id);
+      console.log(`Deleted Ghost post ${result.id} (ok=${result.ok}).`);
+    } catch (e) {
+      console.error(`Delete failed: ${(e as Error).message}`);
       process.exit(1);
     }
   });
