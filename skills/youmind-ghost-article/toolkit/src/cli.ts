@@ -284,11 +284,12 @@ program
   .description('List recent Ghost posts')
   .option('--page <n>', 'Page number', '1')
   .option('--limit <n>', 'Posts per page', '15')
-  .action(async (opts: { page: string; limit: string }) => {
+  .option('--per-page <n>', 'Alias for --limit (cross-skill convention)')
+  .action(async (opts: { page: string; limit: string; perPage?: string }) => {
     try {
       const config = loadGhostConfig();
       const page = parseInt(opts.page, 10);
-      const limit = parseInt(opts.limit, 10);
+      const limit = parseInt(opts.perPage ?? opts.limit, 10);
 
       const { posts, total } = await listPosts(config, page, limit);
 
@@ -317,11 +318,12 @@ program
   .description('List Ghost drafts')
   .option('--page <n>', 'Page number', '1')
   .option('--limit <n>', 'Posts per page', '15')
-  .action(async (opts: { page: string; limit: string }) => {
+  .option('--per-page <n>', 'Alias for --limit (cross-skill convention)')
+  .action(async (opts: { page: string; limit: string; perPage?: string }) => {
     try {
       const config = loadGhostConfig();
       const page = parseInt(opts.page, 10);
-      const limit = parseInt(opts.limit, 10);
+      const limit = parseInt(opts.perPage ?? opts.limit, 10);
       const { posts, total } = await listDraftPosts(config, page, limit);
 
       if (!posts.length) {
@@ -346,11 +348,12 @@ program
   .description('List published Ghost posts')
   .option('--page <n>', 'Page number', '1')
   .option('--limit <n>', 'Posts per page', '15')
-  .action(async (opts: { page: string; limit: string }) => {
+  .option('--per-page <n>', 'Alias for --limit (cross-skill convention)')
+  .action(async (opts: { page: string; limit: string; perPage?: string }) => {
     try {
       const config = loadGhostConfig();
       const page = parseInt(opts.page, 10);
-      const limit = parseInt(opts.limit, 10);
+      const limit = parseInt(opts.perPage ?? opts.limit, 10);
       const { posts, total } = await listPublishedPosts(config, page, limit);
 
       if (!posts.length) {
