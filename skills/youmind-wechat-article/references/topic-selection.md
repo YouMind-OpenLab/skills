@@ -12,6 +12,19 @@
 
 If the answer is "better writing" — that's not enough. If the answer is "a perspective, data point, or insight they've never encountered" — proceed.
 
+## Hard Gates Before Scoring
+
+Before you score a topic, answer these three questions:
+
+1. **What is the forwarding sentence?**
+   If a reader forwards this article, what will they say in one line?
+2. **Why now?**
+   What makes this worth reading this week instead of someday?
+3. **What is the primary conversion goal?**
+   Save, comment, next read, follow, add WeCom, mini-program, join group: pick one.
+
+If any one is blank, the topic is underdeveloped even if it looks hot.
+
 ---
 
 ## Evaluation Model: 5 Dimensions
@@ -101,7 +114,7 @@ Each topic must include:
 
 | Field | Requirement |
 |-------|------------|
-| Draft title | 20-28 Chinese characters, using a specific title strategy (seo-rules.md) |
+| Draft title | Mobile-first title with subject + payoff early, using a specific title strategy (seo-rules.md) |
 | Final score | 0-10, show weighted calculation |
 | Dimension breakdown | Heat / Fit / Angle / Engagement / Insight |
 | CTR prediction | High / Medium / Low |
@@ -109,6 +122,8 @@ Each topic must include:
 | Recommended framework | One of the 6 frameworks + one-line reasoning |
 | Dedup flag | vs. `history.yaml` last 7 days |
 | Atomic Insight draft | 1-2 sentences: what's the core insight this article could deliver? **This is the most important field.** |
+| Share reason | Why a reader would forward this to one specific person |
+| Conversion fit | Which `primary_conversion_goal` this topic naturally supports |
 
 ---
 

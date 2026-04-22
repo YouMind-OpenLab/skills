@@ -1,0 +1,46 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "hashnode"
+skill_name: "youmind-hashnode-article"
+display_name: "Hashnode"
+
+tagline: "In-depth technical blogs, developer-owned with custom domain"
+audience: "Developer bloggers, tech writers, engineers at 25-34 cohort"
+
+best_for:
+  - "deep-dive technical articles"
+  - "tutorial series"
+  - "how-it-works-under-the-hood"
+  - "architecture write-ups"
+  - "developer stories"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - translate
+  - localize
+  - revive
+  - excerpt
+
+hard_limits:
+  max_tags: 5
+  recommended_cover_image: "1600x840"
+  typical_word_count: "1500-3000"
+
+defaults:
+  publish_mode: "draft"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

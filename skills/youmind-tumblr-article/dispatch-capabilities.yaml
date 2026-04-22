@@ -1,0 +1,65 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+
+contract_version: "1.0"
+
+platform: "tumblr"
+skill_name: "youmind-tumblr-article"
+display_name: "Tumblr"
+
+tagline: "Conversational long-form blogging, simple HTML bodies, blog-first publishing"
+audience: "Blog followers, dashboard readers, fandom and creator audiences, mixed technical/general readers"
+
+best_for:
+  - "personal essays with a clear point of view"
+  - "product and build logs"
+  - "cross-posted blog articles with a lighter voice"
+  - "creator notes and behind-the-scenes posts"
+  - "image-led long-form updates"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - translate
+  - localize
+  - revive
+  - excerpt
+  - publish_photo
+  - read_feedback
+  - reorder_queue
+  - shuffle_queue
+
+hard_limits:
+  body_mode: "legacy-text-post"
+  body_html: "simple-html-only"
+  title_required: true
+  tags_mode: "flat-string-tags"
+
+defaults:
+  publish_mode: "publish"
+
+supported_post_states:
+  - published
+  - draft
+  - queue
+  - private
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  primary_blog: "Publish defaults to the primary Tumblr blog selected during OAuth unless blogIdentifier overrides it."
+  embeds: "Complex embeds and scripts should be stripped; text posts work best with paragraphs, headings, images, and lists."
+  voice: "Tumblr generally rewards recognizable voice and clear perspective more than generic SEO blog polish."
+  comments: "Use notes conversation mode when the user asks to read Tumblr comments or replies."
+  queue: "Queue control is a first-class editorial workflow on Tumblr, not just a scheduling afterthought."
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"
+  media_playbook: "references/media-playbook.md"
+  engagement_playbook: "references/engagement-playbook.md"

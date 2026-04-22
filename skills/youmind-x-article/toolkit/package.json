@@ -1,0 +1,27 @@
+{
+  "name": "youmind-x-toolkit",
+  "version": "1.0.0",
+  "description": "YouMind X: Write and publish tweets and threads to X (Twitter)",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "youmind-x": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "tweet": "tsx src/cli.ts tweet",
+    "thread": "tsx src/cli.ts thread",
+    "preview": "tsx src/cli.ts preview"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "node-fetch": "^3.3.0",
+    "yaml": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

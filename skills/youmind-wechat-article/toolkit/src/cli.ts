@@ -11,7 +11,7 @@
  */
 
 import { Command } from 'commander';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { WeChatConverter, previewHtml } from './converter.js';
@@ -27,28 +27,24 @@ import {
   listPresetColors,
   listThemes,
 } from './theme-engine.js';
-import { getAccessToken, uploadImage, uploadThumb } from './wechat-api.js';
+import {
+  countDrafts,
+  deleteDraft,
+  getAccessToken,
+  listDrafts,
+  type WeChatResultLink,
+  uploadImage,
+  uploadThumb,
+  validateConnection,
+} from './wechat-api.js';
 import { createDraft } from './publisher.js';
+import { loadLayeredConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // --- Config Loading ---
-
-import { existsSync } from 'node:fs';
-import { parse as parseYaml } from 'yaml';
 import { dirname, join } from 'node:path';
 
-const CONFIG_PATHS = [
-  join(process.cwd(), 'config.yaml'),
-  join(dirname(import.meta.url.replace('file://', '')), '..', '..', 'config.yaml'),
-  join(dirname(import.meta.url.replace('file://', '')), '..', 'config.yaml'),
-];
-
 function loadConfig(): Record<string, unknown> {
-  for (const p of CONFIG_PATHS) {
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) || {};
-    }
-  }
-  return {};
+  return loadLayeredConfig();
 }
 
 function loadCustomTheme(jsonPath: string): Theme {
@@ -61,6 +57,25 @@ function loadCustomTheme(jsonPath: string): Theme {
     color: raw.tokens?.color ?? DEFAULT_COLOR,
     styles,
   };
+}
+
+function printResultLinks(
+  resultLinks: WeChatResultLink[] | undefined,
+  options?: { indent?: string; skipUrls?: string[] },
+): void {
+  if (!resultLinks || resultLinks.length === 0) {
+    return;
+  }
+
+  const indent = options?.indent ?? '';
+  const filteredLinks = resultLinks.filter((link) => !options?.skipUrls?.includes(link.url));
+  if (filteredLinks.length === 0) {
+    return;
+  }
+  console.log(`${indent}Result links:`);
+  for (const link of filteredLinks) {
+    console.log(`${indent}  - [${link.label}](${link.url})`);
+  }
 }
 
 // --- Commands ---
@@ -76,7 +91,7 @@ program
   .command('preview')
   .description('Generate HTML preview and open in browser')
   .argument('<input>', 'Markdown file path')
-  .option('-t, --theme <key>', 'Theme: simple, center, decoration, prominent', DEFAULT_THEME)
+  .option('-t, --theme <key>', 'Theme key (run `themes` to list built-ins)', DEFAULT_THEME)
   .option('-c, --color <hex>', 'Theme color (HEX)', DEFAULT_COLOR)
   .option('-o, --output <path>', 'Output HTML file path')
   .option('--no-open', "Don't open browser")
@@ -121,8 +136,6 @@ program
   .argument('<input>', 'Markdown file path')
   .option('-t, --theme <key>', 'Theme key')
   .option('-c, --color <hex>', 'Theme color (HEX)')
-  .option('--appid <id>', 'WeChat AppID')
-  .option('--secret <key>', 'WeChat AppSecret')
   .option('--cover <path>', 'Cover image file path')
   .option('--title <text>', 'Override article title')
   .option('--author <name>', 'Article author')
@@ -133,16 +146,14 @@ program
   .option('--custom-theme <path>', 'Custom theme JSON file path')
   .action(async (input: string, opts) => {
     const cfg = loadConfig();
-    const wechatCfg = (cfg.wechat as Record<string, string>) || {};
+    const youmindCfg = (cfg.youmind as Record<string, string>) || {};
 
-    const appid = opts.appid || wechatCfg.appid;
-    const secret = opts.secret || wechatCfg.secret;
     const themeKey = (opts.theme || (cfg.theme as string) || DEFAULT_THEME) as ThemeKey;
     const color = opts.color || (cfg.theme_color as string) || DEFAULT_COLOR;
-    const author = opts.author || wechatCfg.author;
+    const author = opts.author;
 
-    if (!appid || !secret) {
-      console.error('Error: --appid and --secret required (or set in config.yaml)');
+    if (!youmindCfg.api_key) {
+      console.error(`Error: ${YOUMIND_CONFIG_ERROR_HINT}`);
       process.exit(1);
     }
 
@@ -163,7 +174,7 @@ program
     console.log(`Images found: ${result.images.length}`);
     console.log(`Theme: ${themeKey} | Color: ${color}`);
 
-    const token = await getAccessToken(appid, secret);
+    const token = await getAccessToken('', '');
     console.log('Access token obtained.');
 
     let html = result.html;
@@ -208,6 +219,78 @@ program
     });
 
     console.log(`\nDraft created! media_id: ${draft.mediaId}`);
+    printResultLinks(draft.resultLinks);
+  });
+
+program
+  .command('validate')
+  .description('Check WeChat connectivity via YouMind proxy')
+  .action(async () => {
+    try {
+      const r = await validateConnection();
+      console.log(`OK: ${r.message}`);
+      console.log(`  AppID:           ${r.appid}`);
+      console.log(`  Token expires:   ${r.tokenExpiresIn}s`);
+    } catch (e) {
+      console.error(`Validation failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list-drafts')
+  .description('List WeChat drafts (paginated, max 20/page)')
+  .option('--offset <n>', 'Skip first N drafts', '0')
+  .option('--count <n>', 'Items per page', '20')
+  .option('--no-content', 'Omit content body in list (smaller payload)')
+  .action(async (opts: { offset: string; count: string; content?: boolean }) => {
+    try {
+      const r = await listDrafts(
+        Number.parseInt(opts.offset, 10),
+        Number.parseInt(opts.count, 10),
+        opts.content === false,
+      );
+      console.log(`Drafts (${r.items.length}/${r.totalCount} total):\n`);
+      for (const d of r.items) {
+        const titles = d.articles.map((a) => a.title).join(' / ');
+        console.log(`  [${d.mediaId}] ${titles || '(no title)'}`);
+        printResultLinks(d.resultLinks, { indent: '    ' });
+      }
+    } catch (e) {
+      console.error(`list-drafts failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('count-drafts')
+  .description('Total draft count')
+  .action(async () => {
+    try {
+      const r = await countDrafts();
+      console.log(`Total drafts: ${r.totalCount}`);
+    } catch (e) {
+      console.error(`count-drafts failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('delete-draft <mediaId>')
+  .description('Delete a draft by media_id (permanent — WeChat does not trash drafts)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (mediaId: string, opts: { yes?: boolean }) => {
+    if (!opts.yes) {
+      console.error(`Refusing to delete draft ${mediaId} without --yes.`);
+      process.exit(1);
+    }
+    try {
+      const r = await deleteDraft(mediaId);
+      console.log(r.ok ? `Deleted draft ${r.id}.` : `Delete returned ok=false for ${r.id}.`);
+    } catch (e) {
+      console.error(`delete-draft failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
   });
 
 program
@@ -233,7 +316,7 @@ program
 
 program
   .command('theme-preview')
-  .description('Generate previews for all 4 themes with the given color')
+  .description('Generate previews for all built-in themes with the given color')
   .argument('<input>', 'Markdown file path')
   .option('-c, --color <hex>', 'Theme color (HEX)', DEFAULT_COLOR)
   .option('--no-open', "Don't open browser")

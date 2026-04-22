@@ -2,9 +2,16 @@ node_modules/
 dist/
 *.html
 config.yaml
-output/
+
+# Drafts — keep directory tracked via .gitkeep; ignore generated content
+output/*
+!output/.gitkeep
+
+# Client configs — keep demo template tracked; ignore real client data
+clients/*
+!clients/demo/
+
 __pycache__/
 *.pyc
 .env
-clients/
 toolkit/package-lock.json

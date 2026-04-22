@@ -1,0 +1,60 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "wordpress"
+skill_name: "youmind-wordpress-article"
+display_name: "WordPress"
+
+tagline: "SEO-optimized long-form, Yoast/RankMath rubric, E-E-A-T-aware"
+audience: "General audiences (site-dependent), SEO-driven discovery"
+
+best_for:
+  - "SEO pillar articles"
+  - "how-to tutorials targeting long-tail keywords"
+  - "cornerstone content"
+  - "evergreen articles with update-and-bump revival"
+  - "list posts and FAQs"
+
+supported_operations:
+  - generate
+  - adapt
+  - translate
+  - localize
+  - revive                                # extra-powerful on WP (publish-date refresh)
+  - condense
+  - excerpt
+
+hard_limits:
+  title_serp_optimal_chars: 60
+  meta_description_chars: 155
+  recommended_featured_image: "1200x630"
+  typical_word_count: "500-3000"
+  h1_count: 1                             # only title; multiple H1 = SEO penalty
+
+defaults:
+  publish_mode: "draft"
+
+seo_requirements:                          # Yoast/RankMath rubric
+  focus_keyphrase_required: true
+  keyphrase_density_range: "0.5-2.5"
+  internal_links_min: 1
+  outbound_links_min: 1
+  alt_text_required: true
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  taxonomy: "Categories are hierarchical and structural; tags are flat and optional grouping."
+  workflow: "WordPress posts should use excerpt, featured image, and post status intentionally, not only body HTML."
+  theme_variance: "Final rendering depends on theme and block/template setup."
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

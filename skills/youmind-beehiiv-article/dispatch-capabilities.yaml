@@ -1,0 +1,56 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "beehiiv"
+skill_name: "youmind-beehiiv-article"
+display_name: "Beehiiv"
+
+tagline: "Publication-style newsletter posts, template-first layouts, growth + monetization aware"
+audience: "Newsletter operators, creator businesses, editorial growth teams running a publication"
+
+best_for:
+  - "weekly publication briefings"
+  - "launch notes"
+  - "operator memos"
+  - "curated digests"
+  - "free-to-premium teaser posts"
+  - "sponsor-backed or monetized recaps"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense
+  - revive
+  - excerpt
+
+hard_limits:
+  title_soft_ceiling_chars: "45-75"
+  subtitle_soft_ceiling_chars: "55-140"
+  preview_text_chars: "35-120"
+  body_html_mode: "simple-email-safe-html"
+  dual_surface_required: true
+  send_api_access_may_gate_create: true
+  update_post_capability: "beta-enterprise"
+  api_rate_limit: "180-requests-per-minute-per-organization"
+
+defaults:
+  publish_mode: "draft"
+  visibility: "public"
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  template_first: "If the publication uses recurring layouts, inspect post templates before formatting."
+  routing: "Beehiiv posts should decide web/email surface, feed visibility, and free/premium audience explicitly."
+  send_api: "Confirmed publishing can fail when the underlying publication lacks Send API access."
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

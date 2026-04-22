@@ -1,0 +1,57 @@
+# Dispatch Capability Manifest
+# Read by youmind-article-dispatch when orchestrating multi-platform publishing.
+# Contract: shared/DISPATCH_CONTRACT.md (v1.0)
+
+contract_version: "1.0"
+
+platform: "x"
+skill_name: "youmind-x-article"
+display_name: "X (Twitter)"
+
+tagline: "Hook-first threads, 280-char discipline, contrarian takes"
+audience: "General audiences 25-34 cohort, news-seekers, engagement-driven"
+
+best_for:
+  - "hook-driven threads"
+  - "hot takes and commentary"
+  - "breaking news analysis"
+  - "condensing long essays to thread format"
+  - "quick-hit single tweets"
+
+supported_operations:
+  - generate
+  - adapt
+  - condense                              # PRIMARY use case (long essay → thread)
+  - excerpt
+  - translate
+  - localize
+  - revive
+
+hard_limits:
+  max_post_chars: 280                     # free tier
+  url_char_cost: 23                       # any URL = 23 chars
+  max_images_per_post: 4
+  max_video_per_post: 1
+  max_hashtags: 2
+  thread_practical_max: 15                # drop-off past this
+  thread_absolute_max: 25
+
+defaults:
+  publish_mode: "draft"
+  hook_style: "contrarian"                # user may override in platform_overrides
+
+auth:
+  type: "youmind-openapi"
+  connector_url: "https://youmind.com/settings/connector"
+  local_config_required: "youmind.api_key"
+
+special_notes:
+  thread_decomposition_core: "When adapting long-form content, thread decomposition is the core skill. See references/content-adaptation-playbook.md Step 4."
+  no_markdown: "X renders plain text only. Code must be screenshots."
+  link_placement: "External links in LAST tweet only. Mid-thread links are de-amplified."
+  plan_requirement: "Publishing requires YouMind Pro/Max plan; free plan can preview locally."
+
+references:
+  platform_dna: "references/platform-dna.md"
+  generation_playbook: "references/content-generation-playbook.md"
+  adaptation_playbook: "references/content-adaptation-playbook.md"

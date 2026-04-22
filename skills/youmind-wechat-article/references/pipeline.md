@@ -12,11 +12,14 @@ Read `{skill_dir}/clients/{client}/style.yaml`.
 **Routing:**
 - Client directory does not exist → Tell user to reference `references/style-template.md`. Do NOT create it yourself.
 - User provided a specific topic (e.g., "write about AI Agents") → Skip Steps 2–3, go to Step 1.5 → Step 3.5
-- User provided raw Markdown for formatting only → Skip to Step 7
+- User provided raw Markdown or a finished article for formatting/publish only → run the minimal checks from `content-adaptation-playbook.md`, then skip to Step 7
+
+Also load `conversion` defaults if present. These shape CTA planning later in the pipeline.
 
 ## Step 1.5: YouMind Knowledge Mining
 
-> Only runs when `config.yaml` contains `youmind.api_key`. Otherwise skip.
+> Only runs when `~/.youmind/config.yaml` contains `youmind.api_key`. Otherwise skip.
+> Skip this step when using the skill's built-in formatting + direct-send capability.
 
 Use `youmind-api.js mine-topics` with the client's topics and source boards. Keep the top 10 results as `knowledge_context` for use in Steps 3 and 4.
 
@@ -44,6 +47,8 @@ Run two tasks simultaneously:
 Read `references/topic-selection.md`. Generate **10 topics** using the 5-dimension evaluation model (Heat, Audience Fit, Angle Value, Engagement Potential, Insight Potential).
 
 - **Each topic MUST include an Atomic Insight draft** — 1-2 sentences stating the core insight the article could deliver. This is the most important field. If you can't draft one, the topic is too shallow.
+- **Each topic MUST include a share reason** — why someone would forward this to one specific person.
+- **Each topic MUST include conversion fit** — which `primary_conversion_goal` the topic naturally supports.
 - Apply the **Topic Sharpening process** (generic → specific → tense → urgent → insight) to all candidates.
 - Knowledge boost: matching `knowledge_context` items → +1, flag "has knowledge base support"
 - Dedup penalty: overlapping with last 7 days → −2, flag "recently covered"
@@ -63,13 +68,26 @@ If history stats show a particular framework overperforms for this audience, bia
 
 Read `references/writing-guide.md` and `clients/{client}/playbook.md` (if it exists).
 
+Define the article handoff explicitly:
+
+- `primary_conversion_goal`
+- `landing_type`
+- `handoff_owner`
+- `cta_location`
+
+Consult extra docs only when needed:
+
+- `attention-sharing-psychology.md` when title, opening, share value, or CTA quality feels weak
+- `professional-playbook.md` when the article needs stronger column logic, first-screen design, or review framing
+- `conversion-architecture.md` when the piece has a real handoff into private domain, service, group, or mini-program
+
 **Before writing, complete the Pre-Writing Thinking Framework** (in `<thinking>` tags — see writing-guide.md). This MUST include identifying the **Atomic Insight** — the ONE thing the reader will tell a friend over dinner. If you can't state it in one sentence, go back to topic selection.
 
 **Design the Emotional Architecture** (see writing-guide.md "Emotional Architecture" section). Choose one of the 5 emotional shapes and map the arc before writing. The article must have a clear emotional peak at 60-70% of the way through.
 
 **Knowledge integration:** If `knowledge_context` contains relevant items, use `youmind-api.js get-material` / `get-craft` to read the full content. Extract facts, data points, and unique perspectives. Attribute naturally within the article. Do NOT copy-paste.
 
-**Hard rules:** Follow the selected framework structure. Apply writing-guide craft principles throughout. H1 title 20–28 characters. Word count 1,500–2,500. No banned words from writing-guide or client blacklist. Place golden quotes at framework-specified positions. Match client voice and tone. Apply Chinese Writing Mastery techniques (转折, 对仗不对称, 留白, 口语切入). Do NOT insert image placeholders (Step 6 handles images).
+**Hard rules:** Follow the selected framework structure. Apply writing-guide craft principles throughout. H1 title must front-load subject and payoff for mobile scanability. Word count 1,500–2,500. No banned words from writing-guide or client blacklist. Place golden quotes at framework-specified positions. Match client voice and tone. Apply Chinese Writing Mastery techniques (转折, 对仗不对称, 留白, 口语切入). Design the first 120–200 Chinese characters as the real opening battlefield. Do NOT insert image placeholders (Step 6 handles images).
 
 **Self-check (three passes, in this order):**
 1. **Depth Checklist** (writing-guide.md "Depth Architecture" section): Does the article hit Level 3 on the "So What?" ladder at least twice? Does it contain at least one genuinely surprising insight? Would it still be worth reading with all formatting stripped?
@@ -90,6 +108,12 @@ Read `references/seo-rules.md`. Execute ALL 6 optimizations:
 4. **Digest:** ≤54 characters with core keyword + curiosity hook. Must NOT repeat the title.
 5. **Tags:** 5 tags (2 industry + 2 trending + 1 long-tail). Specific beats broad.
 6. **Completion rate check:** Verify paragraph lengths, hook intervals, and rhythm variation. Fix flat sections.
+
+Also verify CTA alignment:
+
+- one primary conversion goal only
+- the ending asks for the next step that matches the article's real job
+- no inducement-to-share language
 
 Overwrite the file with the optimized version.
 
@@ -156,4 +180,12 @@ Use `cli.js publish` with theme and color from style.yaml (or user override). Fo
 
 ## Step 8: Final Output
 
-Report the results: title (with 2 alternatives and their strategies), digest, tags, theme + color, media_id, and remind the user to check the draft box to publish. On partial success, list each step's status and explain what needs manual completion.
+Report the results: title (with 2 alternatives and their strategies), digest, tags, theme + color, media_id, the chosen `primary_conversion_goal`, and **result links**.
+
+- Always include every `resultLinks` URL returned by the CLI / OpenAPI at the end.
+- For draft results, also include the preview link from `articles[].url` when available.
+- Always include `https://mp.weixin.qq.com/` as the manual publish / review entry.
+- Render links in Markdown format, for example `[Draft preview](url)` and `[WeChat backend / draft box](https://mp.weixin.qq.com/)`.
+- Phrase them as action-oriented links such as `Draft box / publish / stats` or `Published article`.
+
+On partial success, list each step's status, include any fallback links that still help the user continue manually, and explain what needs manual completion.

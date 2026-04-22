@@ -1,0 +1,15 @@
+# User data — personal, not shared
+config.yaml
+author-profile.yaml
+dispatch-roster.yaml
+learning-log.yaml
+
+# Secrets
+.env
+
+# Build artifacts (if toolkit is added later)
+node_modules/
+dist/
+
+# Drafts
+output/
