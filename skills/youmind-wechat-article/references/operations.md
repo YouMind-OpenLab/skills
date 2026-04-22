@@ -22,6 +22,7 @@
 | Learn from my edits | Run learn-from-edits flow (see below) |
 | Search my materials / knowledge base | Run `youmind-api.js search` |
 | Write from my notes / based on this doc | Read the specific material and use as primary source in Step 4 |
+| Design a better CTA / private-domain handoff | Read `conversion-architecture.md` and rewrite the article around one primary goal |
 
 ---
 
@@ -38,6 +39,7 @@ When the user asks about article stats: fetch with `fetch-stats.js`, backfill hi
 1. **Top performer:** Which article did best? Why? (title strategy, topic heat, framework, timing)
 2. **Underperformer:** Which article lagged? Root cause hypothesis.
 3. **Adjustments:** Specific changes for the next article's topic selection, title strategy, or framework choice.
+4. **Process metrics:** Separate open willingness, first-screen retention, completion depth, and conversion handoff. Do not collapse everything into read count.
 
 When reporting the review, also surface the best available **result links**:
 - Prefer the `resultLinks` returned by the CLI / OpenAPI.

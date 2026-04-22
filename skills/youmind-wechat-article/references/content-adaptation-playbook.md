@@ -31,7 +31,7 @@ The **localize** (English → Chinese) and **condense** sub-modes are the most c
 
 ## Step 2 — Extract canonical content spec
 
-- **Title candidates** (3): **≤14 汉字** each; 痛点/反差/数字 hooks
+- **Title candidates** (3): mobile-first titles with subject + payoff in the first half; prefer clarity over ornament
 - **摘要** (digest): ≤54 汉字 (≤120 UTF-8 bytes)
 - **Outline**: Sections mapped to 公众号 flow
 - **Key assets**: 封面图 (mandatory), body images, diagrams
@@ -46,7 +46,7 @@ Read `references/platform-dna.md` (index) + cited core references. Assess the so
 |-----------|----------------------|
 | Language | Chinese? If not, full transcreation needed |
 | Paragraph length | All ≤4 sentences? (Mobile vertical scroll) |
-| Title length | ≤14 汉字? |
+| Title quality | Does the title front-load subject + payoff clearly? |
 | 封面图 | Present? Quality sufficient? |
 | Code blocks | 公众号 renders code poorly — need screenshots? |
 | External links | 公众号 restricts these — plan 阅读原文 |
@@ -69,7 +69,7 @@ Source structure            → 公众号 structure
 Long introduction           → Hook in 2 sentences (第一屏即钩)
 Long paragraphs             → Break to 2-4 句 per paragraph
 No subheadings              → Add 小标题 every 3-5 paragraphs
-Sparse images               → Add images every 300-500 字
+Sparse images               → Add only where they improve comprehension, rhythm, or trust
 Code blocks (>5 lines)      → Screenshots or minimal inline code
 Numbered lists              → Simplified, shorter items
 External links mid-text     → Move to 阅读原文 at bottom
@@ -81,7 +81,7 @@ No cover image              → Generate 封面图 (mandatory)
 ### Image handling
 - **cdn.gooo.ai images**: Download → upload via WeChat media API → swap URLs
 - **External images**: Download → upload to WeChat media → replace
-- **Image frequency**: One every 300–500 字 to maintain mobile engagement
+- **Image frequency**: Use images intentionally; do not add them by quota alone
 - See `references/visual-prompts.md` for cover image generation
 
 ### Code handling
@@ -116,8 +116,8 @@ English → Chinese transcreation is NOT translation. It's rebuilding the articl
 
 ### Title transcreation
 - Don't translate — rebuild for 公众号 subscription list
-- Apply 痛点/反差/数字 hook
-- Target: ≤14 汉字
+- Apply 痛点/反差/数字 or clear payoff hook
+- Put the subject and value in the first half of the title
 - Example: "Building REST APIs with Hono" → "用 Hono 写 API，比 Express 快 10 倍"
 
 ## Step 6 — Constraint conflict resolution
@@ -139,12 +139,12 @@ English → Chinese transcreation is NOT translation. It's rebuilding the articl
 
 - [ ] **Platform-fit**: Reads like a native 公众号 article? (Not a translated blog post)
 - [ ] **De-AI pass**: Zero AI-sounding phrases? (Run writing-guide.md §de-AI checklist)
-- [ ] **标题**: ≤14 汉字? Compelling in subscription list?
+- [ ] **标题**: Mobile-first and compelling in subscription list?
 - [ ] **摘要**: ≤54 汉字 (≤120 UTF-8 bytes)?
 - [ ] **封面图**: Present and quality?
 - [ ] **段落长度**: All ≤4 sentences?
 - [ ] **小标题**: Every 3–5 paragraphs?
-- [ ] **Images**: Every 300–500 字? Zero external hotlink failures?
+- [ ] **Images**: Used intentionally and zero external hotlink failures?
 - [ ] **Code**: Minimized; screenshots for long blocks?
 - [ ] **底部引流**: Present?
 - [ ] **外部链接**: All in 阅读原文 only?

@@ -70,3 +70,11 @@ length:
   target: 2000                   # 字 count
   min: 1500
   max: 2500
+
+# Primary handoff after reading
+conversion:
+  primary_goal: "follow"         # follow | save | comment | next_read | mini_program | wecom_add | customer_group | manual_service | transaction
+  landing_type: "read_more"      # read_more | mini_program | wecom_add | customer_group | manual_service
+  handoff_owner: "公众号客服"       # 公众号客服 | 企业微信成员 | 群运营 | 小程序表单
+  cta_location: "footer"         # header | body_mid | footer | read_original | menu
+  topic_cluster: "AI workflow"

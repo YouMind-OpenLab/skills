@@ -16,8 +16,8 @@ This is the complete file inventory. Read on demand — do NOT load everything u
 
 | Path | Purpose | When to read |
 |------|---------|-------------|
-| `references/topic-selection.md` | 4-dimension topic evaluation model | Step 3 (topic generation) |
-| `references/frameworks.md` | 5 article frameworks with execution detail | Step 3.5 (framework selection) |
+| `references/topic-selection.md` | 5-dimension topic evaluation model + hard gates | Step 3 (topic generation) |
+| `references/frameworks.md` | 6 article frameworks with execution detail | Step 3.5 (framework selection) |
 | `references/seo-rules.md` | Title optimization, keyword density, digest, tags | Step 5 (SEO pass) |
 | `references/visual-prompts.md` | Cover and inline image design, prompt engineering | Step 6 (visual AI) |
 | `references/cli-reference.md` | All CLI command syntax | When running toolkit commands |
@@ -38,6 +38,15 @@ This is the complete file inventory. Read on demand — do NOT load everything u
 | `references/resilience.md` | Per-step fallback chain + environmental failure recovery | When a step fails |
 | `references/gotchas.md` | 6 named content quality anti-patterns | When reviewing draft quality |
 | `references/builtin-themes.json` | CSS examples for built-in themes | Customizing themes |
+
+## Tier 4 — Specialized Background
+
+| Path | Purpose | When to read |
+|------|---------|-------------|
+| `references/professional-playbook.md` | Columnization, first-screen design, review metrics, account archetypes | When the draft needs stronger editorial system design |
+| `references/attention-sharing-psychology.md` | Research-backed title, hook, sharing, and CTA heuristics | When title, opening, sharing, or CTA need deeper grounding |
+| `references/conversion-architecture.md` | CTA, handoff, private-domain routing, compliance red flags | When planning article-to-conversion flows |
+| `references/research/professionalization-sources.md` | Full bibliography for the professionalization upgrade | Provenance checks and future maintenance |
 
 ## Client + state files
 

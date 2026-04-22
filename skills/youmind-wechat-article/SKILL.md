@@ -122,7 +122,7 @@ Standalone by default. If you need dispatch interop details, read [`references/r
 
 ## Content Modes
 
-Before writing, read [`references/platform-dna.md`](references/platform-dna.md) (index → `writing-guide.md`, `style-template.md`, `wechat-constraints.md`).
+Before writing, read [`references/platform-dna.md`](references/platform-dna.md) (index → `writing-guide.md`, `style-template.md`, `wechat-constraints.md`). Use the specialized playbooks it points to only when the draft needs them.
 
 **Intent routing:**
 - Topic/idea only → [`content-generation-playbook.md`](references/content-generation-playbook.md)
@@ -151,7 +151,7 @@ Non-negotiable. Violating any one means the article has failed:
 
 1. **Read `references/writing-guide.md` BEFORE writing** — pre-writing framework + de-AI protocol are mandatory.
 2. **Zero AI-sounding text** — run the full 4-level de-AI pass from writing-guide.md.
-3. **H1 title: 20–28 汉字** — converter extracts H1 as WeChat title.
+3. **H1 title: mobile-first, concise, and front-loaded** — the converter extracts H1 as the WeChat title, so subject + payoff must appear early.
 4. **Digest: ≤54 汉字** (120 UTF-8 byte limit).
 5. **Word count: 1,500–2,500 字** — sweet spot for completion is 1,500–2,000.
 6. **Specificity over abstraction** — every claim grounded in concrete detail.

@@ -50,6 +50,13 @@ youmind:
 
 cover_style: "Cover image style description for AI image generation"
 author: "Author name displayed on article"
+
+conversion:
+  primary_goal: "follow"          # follow | save | comment | next_read | mini_program | wecom_add | customer_group | manual_service | transaction
+  landing_type: "read_more"       # read_more | mini_program | wecom_add | customer_group | manual_service
+  handoff_owner: "公众号客服"       # e.g. 公众号客服 | 企业微信成员 | 群运营 | 小程序表单
+  cta_location: "footer"          # header | body_mid | footer | read_original | menu
+  topic_cluster: ""               # e.g. AI workflow / B2B lead gen / health myth busting
 ```
 
 ---
@@ -96,6 +103,18 @@ Optional. Requires `youmind.api_key` in `~/.youmind/config.yaml`.
 |-------|--------|
 | `source_boards` | Agent searches these boards for relevant materials/documents as writing references. Leave empty to search all. |
 | `save_board` | After publishing, the article is archived to this board as a YouMind document. Leave empty to skip. |
+
+### `conversion` — Handoff Design
+
+Professional公众号文章 should define one main next step instead of asking for everything.
+
+| Field | Effect |
+|-------|--------|
+| `primary_goal` | The article's main action after reading. Use exactly one. |
+| `landing_type` | Tells the agent where the CTA should send the reader next. |
+| `handoff_owner` | Clarifies who receives the user after the article. |
+| `cta_location` | Keeps CTA placement intentional instead of scattered. |
+| `topic_cluster` | Helps matrix operations and later review. |
 
 ### `blacklist` — Hard Boundaries
 
