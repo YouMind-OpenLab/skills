@@ -54,6 +54,7 @@ These are workflow defaults, not public platform guarantees:
 - design the first 120-200 Chinese characters as the true opening battleground
 - default to 2-4 short lines per paragraph on mobile
 - plan one `primary_conversion_goal` per article
+- when the user already has a finished article and only wants to send it, skip ideation/research and focus on mobile-native adaptation plus publish
 
 ## Anti-Patterns the Skill Should Actively Avoid
 
@@ -68,6 +69,7 @@ These are workflow defaults, not public platform guarantees:
 | Need | Read first |
 |------|------------|
 | Platform-safe publishing | `wechat-constraints.md`, `runtime-rules.md` |
+| Existing article ready to publish | `runtime-rules.md`, then `content-adaptation-playbook.md` |
 | Stronger titles, hooks, and sharing | `seo-rules.md`, then `attention-sharing-psychology.md` if needed |
 | Better columns, rhythm, and professional structure | `writing-guide.md`, then `professional-playbook.md` if needed |
 | Better handoff into private domain or service flow | `operations.md`, then `conversion-architecture.md` if needed |

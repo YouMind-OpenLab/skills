@@ -19,6 +19,12 @@ If no source content exists → redirect to `content-generation-playbook.md`.
 
 The **localize** (English → Chinese) and **condense** sub-modes are the most common for 公众号.
 
+If the source article is already complete and the user only wants "排版/发布到草稿箱", treat **cross-post** as the entry to the skill's built-in formatting + direct-send capability:
+
+- skip topic mining, hotspot collection, framework generation, and fresh drafting
+- keep the supplied article as source of truth
+- do only the minimum WeChat-native restructuring, asset sanitation, title/digest cleanup, and publish
+
 ## Step 1 — Source analysis
 
 - **Origin platform**: Blog, Dev.to, Ghost, Hashnode, Medium, etc.

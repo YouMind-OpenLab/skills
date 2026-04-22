@@ -24,8 +24,19 @@ This skill is self-contained and standalone. The `youmind-article-dispatch` hub 
 
 - Read `~/.youmind/author-profile.yaml` for cross-platform voice preferences.
 - If dispatch invokes this skill with `resolved_author`, use it as extra context.
+- If dispatch or the caller makes it clear that the article is already finished, keep the existing article as source of truth and use the skill's built-in formatting + direct-send capability.
 - The de-AI protocol in `writing-guide.md` remains mandatory regardless of invocation path.
 - Optional interop contract: `dispatch-capabilities.yaml` and `shared/DISPATCH_CONTRACT.md`.
+
+---
+
+## Built-In Formatting + Direct-Send Capability
+
+Use this path when the user already supplied a finished article and only wants WeChat formatting / draft-box publishing.
+
+- Skip topic mining, hotspot fetch, framework selection, and fresh drafting.
+- Run only the minimum checks that affect WeChat delivery: title/digest, paragraph rhythm, image/link sanitation, theme choice, and publish.
+- Only reopen writing or research if the user explicitly asks for deeper adaptation.
 
 ---
 

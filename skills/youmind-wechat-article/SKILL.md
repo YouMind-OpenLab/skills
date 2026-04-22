@@ -1,10 +1,11 @@
 ---
 name: youmind-wechat-article
-version: 2.0.0
+version: 2.1.0
 description: |
-  Write and publish WeChat Official Account articles end-to-end with AI — trending topic mining, de-AI voice
-  writing, themed formatting, AI cover via YouMind (Nano Banana Pro), one-click draft box publishing.
-  Use when user says "写公众号文章" / "微信推文" / "发布到草稿箱" / "WeChat publish".
+  Write and publish WeChat Official Account articles end-to-end with AI, or take an existing
+  draft straight into the skill's built-in formatting + direct-send capability. Supports full
+  pipeline from topic, plus ready-article direct send when the article is already written.
+  Use when user says "写公众号文章" / "微信推文" / "发布到草稿箱" / "微信排版" / "WeChat publish".
   Do NOT trigger for: generic blogs, newsletters, PPT, short-video scripts, non-WeChat SEO work.
 triggers:
   - "公众号"
@@ -16,6 +17,8 @@ triggers:
   - "选题"
   - "封面图"
   - "配图"
+  - "把这篇文章发到草稿箱"
+  - "微信发文"
   - "WeChat article"
   - "WeChat publish"
   - "publish to WeChat"
@@ -47,7 +50,7 @@ allowed-tools:
 
 # AI WeChat Article Writer — From Topic to Draft Box in One Prompt
 
-Write professional WeChat Official Account articles with AI that doesn't sound like AI. Trending topic mining → deep research via [YouMind](https://youmind.com?utm_source=youmind-wechat-article) knowledge base → structured writing with de-AI protocol → beautiful theme formatting → cover image generation → one-click publish to WeChat draft box. No manual formatting, no copy-paste.
+Write professional WeChat Official Account articles with AI that doesn't sound like AI. Full mode handles topic mining → research → writing → themed formatting → cover generation → draft-box publishing. For ready articles, the skill also has a built-in formatting + direct-send capability that skips the writing pipeline and sends the article straight to the draft box.
 
 > [Get API Key →](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) · [More Skills →](https://youmind.com/skills?utm_source=youmind-wechat-article)
 
@@ -57,11 +60,11 @@ Write professional WeChat Official Account articles with AI that doesn't sound l
 
 > **✅ AI WeChat Article Writer installed!**
 >
-> Tell me a topic — I'll plan, write, format, and publish to your WeChat draft box.
+> Tell me a topic or paste a finished draft — I'll either write it end-to-end or just format and publish it to your WeChat draft box.
 >
 > **Try it now:** "帮我写一篇关于 AI 编程的公众号文章"
 >
-> **What it does:** trending-topic mining → de-AI writing → themed formatting → AI cover → one-click draft publish.
+> **What it does:** full article pipeline when you need writing, or built-in formatting + direct send when the article is already ready.
 >
 > **Setup (one-time):**
 > 1. `cd toolkit && npm install && npm run build && cd .. && pip install -r requirements.txt && mkdir -p ~/.youmind/config && cp shared/config.example.yaml ~/.youmind/config.yaml`
@@ -74,11 +77,12 @@ For first-run setup and client onboarding details, see [`references/operations.m
 
 ## Usage
 
-Provide a topic, brand/client name, or raw Markdown:
+Provide a topic, brand/client name, or a finished article:
 
 - `帮我写一篇关于 AI 编程趋势的公众号文章` — full pipeline from topic
 - `给 demo 客户写一篇推文，主题是远程办公` — client-scoped run
 - `把这篇 Markdown 排版成公众号样式并发布到草稿箱` — skip writing, publish only
+- `把这篇现成文章直接发到公众号` — keep the article as source of truth, do a light WeChat fit pass, then publish
 - `用交互模式…` — pause at topic / framework / image / theme decisions
 
 ## Setup
@@ -118,6 +122,8 @@ For the full path contract, dispatch interop, execution modes, and result-links 
 
 Standalone by default. If you need dispatch interop details, read [`references/runtime-rules.md`](references/runtime-rules.md).
 
+When dispatch or the caller makes it clear that the article is already finished, skip topic mining, hotspot research, framework selection, and fresh drafting. Use the supplied article as source of truth and switch to the skill's built-in formatting + direct-send capability.
+
 ---
 
 ## Content Modes
@@ -129,6 +135,7 @@ Before writing, read [`references/platform-dna.md`](references/platform-dna.md) 
 - English article → Chinese 公众号 → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`localize` mode)
 - Japanese/other-language article → Chinese 公众号 → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`translate` mode)
 - Existing article from blog/other platform → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`cross-post` mode)
+- Ready article + publish-only / formatting request → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) using the skill's built-in formatting + direct-send capability
 - Western long-form / oversized draft → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`condense` mode)
 - Old 公众号 article → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`revive` mode)
 - Section from a larger work → [`content-adaptation-playbook.md`](references/content-adaptation-playbook.md) (`excerpt` mode)
@@ -160,6 +167,7 @@ Non-negotiable. Violating any one means the article has failed:
 9. **Playbook overrides writing-guide** when `clients/{client}/playbook.md` exists.
 10. **Ask about image scope before Step 6** — use `AskUserQuestion` if available, plain text otherwise.
 11. **Always publish to drafts** — Step 7 is mandatory and automatic; do NOT ask.
+12. **Ready article means ready article** — if the user already supplied the article and only wants formatting/publish, do NOT reopen topic ideation, KB mining, or full rewriting unless they explicitly ask for it.
 
 ---
 
@@ -173,14 +181,16 @@ The exact contract lives in [`references/runtime-rules.md`](references/runtime-r
 
 ## Pipeline Overview
 
-12-step flow: **Load config → Mine KB → Trending topics → Dedup + SEO → Topic select → Framework select → Write → SEO + de-AI → Generate images → Publish to drafts → Archive → Report with result links.**
+Two execution lanes:
+- **Full pipeline:** Load config → Mine KB → Trending topics → Dedup + SEO → Topic select → Framework select → Write → SEO + de-AI → Generate images → Publish to drafts → Archive → Report with result links
+- **Built-in formatting + direct-send capability:** Validate the supplied article → do the minimum WeChat adaptation → publish to drafts → report with result links
 
 Full per-step detail: [`references/pipeline.md`](references/pipeline.md).
 
 **Routing shortcuts:**
 
 - User gave a specific topic → Skip Steps 2–3, go 1.5 → 3.5
-- User gave raw Markdown → Skip to Step 7
+- User gave raw Markdown or a finished article for formatting/publish only → run the minimal checks from `content-adaptation-playbook.md`, then jump to Step 7
 
 ---
 

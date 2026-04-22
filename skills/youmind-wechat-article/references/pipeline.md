@@ -12,13 +12,14 @@ Read `{skill_dir}/clients/{client}/style.yaml`.
 **Routing:**
 - Client directory does not exist → Tell user to reference `references/style-template.md`. Do NOT create it yourself.
 - User provided a specific topic (e.g., "write about AI Agents") → Skip Steps 2–3, go to Step 1.5 → Step 3.5
-- User provided raw Markdown for formatting only → Skip to Step 7
+- User provided raw Markdown or a finished article for formatting/publish only → run the minimal checks from `content-adaptation-playbook.md`, then skip to Step 7
 
 Also load `conversion` defaults if present. These shape CTA planning later in the pipeline.
 
 ## Step 1.5: YouMind Knowledge Mining
 
 > Only runs when `~/.youmind/config.yaml` contains `youmind.api_key`. Otherwise skip.
+> Skip this step when using the skill's built-in formatting + direct-send capability.
 
 Use `youmind-api.js mine-topics` with the client's topics and source boards. Keep the top 10 results as `knowledge_context` for use in Steps 3 and 4.
 

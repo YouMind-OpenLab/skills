@@ -97,14 +97,16 @@ Visit [YouMind API Key Settings](https://youmind.com/settings/api-keys?utm_sourc
 
 Dispatch doesn't just copy-paste. Each sub-skill adapts content to the platform:
 
-- **Dev.to**: Technical depth, code examples, TL;DR at top
-- **Ghost**: Editorial newsletter content, member tiers, email-first distribution
-- **Tumblr**: Voice-driven long-form blogging, simple HTML, creator/build-log energy
-- **Beehiiv**: Newsletter-native long form, growth hooks, HTML tuned for web + email
-- **Kit**: Creator broadcast format, subject + preview text, public feed readability
-- **WeChat**: Chinese localization, styled formatting, cover images
-- **X/Twitter**: Distilled into tweet threads, hashtags
-- **Qiita**: Japanese developer focus, GFM Markdown, environment info, note boxes
+- **`youmind-devto-article`**: technical depth, code examples, TL;DR at top
+- **`youmind-hashnode-article`**: deeper developer-blog flow, series-friendly, more narrative than Dev.to
+- **`youmind-wordpress-article`**: HTML CMS posting, category/tag/excerpt aware, SEO-friendly long form
+- **`youmind-ghost-article`**: editorial newsletter content, member tiers, email-first distribution
+- **`youmind-tumblr-article`**: voice-driven long-form blogging, simple HTML, creator/build-log energy
+- **`youmind-beehiiv-article`**: newsletter-native long form, growth hooks, HTML tuned for web + email
+- **`youmind-kit-article`**: creator broadcast format, subject + preview text, public feed readability
+- **`youmind-wechat-article`**: Chinese localization, styled formatting, cover images, and direct send for ready articles
+- **`youmind-x-article`**: distilled into tweet threads, hashtags
+- **`youmind-qiita-article`**: Japanese developer focus, GFM Markdown, environment info, note boxes
 
 ### Cross-Platform SEO
 

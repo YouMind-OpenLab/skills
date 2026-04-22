@@ -214,6 +214,21 @@ The optional integration protocol is documented at [`shared/DISPATCH_CONTRACT.md
 >
 > **Note:** Each platform skill must be installed separately. Dispatch checks your roster (`dispatch-roster.yaml`) on each run.
 
+### Quick Skill Hints
+
+Use these as lightweight routing clues before you open the full platform skill:
+
+- `youmind-devto-article`: code-first Markdown posts, TL;DR, practical developer tutorial voice
+- `youmind-hashnode-article`: deeper developer-blog storytelling, series-friendly, canonical-aware cross-posting
+- `youmind-wordpress-article`: HTML CMS publishing, taxonomy/excerpt aware, company-blog friendly
+- `youmind-tumblr-article`: voice-driven creator posting, one title plus one clean rich-text body
+- `youmind-ghost-article`: editorial publication tone, excerpt/tag aware, newsletter-style HTML
+- `youmind-beehiiv-article`: newsletter-first writing, subject/preview/web-email surfaces matter
+- `youmind-kit-article`: creator broadcast format, inbox/feed readability, compact CTA structure
+- `youmind-x-article`: concise hooks, thread splitting, sparse hashtags, native social adaptation
+- `youmind-wechat-article`: WeChat-native rich formatting, draft-box publishing, built-in direct-send for ready articles
+- `youmind-qiita-article`: Japanese developer Markdown, environment/setup context, note-box friendly
+
 ## Dispatch Pipeline
 
 ### Step 1: Parse Request + Load Roster
