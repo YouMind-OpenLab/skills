@@ -132,7 +132,7 @@ defaults:
 auth:
   type: "youmind-openapi"                            # always this — all skills route through YouMind
   connector_url: "https://youmind.com/settings/connector"
-  local_config_required: "youmind.api_key"          # only field required in local config.yaml
+  local_config_required: "youmind.api_key"          # only field required in ~/.youmind/config.yaml
 ```
 
 ## Contract — Standalone vs Dispatch Mode
