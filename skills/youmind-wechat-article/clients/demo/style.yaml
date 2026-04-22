@@ -57,7 +57,7 @@ blacklist:
 
 # Default theme (override with --theme flag)
 theme:
-  name: "simple"                 # simple | center | decoration | prominent
+  name: "simple"                 # pure | simple | center | decoration | prominent | gorgeous
   color: "#3498db"               # any HEX color
 
 # Cover image preferences

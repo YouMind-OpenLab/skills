@@ -85,27 +85,13 @@ Provide a topic, brand/client name, or raw Markdown:
 
 > Prerequisites: Node.js ≥ 18, Python ≥ 3.9, a verified WeChat Official Account bound in YouMind Connector Settings.
 
+Run the one-time setup from [`references/setup.md`](references/setup.md), then verify with:
+
 ```bash
-cd toolkit && npm install && npm run build && cd ..
-pip install -r requirements.txt
-mkdir -p ~/.youmind/config
-cp shared/config.example.yaml ~/.youmind/config.yaml
-# Fill youmind.api_key in ~/.youmind/config.yaml — that's the only required field
 node toolkit/dist/cli.js validate
 ```
 
-> **Upgrade-safe config (recommended):**
-> - Shared YouMind credentials → `~/.youmind/config.yaml` (fill ONCE for all 8 skills). Template: [`shared/config.example.yaml`](shared/config.example.yaml).
-> - WeChat-specific overrides (optional) → `~/.youmind/config/youmind-wechat-article.yaml` for `theme` + `theme_color`.
-> - Resolution: shared → overrides. See [`shared/YOUMIND_HOME.md`](shared/YOUMIND_HOME.md).
-
-Expected: `OK: Connected to WeChat Official Account wxxxxxxxxxx` + token 剩余秒数.
-
-**Full walkthrough with screenshots:** [README.md §安装](README.md) — covers YouMind API key creation, WeChat Connector binding, rotation procedure.
-
-**Image generation:** routes through YouMind chat API (Nano Banana Pro). Fallback chain: YouMind → Nano Banana Pro library match → CDN predefined cover → prompt-only. See `references/cli-reference.md` §Image Generation.
-
-For client onboarding, multi-client setup, and post-setup operations, see [`references/operations.md`](references/operations.md).
+For screenshots and connector binding walkthroughs, see [README.md §安装](README.md). For onboarding and post-setup operations, see [`references/operations.md`](references/operations.md).
 
 ## Skill Directory
 
@@ -122,22 +108,15 @@ Read files on demand — do NOT load everything upfront. Five always-relevant en
 
 ## Draft Location Rule
 
-**Canonical:** write local article Markdown files to `~/.youmind/articles/wechat/<client>/<slug>.md` (multi-client aware — see `shared/YOUMIND_HOME.md`).
-**Legacy fallback** (if `~/.youmind/` is not writable): `skills/youmind-wechat-article/output/<slug>.md`.
+Write drafts to `~/.youmind/articles/wechat/<client>/<slug>.md`; only fall back to `output/` if `~/.youmind/` is unavailable.
 
-Never the skill root, `drafts/`, `references/`, `toolkit/`, `clients/` (config only), or `scripts/`. Both locations are git-ignored. Kebab-case filenames (`my-article.md`), descriptive slugs. Client configs live at `~/.youmind/clients/<client>/{style.yaml,history.yaml,playbook.md}` — the legacy `clients/demo/` under this skill is a tracked template only.
-
-Local file ≠ WeChat draft box; the draft box is a server-side publish target, not a path.
+For the full path contract, dispatch interop, execution modes, and result-links behavior, see [`references/runtime-rules.md`](references/runtime-rules.md).
 
 ---
 
 ## Dispatch Integration (Optional)
 
-**Self-contained standalone** ("帮我写一篇公众号文章" — full pipeline, zero other skills required). The `youmind-article-dispatch` hub is an optional companion — never a dependency.
-
-- This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences. Independent of whether dispatch is installed.
-- If dispatch invokes this skill with a brief containing `resolved_author`, use it as extra context. De-AI protocol (`writing-guide.md`) is always mandatory regardless of invocation path.
-- Opt-in manifest: `dispatch-capabilities.yaml`. Optional interop protocol: [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
+Standalone by default. If you need dispatch interop details, read [`references/runtime-rules.md`](references/runtime-rules.md).
 
 ---
 
@@ -160,9 +139,9 @@ Before writing, read [`references/platform-dna.md`](references/platform-dna.md) 
 
 ## Execution Modes
 
-**Auto (default):** Run Steps 1–5 automatically. Before Step 6 image generation, proactively ask once about image scope and style unless the user already specified them. Then continue through Steps 6–8. Only pause elsewhere if a step AND its fallback both fail, required info is missing, or user explicitly asks to pause.
+The skill has two modes: `auto` and `interactive`.
 
-**Interactive:** Triggered by "interactive mode", "let me choose", "show me the topics/frameworks/themes". Pauses at: topic selection, framework choice, image plan, theme selection. All other steps run automatically.
+Read [`references/runtime-rules.md`](references/runtime-rules.md) for exact pause behavior and mode triggers.
 
 ---
 
@@ -186,13 +165,9 @@ Non-negotiable. Violating any one means the article has failed:
 
 ## Result Links Rule
 
-After any draft, publish, list, or stats-review action, always end with `Result links`.
+Always end draft, publish, list, and stats-review actions with `Result links`.
 
-- Preserve any `resultLinks` returned by the CLI / OpenAPI.
-- For drafts, also include the preview link from `articles[].url` when available.
-- Always include the WeChat Official Account backend entry `https://mp.weixin.qq.com/` so the user can finish publish/review manually.
-- Render result links as Markdown links such as `[Draft preview](...)` for cleaner output.
-- Never leave the user with only `media_id`, article IDs, or status text.
+The exact contract lives in [`references/runtime-rules.md`](references/runtime-rules.md).
 
 ---
 
@@ -240,7 +215,6 @@ Full explanation, fix, and detection method for each: [`references/gotchas.md`](
 
 ## References
 
-- YouMind API: see [references/openapi-document.md](references/openapi-document.md)
-- CLI commands: see [references/cli-reference.md](references/cli-reference.md)
-- YouMind Skills gallery: https://youmind.com/skills?utm_source=youmind-wechat-article
+- API: [references/openapi-document.md](references/openapi-document.md)
+- CLI: [references/cli-reference.md](references/cli-reference.md)
 - Publishing: [shared/PUBLISHING.md](shared/PUBLISHING.md)

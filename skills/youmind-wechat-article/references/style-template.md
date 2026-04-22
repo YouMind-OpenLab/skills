@@ -29,9 +29,7 @@ blacklist:
 reference_accounts: [Account1, Account2, Account3]
 
 # Theme engine settings (overridden by CLI --theme / --color)
-theme: "simple"           # Built-in: simple | center | decoration | prominent
-                          #           ink-literary | tech-deep | warm-narrative
-                          #           jade-fresh | rose-editorial | mist-minimal
+theme: "simple"           # Built-in: pure | simple | center | decoration | prominent | gorgeous
                           # Or: any custom theme ID from clients/{client}/themes/
 theme_color: "#3498db"    # Any HEX color. Overrides the theme's primary color.
 

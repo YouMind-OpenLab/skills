@@ -91,7 +91,7 @@ program
   .command('preview')
   .description('Generate HTML preview and open in browser')
   .argument('<input>', 'Markdown file path')
-  .option('-t, --theme <key>', 'Theme: simple, center, decoration, prominent', DEFAULT_THEME)
+  .option('-t, --theme <key>', 'Theme key (run `themes` to list built-ins)', DEFAULT_THEME)
   .option('-c, --color <hex>', 'Theme color (HEX)', DEFAULT_COLOR)
   .option('-o, --output <path>', 'Output HTML file path')
   .option('--no-open', "Don't open browser")
@@ -316,7 +316,7 @@ program
 
 program
   .command('theme-preview')
-  .description('Generate previews for all 4 themes with the given color')
+  .description('Generate previews for all built-in themes with the given color')
   .argument('<input>', 'Markdown file path')
   .option('-c, --color <hex>', 'Theme color (HEX)', DEFAULT_COLOR)
   .option('--no-open', "Don't open browser")

@@ -38,7 +38,7 @@ Parameter priority: `--custom-theme` > CLI args > `style.yaml` values > defaults
 node dist/cli.js theme-preview {markdown_path} --color "{hex}"
 ```
 
-Generates a side-by-side preview of all 4 themes with the given color.
+Generates a side-by-side preview of all built-in themes with the given color.
 
 ### List Themes and Colors
 

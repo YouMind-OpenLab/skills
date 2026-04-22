@@ -12,5 +12,5 @@ youmind:
   base_url: "https://youmind.com/openapi/v1"
 
 # WeChat-specific (safe to commit — not credentials)
-theme: "simple"             # simple | center | decoration | prominent
+theme: "simple"             # pure | simple | center | decoration | prominent | gorgeous
 theme_color: "#3498db"      # Any HEX color or preset name
