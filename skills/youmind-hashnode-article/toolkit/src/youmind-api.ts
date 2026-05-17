@@ -360,24 +360,26 @@ export async function chatGenerateImage(
   if (!chatId) throw new Error('createChat 未返回 chat_id');
 
   // 先检查 createChat 响应是否已经包含生成的图
-  let imageUrls = extractImageUrls(createResp);
-  if (imageUrls.length) {
-    return { chatId, imageUrls, text: '' };
+  const initial = extractImages(createResp);
+  if (initial.urls.length) {
+    return { chatId, imageUrls: initial.urls, text: '' };
   }
 
   // Step 2: 轮询 listMessages 等待图片生成完成（最多 120 秒）
   const maxWait = 120_000;
   const interval = 3_000;
   const start = Date.now();
+  let lastToolErrors: string[] = [];
 
   while (Date.now() - start < maxWait) {
     await new Promise(r => setTimeout(r, interval));
 
     const msgResp = await post<Record<string, unknown>>('/listMessages', { chat_id: chatId }, cfg);
-    imageUrls = extractImageUrls(msgResp);
-    if (imageUrls.length) {
-      return { chatId, imageUrls, text: '' };
+    const extracted = extractImages(msgResp);
+    if (extracted.urls.length) {
+      return { chatId, imageUrls: extracted.urls, text: '' };
     }
+    lastToolErrors = extracted.toolErrors;
 
     // 检查 agent 是否已结束（所有 message status != pending）
     const messages = (msgResp.messages ?? []) as Record<string, unknown>[];
@@ -388,21 +390,73 @@ export async function chatGenerateImage(
     }
   }
 
+  // tool 自报错误优先（如 "No image was generated. Please change your prompt and try again."）
+  if (lastToolErrors.length) {
+    throw new Error(`YouMind generateImage 未生成图片: ${lastToolErrors.join('; ')}`);
+  }
   throw new Error('YouMind AI 生图超时或未生成图片');
 }
 
-/** 从 chat 响应的所有 messages/blocks 中提取 AI 生成的图片 URL (cdn.gooo.ai) */
-function extractImageUrls(resp: Record<string, unknown>): string[] {
-  const urls: string[] = [];
-  const seen = new Set<string>();
-  const raw = JSON.stringify(resp);
+interface ExtractedImages {
+  urls: string[];
+  /** generateImage 工具自报的错误（如 "No image was generated..."），用于把真实失败原因透传给上层 */
+  toolErrors: string[];
+}
 
-  // 只匹配 cdn.gooo.ai 的 AI 生成图片，不要搜索来的图
-  for (const m of raw.matchAll(/https?:\/\/cdn\.gooo\.ai\/gen-images\/[a-f0-9]+\.(?:jpg|jpeg|png|webp)/gi)) {
-    if (!seen.has(m[0])) { seen.add(m[0]); urls.push(m[0]); }
+/**
+ * 从 listMessages / createChat 响应里提取 generateImage 工具产物。
+ *
+ * 优先走稳定契约 `tool_result.files[].file.{original_url,compressed_url}`，
+ * 而不是在响应 JSON 文本里正则扫 URL —— `toolResponse` 是给 LLM 看的文案，
+ * youapi 端会按 LLM 引导反复调整其格式（如 commit 8df310601d / 1d54fe75e3）。
+ * 仅当结构化路径找不到时，才回退到正则兜底，确保旧 schema 也能工作。
+ */
+function extractImages(resp: Record<string, unknown>): ExtractedImages {
+  const urls: string[] = [];
+  const toolErrors: string[] = [];
+  const seen = new Set<string>();
+
+  const messages = (resp.messages ?? []) as Record<string, unknown>[];
+  for (const msg of messages) {
+    if ((msg.role as string) !== 'assistant') continue;
+    const blocks = (msg.blocks ?? []) as Record<string, unknown>[];
+    for (const block of blocks) {
+      if ((block.type as string) !== 'tool') continue;
+      const toolName = block.tool_name as string | undefined;
+      // 兼容 camelCase / snake_case 两种命名
+      if (toolName !== 'generateImage' && toolName !== 'generate_image') continue;
+
+      const toolResult = (block.tool_result ?? {}) as Record<string, unknown>;
+      const filesRaw = (toolResult.files as unknown[]) ?? [];
+      const files = filesRaw.filter((f): f is Record<string, unknown> => !!f && typeof f === 'object');
+      const fileList = files.length === 0 && toolResult.file
+        ? [toolResult.file as Record<string, unknown>]
+        : files;
+
+      if (fileList.length === 0) {
+        // tool 显式返回 files=[]，说明生成失败；把 toolResponse 当真实错误透出
+        const errText = block.tool_response as string | undefined;
+        if (errText) toolErrors.push(errText);
+        continue;
+      }
+
+      for (const fileDto of fileList) {
+        const fileMeta = (fileDto.file ?? {}) as Record<string, unknown>;
+        const url = (fileMeta.original_url ?? fileMeta.compressed_url) as string | undefined;
+        if (url && !seen.has(url)) { seen.add(url); urls.push(url); }
+      }
+    }
   }
 
-  return urls;
+  // 兜底：旧版 schema 或 toolResponse 仍带 URL 的情况
+  if (urls.length === 0) {
+    const raw = JSON.stringify(resp);
+    for (const m of raw.matchAll(/https?:\/\/cdn\.gooo\.ai\/gen-images\/[a-f0-9]+\.(?:jpg|jpeg|png|webp)/gi)) {
+      if (!seen.has(m[0])) { seen.add(m[0]); urls.push(m[0]); }
+    }
+  }
+
+  return { urls, toolErrors };
 }
 
 // ---------------------------------------------------------------------------
