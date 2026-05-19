@@ -1,6 +1,6 @@
 ---
 name: youmind
-version: 2.0.1
+version: 3.0.2
 description: This skill should be used when interacting with the YouMind API to manage content such as boards, crafts, notes, picks, and materials. It provides installation and usage instructions for the youmind CLI, which enables searching, inspecting, and calling YouMind's OpenAPI endpoints.
 allowed-tools:
   - Bash(youmind *)
@@ -24,7 +24,11 @@ If the command is not found, install it first before proceeding.
 
 ## Authentication
 
-Set the API key as environment variable:
+If you do not have a YouMind API key yet, generate one at:
+
+https://youmind.com/settings/api-keys
+
+Then set it as an environment variable:
 
 ```bash
 export YOUMIND_API_KEY=sk-ym-xxx
