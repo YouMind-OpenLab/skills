@@ -23,7 +23,7 @@ export {
 export { createDraft, type DraftResult, type CreateDraftOptions } from './publisher.js';
 export { getAccessToken, uploadImage, uploadThumb } from './wechat-api.js';
 export {
-  generateGemini, generateOpenAI, generateDoubao,
+  generateYouMind,
   searchNanoBanana, selectFallbackCover, resolveProvider,
   GENERATORS, SIZE_MAP,
 } from './image-gen.js';

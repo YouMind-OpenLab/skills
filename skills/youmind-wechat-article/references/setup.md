@@ -1,36 +1,36 @@
 # Setup
 
+Use this file for the full one-time installation flow. `SKILL.md` should keep only the short entrypoint.
+
 ## Installation
 
-Install the YouMind CLI (lightweight, zero dependencies):
-
 ```bash
-npm install -g @youmind-ai/cli
+cd toolkit && npm install && npm run build && cd ..
+pip install -r requirements.txt
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-Verify: `youmind --help`
+Fill `youmind.api_key` in `~/.youmind/config.yaml`. That is the only required local credential.
 
-If not found, install it first before proceeding.
+## Config Resolution
 
-## Authentication
+- Shared YouMind credentials: `~/.youmind/config.yaml`
+- WeChat-specific overrides: `~/.youmind/config/youmind-wechat-article.yaml`
+- Resolution order: shared → override
 
-Check if `YOUMIND_API_KEY` is already set (without exposing the value):
+See `shared/YOUMIND_HOME.md` for the home-directory layout.
+
+## WeChat Binding
+
+Bind the WeChat Official Account once in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article). Paste AppID + AppSecret there; YouMind encrypts and proxies WeChat calls, so the skill does not store the secret locally and does not need IP whitelist management.
+
+## Verification
 
 ```bash
-[ -n "$YOUMIND_API_KEY" ] && echo "YOUMIND_API_KEY is set" || echo "YOUMIND_API_KEY is not set"
+node toolkit/dist/cli.js validate
 ```
 
-If set, proceed to the workflow.
+Expected: `OK: Connected to WeChat Official Account wxxxxxxxxxx` plus token expiry information.
 
-If not set, guide the user to configure it themselves. **Do NOT ask the user to paste the key in chat — it would be exposed in chat history.**
-
-Tell the user (in their language):
-
-> "You need a YouMind API key to use this skill.
->
-> 1. Get your free key at: https://youmind.com/settings/api-keys
-> 2. Add it to your config — see the skill page for setup instructions.
->
-> Let me know when you've set it up!"
-
-Wait for confirmation, then verify again before proceeding.
+For the screenshot walkthrough and secret-rotation notes, see `README.md`.

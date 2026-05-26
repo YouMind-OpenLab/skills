@@ -1,0 +1,8 @@
+# Optional skill-local override.
+#
+# Canonical shared config lives at ~/.youmind/config.yaml.
+# This file is only a minimal example for local debugging.
+
+youmind:
+  api_key: ""
+  base_url: "https://youmind.com/openapi/v1"

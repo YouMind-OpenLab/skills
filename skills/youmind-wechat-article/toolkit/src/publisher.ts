@@ -1,58 +1,53 @@
 /**
- * WeChat draft creation API wrapper.
+ * publisher.ts — calls YouMind /wechat/createDraft proxy.
+ *
+ * Backwards-compatible signature: existing cli.ts callers pass
+ * { accessToken, title, html, digest, thumbMediaId, author }. The
+ * accessToken field is ignored (YouMind manages tokens server-side); the
+ * rest is forwarded as the first article in a 1-article createDraft call.
  */
+
+import { createDraftFull } from './wechat-api.js';
 
 export interface DraftResult {
   mediaId: string;
+  resultLinks?: Array<{
+    label: string;
+    kind: string;
+    url: string;
+  }>;
 }
 
 export interface CreateDraftOptions {
-  accessToken: string;
+  /** Ignored — YouMind manages access_token. Kept for backwards compat. */
+  accessToken?: string;
   title: string;
   html: string;
   digest: string;
   thumbMediaId?: string;
   author?: string;
+  needOpenComment?: 0 | 1;
+  onlyFansCanComment?: 0 | 1;
+  contentSourceUrl?: string;
 }
 
 export async function createDraft(options: CreateDraftOptions): Promise<DraftResult> {
-  const { accessToken, title, html, digest, thumbMediaId, author } = options;
-
-  const article: Record<string, unknown> = {
-    title,
-    author: author || '',
-    digest,
-    content: html,
-    show_cover_pic: 0,
-  };
-
-  if (thumbMediaId) {
-    article.thumb_media_id = thumbMediaId;
-  }
-
-  const body = { articles: [article] };
-
-  const resp = await fetch(
-    `https://api.weixin.qq.com/cgi-bin/draft/add?access_token=${accessToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify(body),
-    },
-  );
-
-  const data = (await resp.json()) as Record<string, unknown>;
-
-  const errcode = (data.errcode as number) ?? 0;
-  if (errcode !== 0) {
+  if (!options.thumbMediaId) {
     throw new Error(
-      `WeChat create_draft error: errcode=${errcode}, errmsg=${data.errmsg ?? 'unknown'}`,
+      'createDraft requires thumbMediaId. Call uploadThumb(_, coverImagePath) first to get a media_id.',
     );
   }
-
-  if (!data.media_id) {
-    throw new Error(`WeChat create_draft error: missing media_id in response: ${JSON.stringify(data)}`);
-  }
-
-  return { mediaId: data.media_id as string };
+  const draft = await createDraftFull([
+    {
+      title: options.title,
+      content: options.html,
+      thumbMediaId: options.thumbMediaId,
+      author: options.author,
+      digest: options.digest,
+      contentSourceUrl: options.contentSourceUrl,
+      needOpenComment: options.needOpenComment,
+      onlyFansCanComment: options.onlyFansCanComment,
+    },
+  ]);
+  return { mediaId: draft.mediaId, resultLinks: draft.resultLinks };
 }

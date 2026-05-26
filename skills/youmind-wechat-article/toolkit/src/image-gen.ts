@@ -1,12 +1,11 @@
 /**
- * AI image generation — multi-provider + Nano Banana Pro library search + CDN fallback covers.
+ * AI image generation via YouMind chat API (Nano Banana Pro).
  *
- * Providers: youmind | gemini | openai | doubao
- * Fallback chain: API → Nano Banana Pro library match → CDN predefined covers → prompt-only output
+ * Fallback chain: YouMind chat → Nano Banana Pro library match →
+ * CDN predefined covers → prompt-only output.
  *
  * Usage:
  *   npx tsx src/image-gen.ts --prompt "..." --output cover.jpg --size cover
- *   npx tsx src/image-gen.ts --prompt "..." --output img.jpg --provider gemini
  *   npx tsx src/image-gen.ts --search "tech futuristic" --output img.jpg
  *   npx tsx src/image-gen.ts --fallback-cover --color "#3498db" --output cover.jpg
  */
@@ -15,8 +14,8 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';
-import { parse as parseYaml } from 'yaml';
 import { COVER_PALETTE, COLOR_HUE_MAP, type CoverMeta } from './cover-assets.js';
+import { loadLayeredConfig } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,10 +31,10 @@ const NANO_BANANA_REFS = resolve(
 
 const SIZE_MAP: Record<string, Record<string, string>> = {
   cover: {
-    youmind: '1536x1024', gemini: '16:9', openai: '1536x1024', doubao: '1280x544',
+    youmind: '1536x1024',
   },
   article: {
-    youmind: '1536x1024', gemini: '16:9', openai: '1536x1024', doubao: '1280x720',
+    youmind: '1536x1024',
   },
 };
 
@@ -51,51 +50,31 @@ interface ProviderConfig {
   base_url?: string;
 }
 
+// Kept as an (empty-ish) shape for minimal disruption to existing call sites.
 interface ImageConfig {
-  default_provider?: string;
-  providers?: Record<string, ProviderConfig>;
+  // no fields — multi-provider selection has been removed.
 }
 
 function loadConfig(): { image: ImageConfig; youmind?: { api_key?: string } } {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      return { image: raw.image ?? {}, youmind: raw.youmind };
-    }
-  }
-  return { image: {} };
+  const raw = loadLayeredConfig();
+  const youmind =
+    raw.youmind && typeof raw.youmind === 'object' && !Array.isArray(raw.youmind)
+      ? (raw.youmind as { api_key?: string })
+      : undefined;
+  return { image: {}, youmind };
 }
 
 function resolveProvider(
   config: { image: ImageConfig; youmind?: { api_key?: string } },
-  explicit?: string,
+  _explicit?: string,
 ): [string, ProviderConfig] {
-  const img = config.image;
-  const providers = img.providers ?? {};
-
-  // youmind provider 可从顶层 youmind.api_key 继承
-  if (providers.youmind && !providers.youmind.api_key && config.youmind?.api_key) {
-    providers.youmind.api_key = config.youmind.api_key;
+  // Single-provider world: if youmind.api_key is set, use it. Otherwise
+  // return ['', {}] so the caller falls through to the Nano Banana Pro
+  // library → CDN cover → prompt-only chain.
+  const youmindKey = config.youmind?.api_key;
+  if (youmindKey) {
+    return ['youmind', { api_key: youmindKey }];
   }
-
-  if (explicit) {
-    const p = providers[explicit];
-    if (p?.api_key) return [explicit, p];
-    console.error(`[WARN] 指定的 provider '${explicit}' 未配置 api_key`);
-    return [explicit, p ?? {}];
-  }
-
-  const defaultP = img.default_provider;
-  if (defaultP && providers[defaultP]?.api_key) return [defaultP, providers[defaultP]];
-
-  for (const [name, cfg] of Object.entries(providers)) {
-    if (cfg.api_key) {
-      console.error(`[INFO] 自动选择 provider: ${name}`);
-      return [name, cfg];
-    }
-  }
-
   return ['', {}];
 }
 
@@ -125,74 +104,8 @@ async function httpRetry(
 }
 
 // ---------------------------------------------------------------------------
-// Providers
+// Image generation
 // ---------------------------------------------------------------------------
-
-async function generateGemini(
-  prompt: string, apiKey: string, aspectRatio: string, model = 'imagen-3.0-generate-002',
-): Promise<Buffer> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
-  const resp = await httpRetry(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio },
-    }),
-  }, 3, 90_000);
-
-  const data = await resp.json() as Record<string, unknown>;
-  const predictions = (data.predictions ?? []) as Record<string, string>[];
-  const b64 = predictions[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error(`Gemini API 无返回: ${JSON.stringify(data).slice(0, 200)}`);
-  return Buffer.from(b64, 'base64');
-}
-
-async function generateOpenAI(
-  prompt: string, apiKey: string, size: string,
-  model = 'gpt-image-1', baseUrl = 'https://api.openai.com/v1',
-): Promise<Buffer> {
-  const url = `${baseUrl}/images/generations`;
-  const resp = await httpRetry(url, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, prompt, size, n: 1, quality: 'medium' }),
-  }, 3, 120_000);
-
-  const data = await resp.json() as Record<string, unknown>;
-  const items = (data.data ?? []) as Record<string, string>[];
-  if (!items.length) throw new Error(`OpenAI API 无返回: ${JSON.stringify(data).slice(0, 200)}`);
-
-  if (items[0].b64_json) return Buffer.from(items[0].b64_json, 'base64');
-  if (items[0].url) {
-    const imgResp = await httpRetry(items[0].url, {}, 1, 30_000);
-    return Buffer.from(await imgResp.arrayBuffer());
-  }
-  throw new Error('OpenAI API 未返回图片数据');
-}
-
-async function generateDoubao(
-  prompt: string, apiKey: string, size: string,
-  model = 'doubao-seedream-5-0-260128', baseUrl = 'https://ark.cn-beijing.volces.com/api/v3',
-): Promise<Buffer> {
-  const url = `${baseUrl}/images/generations`;
-  const resp = await httpRetry(url, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, prompt, size, n: 1, response_format: 'b64_json' }),
-  }, 3, 60_000);
-
-  const data = await resp.json() as Record<string, unknown>;
-  const items = (data.data ?? []) as Record<string, string>[];
-  if (!items.length) throw new Error(`豆包 API 无返回: ${JSON.stringify(data).slice(0, 200)}`);
-
-  if (items[0].b64_json) return Buffer.from(items[0].b64_json, 'base64');
-  if (items[0].url?.startsWith('http')) {
-    const imgResp = await httpRetry(items[0].url, {}, 1, 30_000);
-    return Buffer.from(await imgResp.arrayBuffer());
-  }
-  throw new Error('豆包 API 未返回图片数据');
-}
 
 type GenerateFn = (prompt: string, apiKey: string, sizeOrRatio: string, model?: string, baseUrl?: string) => Promise<Buffer>;
 
@@ -201,7 +114,7 @@ type GenerateFn = (prompt: string, apiKey: string, sizeOrRatio: string, model?: 
  * AI 会自动选择可用的生图工具或联网搜索匹配图片。
  */
 async function generateYouMind(
-  prompt: string, apiKey: string, _size: string,
+  prompt: string, _apiKey: string, _size: string,
   _model?: string, _baseUrl?: string,
 ): Promise<Buffer> {
   // 动态导入 youmind-api 的 chatGenerateImage
@@ -243,9 +156,6 @@ async function generateYouMind(
 }
 
 const GENERATORS: Record<string, GenerateFn> = {
-  gemini: (p, k, s, m) => generateGemini(p, k, s, m),
-  openai: (p, k, s, m, b) => generateOpenAI(p, k, s, m, b),
-  doubao: (p, k, s, m, b) => generateDoubao(p, k, s, m, b),
   youmind: (p, k, s) => generateYouMind(p, k, s),
 };
 
@@ -453,18 +363,18 @@ async function main() {
     // Fallback 3: prompt only
     output({
       status: 'prompt_only', prompt: args.prompt,
-      message: '无可用 API key。请在 config.yaml 中配置 image.providers 的 api_key',
+      message: 'No API key available. Configure ~/.youmind/config.yaml.',
     });
     return;
   }
 
   const genFn = GENERATORS[providerName];
   if (!genFn) {
-    console.error(`未知 provider: ${providerName} (支持: youmind, gemini, openai, doubao)`);
+    console.error(`未知 provider: ${providerName} (仅支持: youmind)`);
     process.exit(1);
   }
 
-  const sizeVal = SIZE_MAP[args.size][providerName] ?? SIZE_MAP[args.size].openai;
+  const sizeVal = SIZE_MAP[args.size][providerName] ?? SIZE_MAP[args.size].youmind;
 
   try {
     const imageBytes = await genFn(
@@ -499,7 +409,7 @@ async function main() {
 
 // Export for module usage
 export {
-  generateGemini, generateOpenAI, generateDoubao,
+  generateYouMind,
   searchNanoBanana, selectFallbackCover, downloadFallbackCover, resolveProvider,
   GENERATORS, SIZE_MAP,
 };

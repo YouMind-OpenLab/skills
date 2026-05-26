@@ -4,6 +4,8 @@ AI agent skills powered by [YouMind](https://youmind.com?utm_source=github-skill
 
 ## Available Skills
 
+### Core Skills
+
 | Skill | Description | ClawHub |
 |-------|-------------|---------|
 | [youmind](skills/youmind/) | Base CLI — search, inspect, and call YouMind APIs | [![Install](https://img.shields.io/badge/clawhub-install-blue)](https://clawhub.ai/skill/youmind) |
@@ -14,7 +16,22 @@ AI agent skills powered by [YouMind](https://youmind.com?utm_source=github-skill
 | [youmind-web-clipper](skills/youmind-web-clipper/) | Save any URL to your YouMind board — instant web clipper from terminal | [![Install](https://img.shields.io/badge/clawhub-install-blue)](https://clawhub.ai/skill/youmind-web-clipper) |
 | [youmind-blog-cover](skills/youmind-blog-cover/) | Generate blog cover images — clean 16:9 compositions with multi-model AI | [![Install](https://img.shields.io/badge/clawhub-install-blue)](https://clawhub.ai/skill/youmind-blog-cover) |
 | [youmind-webpage-generator](skills/youmind-webpage-generator/) | Generate webpages — landing pages, portfolios, event pages with one click | — |
+
+### Publishing Skills
+
+| Skill | Description | ClawHub |
+|-------|-------------|---------|
+| [youmind-article-dispatch](skills/youmind-article-dispatch/) | Multi-platform article dispatch hub — route one brief across supported publishing skills | — |
+| [youmind-beehiiv-article](skills/youmind-beehiiv-article/) | Write and publish Beehiiv posts — newsletter-first workflow | — |
+| [youmind-devto-article](skills/youmind-devto-article/) | Write and publish Dev.to posts — developer blog flow with formatting and publish support | — |
+| [youmind-ghost-article](skills/youmind-ghost-article/) | Write and publish Ghost posts — long-form publishing through YouMind | — |
+| [youmind-hashnode-article](skills/youmind-hashnode-article/) | Write and publish Hashnode posts — developer publishing via YouMind | — |
+| [youmind-kit-article](skills/youmind-kit-article/) | Write and publish Kit posts — newsletter publishing via YouMind | — |
+| [youmind-qiita-article](skills/youmind-qiita-article/) | Write and publish Qiita posts — Japanese dev-community publishing | — |
+| [youmind-tumblr-article](skills/youmind-tumblr-article/) | Write and publish Tumblr posts — long-form blogging with simple HTML adaptation | — |
 | [youmind-wechat-article](skills/youmind-wechat-article/) | Write and publish WeChat articles end-to-end — topic mining to draft box | — |
+| [youmind-wordpress-article](skills/youmind-wordpress-article/) | Write and publish WordPress posts — convert Markdown, upload media, publish via YouMind | — |
+| [youmind-x-article](skills/youmind-x-article/) | Write and publish X threads/posts — short-form social publishing via YouMind | — |
 
 ## Quick Install
 
@@ -41,16 +58,33 @@ clawhub install youmind-youtube-transcript
 clawhub search youmind
 ```
 
-## Prerequisites
+## Setup
 
-All skills require the [YouMind CLI](https://www.npmjs.com/package/@youmind-ai/cli):
+### Core Skills
+
+Core CLI skills use the [YouMind CLI](https://www.npmjs.com/package/@youmind-ai/cli):
 
 ```bash
 npm install -g @youmind-ai/cli
 export YOUMIND_API_KEY=sk-ym-xxx
 ```
 
-Get your API key at [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=github-skills-repo)
+Get your API key at [youmind.com/settings/api-keys](https://youmind.com/settings/api-keys?utm_source=github-skills-repo).
+
+### Publishing Skills
+
+Publishing skills use one shared local config plus YouMind-hosted platform connectors:
+
+```bash
+mkdir -p ~/.youmind/config
+cat > ~/.youmind/config.yaml <<'EOF'
+youmind:
+  api_key: "sk-ym-..."
+  base_url: "https://youmind.com/openapi/v1"
+EOF
+```
+
+Platform credentials for WeChat, WordPress, X, Ghost, Hashnode, Dev.to, and other publishing targets are configured once in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=github-skills-repo), not in this repo.
 
 ## Works With
 

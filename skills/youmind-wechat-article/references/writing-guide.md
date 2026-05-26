@@ -336,7 +336,7 @@ The rhythm rule: long builds, short punches. Never three consecutive sentences o
 
 ## Opening Rules — You Have 3 Seconds
 
-Title gets the click. Opening determines if they stay. 70% of drop-offs happen in the first 100 words. If your opening works for any article on any topic — it's garbage.
+Title gets the click. Opening determines if they stay. Most early drop-off risk sits in the first screen, so if your opening works for any article on any topic — it's garbage.
 
 ### 8 Opening Patterns (Ranked by Power)
 
@@ -533,7 +533,7 @@ After completing the draft, answer honestly:
 | Element | Requirement |
 |---------|------------|
 | Total word count | 1,500–2,500 (1,500–2,000 optimal for completion rate) |
-| H1 title | 20–28 Chinese characters (HARD LIMIT) |
+| H1 title | Mobile-first, concise, and front-loaded. Put subject + payoff early. |
 | H2 subheadings | Minimum 3. Must be intriguing: "这才是真正的问题" not "问题分析" |
 | Paragraph max | 150 characters (mobile readability) |
 | Hook interval | Every 3-4 paragraphs |

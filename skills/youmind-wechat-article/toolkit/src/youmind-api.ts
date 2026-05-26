@@ -13,43 +13,27 @@
  *   npx tsx src/youmind-api.ts mine-topics "AI,产品设计" --board <board_id> --top-k 5
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { DEFAULT_YOUMIND_OPENAPI_BASE_URL, loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
 
 interface YouMindConfig {
   apiKey: string;
   baseUrl: string;
 }
 
-const YOUMIND_OPENAPI_BASE_URLS = [
-  'https://youmind.com/openapi/v1',
-];
+const YOUMIND_OPENAPI_BASE_URLS = [DEFAULT_YOUMIND_OPENAPI_BASE_URL];
 
 function loadConfig(): YouMindConfig {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const p = resolve(PROJECT_DIR, name);
-    if (existsSync(p)) {
-      const raw = parseYaml(readFileSync(p, 'utf-8')) ?? {};
-      const ym = raw.youmind ?? {};
-      // 兼容: 也从 image.providers.youmind 读取 api_key
-      const imgYm = raw.image?.providers?.youmind ?? {};
-      return {
-        apiKey: ym.api_key || imgYm.api_key || '',
-        baseUrl: ym.base_url || YOUMIND_OPENAPI_BASE_URLS[0],
-      };
-    }
-  }
-  return { apiKey: '', baseUrl: YOUMIND_OPENAPI_BASE_URLS[0] };
+  const { apiKey, baseUrl } = loadYouMindConfig();
+  return {
+    apiKey,
+    baseUrl,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +47,7 @@ async function post<T = unknown>(
 ): Promise<T> {
   const cfg = config ?? loadConfig();
   if (!cfg.apiKey) {
-    throw new Error('YouMind API key 未配置。请在 config.yaml 的 youmind.api_key 中设置。');
+    throw new Error(`YouMind API key not configured. ${YOUMIND_CONFIG_ERROR_HINT}`);
   }
 
   // 尝试配置的 baseUrl，失败后尝试备选地址

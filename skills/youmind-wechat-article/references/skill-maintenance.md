@@ -32,6 +32,22 @@ If a new user request should trigger the skill but would not obviously match the
 
 ---
 
+## Evidence Discipline
+
+Platform and growth guidance must be labeled mentally before you write it:
+
+- **Platform rule:** official docs, official announcements, or directly confirmed capability behavior
+- **Research-backed heuristic:** transferable evidence from papers, experiments, or credible studies
+- **House playbook:** operational default chosen by this skill
+
+Rules:
+
+- Never present heuristic or house guidance as if WeChat officially confirmed it.
+- Avoid pseudo-precise algorithm numbers unless the source is public and durable.
+- When upgrading platform knowledge, prefer adding source-backed references over stuffing more unqualified claims into `SKILL.md`.
+
+---
+
 ## Gotchas Discipline
 
 Keep gotchas high-signal and failure-driven.
@@ -70,12 +86,12 @@ For visual generation behavior, preserve this invariant:
 
 ## Data and Persistence
 
-Current mutable data lives in repo-local paths such as:
+Current mutable data lives in shared home paths such as:
 
 - `clients/*/history.yaml`
 - `clients/*/lessons/`
 - `output/`
-- local `config.yaml`
+- `~/.youmind/config.yaml`
 
 This is acceptable while the skill is primarily repo-scoped. If this skill is later distributed as a shared plugin or marketplace package, move mutable state to a stable plugin data directory instead of the skill folder itself.
 

@@ -1,6 +1,8 @@
 # YouMind WeChat Skill
 
-微信公众号 AI Skill。对 Agent 说一句话，自动跑完选题、写作、配图、排版、发布到草稿箱。
+微信公众号 AI Skill。对 Agent 说一句话，既能自动跑完整写作链路，也支持基于 skill 内置能力把现成稿件排版后直接发到草稿箱。
+
+发布命令现在会在末尾打印 `Result links`，优先给直达文章/结果页；拿不到精确结果页时，至少给出可点击的平台入口（如公众号后台）。
 
 ---
 
@@ -11,6 +13,7 @@
 | `给 demo 写一篇公众号文章` | 全自动 8 步：热点 → 选题 → 写作 → SEO → 配图 → 排版 → 发到草稿箱 |
 | `写一篇关于高考志愿的文章` | 跳过热点，直接围绕指定主题走流程 |
 | `把这篇 Markdown 发到草稿箱` | 跳过写作，直接排版发布 |
+| `把这篇现成文章直接发到公众号` | 保留原文结构，只做轻量公众号适配后发送 |
 | `用紫色 decoration 主题预览` | 换主题换色，即时预览 |
 | `看看最近 7 天文章表现` | 拉数据、分析 top/flop、给下一篇建议 |
 | `根据我的修改学习风格` | 从你的人工改稿中提取经验，下次写得更像你 |
@@ -27,78 +30,50 @@
 cd toolkit && npm install && npm run build && cd ..
 pip install -r requirements.txt
 
-# 2. 生成配置文件（如果 config.yaml 不存在）
-cp config.example.yaml config.yaml
-
-# 3. 获取公网 IP（填入微信 IP 白名单，否则无法发布，详见下方「获取本机公网 IP」）
-curl -s https://ifconfig.me
+# 2. 生成共享配置（推荐）
+mkdir -p ~/.youmind/config
+cp shared/config.example.yaml ~/.youmind/config.yaml
 ```
 
-`config.yaml` 需要填写以下凭证：
+默认只需要在 `~/.youmind/config.yaml` 里放一个字段：
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `wechat.appid` | **是** | 微信公众号 AppID |
-| `wechat.secret` | **是** | 微信公众号 AppSecret |
-| `wechat.author` | 否 | 文章作者名，默认 "YouMind" |
-| `youmind.api_key` | 推荐 | 用于知识库搜索、联网搜索、文章归档、AI 生图 → [获取 API Key](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) |
-| `image.providers.*.api_key` | 否 | 配了哪个就启用哪个（youmind / gemini / openai / doubao） |
+| `youmind.api_key` | **是** | YouMind API Key → [获取入口](https://youmind.com/settings/api-keys?utm_source=youmind-wechat-article) |
 
-### 获取 AppID / AppSecret / 配置 IP 白名单
+WeChat 凭据**不在 skill 本地存** —— 走 YouMind connector 加密保存，下面单独说。
 
-> 微信开发者平台控制台：<https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev>
+配置解析顺序是：`~/.youmind/config/youmind-wechat-article.yaml` -> `~/.youmind/config.yaml`。如果你要调本地 `youapi`，改共享配置或写 skill 专属 override，不要再默认改 repo 里的 `config.yaml`。
 
-**第 1 步 — 进入微信开发者平台**
+### 在 YouMind 绑定 WeChat 公众号（一次性）
 
-打开 [微信开发者平台](https://developers.weixin.qq.com/platform?tab1=basicInfo&tab2=dev)，点击首页的 **「前往使用」** 按钮登录。
+1. 打开 [微信公众平台](https://mp.weixin.qq.com)，**设置与开发 → 基本配置**
 
-![步骤1：点击前往使用](image/1.png)
+   ![步骤1：进入微信公众平台](image/1.png)
 
-**第 2 步 — 选择公众号**
+2. 在「公众号开发信息」区域复制 **AppID**，并点击「重置」获取 **AppSecret**（只展示一次）
 
-在「我的业务」面板中，找到并点击 **「公众号」** 进入公众号管理页。
+   ![步骤2：复制 AppID](image/2.png)
 
-![步骤2：点击公众号](image/2.png)
+3. 打开 [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=youmind-wechat-article)，选择 **WeChat**，粘贴 AppID / AppSecret / 作者名，保存。YouMind 立即调 `cgi-bin/token` 验证 — 绿勾代表绑定成功
 
-**第 3 步 — 复制 AppID、AppSecret 并配置 IP 白名单**
+   ![步骤3：在 YouMind 绑定](image/3.png)
 
-在公众号 → **基础信息** 页面：
+**为什么不在本地存 secret？**
 
-1. **AppID** — 顶部「基础信息」区域直接复制，填入 `config.yaml` 的 `wechat.appid`
-2. **AppSecret** — 「开发密钥」区域，点击 **重置** 获取（只展示一次，请立即保存），填入 `wechat.secret`
-3. **API IP 白名单** — 同一区域，点击 **编辑**，将你的公网 IP 粘贴进去
+- secret 加密落库在 YouMind，泄漏面更小
+- access_token 由 YouMind 服务端缓存（2hr TTL，命中省一次 token 请求）
+- **无需 IP 白名单** —— YouMind 出口 IP 已在 WeChat 侧白名单里
 
-![步骤3：AppID、AppSecret 和 IP 白名单位置](image/3.png)
+要轮换密钥就回 WeChat 平台重置 secret，再回 connector 重新粘贴即可。
 
-### 获取本机公网 IP
-
-家庭宽带 IP 会变，发布报 IP 错误时重新获取并更新白名单即可。
-
-**macOS**
+### 验证
 
 ```bash
-curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
-# 或者
-curl -s https://ifconfig.me
+cd toolkit && node dist/cli.js validate
 ```
 
-**Windows（PowerShell）**
-
-```powershell
-(Invoke-WebRequest -Uri "https://ifconfig.me" -UseBasicParsing).Content.Trim()
-# 或者
-(Invoke-RestMethod -Uri "https://httpbin.org/ip").origin
-```
-
-**Linux**
-
-```bash
-curl -s https://ifconfig.me
-# 或者
-curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sys.stdin)['origin'])"
-```
-
-> **提示**：拿到 IP 后，回到上面第 3 步的「API IP 白名单」→ 编辑，粘贴保存即可。
+期望 `OK: Connected to WeChat Official Account wxxxxxxxxxx`。
 
 ---
 
@@ -109,16 +84,26 @@ curl -s https://httpbin.org/ip | python3 -c "import sys,json; print(json.load(sy
 - **自动模式**（默认）：全程自动跑，只在生成配图前问一次图片风格偏好
 - **交互模式**：说"让我来选题" / "交互模式"，会在选题、框架、配图、主题环节暂停让你选
 
+### 内置排版直发能力
+
+如果你已经给了完整文章，且诉求只是"排版并发出去"：
+
+- Skill 会直接把这篇文章当作唯一事实来源
+- 跳过热点、选题、框架和重新写作
+- 只做必要的公众号适配：标题/摘要、段落节奏、图片/外链清理、主题、发送
+
 ### 主题系统
 
-4 款内置主题，搭配任意 HEX 色值：
+当前内置主题支持以下风格，均可搭配任意 HEX 色值：
 
 | 主题 | 风格 | 适合 |
 |------|------|------|
+| `pure` | 克制留白 | 学术、文学、哲思、严肃长文 |
 | `simple` | 简约干净 | 日常推送、知识科普 |
 | `center` | 居中排版 | 短篇、金句、情感 |
 | `decoration` | 装饰线条 | 品牌感强的内容 |
 | `prominent` | 大标题 | 深度长文、观点输出 |
+| `gorgeous` | 高表达装饰感 | 品牌故事、视觉专题、艺术文化 |
 
 <!-- TODO: 主题对比截图 -->
 
@@ -164,11 +149,46 @@ clients/demo/
 
 **发布报 IP 错误** — 公网 IP 变了。重跑 `curl -s https://ifconfig.me` 拿新 IP，更新微信白名单（详见上方「获取本机公网 IP」章节）。
 
-**图片生成失败** — 不影响发布。Skill 会自动走降级链。想用特定 provider 就在 `config.yaml` 里填对应 key。
+**图片生成失败** — 不影响发布。Skill 会自动走降级链。想用特定 provider，就在 `~/.youmind/config.yaml` 或 `~/.youmind/config/youmind-wechat-article.yaml` 里填对应 key。
 
 **文章有 AI 味** — 在 `style.yaml` 里写清楚你的调性；多喂历史语料建 playbook；发布后改稿再跑"学习风格"。三管齐下效果最好。
 
 **怎么自定义排版？** — 三个层级：① 对话里指定颜色字号 → ② 写 Theme DSL JSON → ③ 搭配设计类 Skill 深度定制。
+
+---
+
+## 项目结构
+
+### Toolkit scripts (TypeScript, 在 `toolkit/src/` 下)
+
+| 文件 | 作用 | 对应 npm script |
+|------|------|---------------|
+| `cli.ts` | 主 CLI 入口（preview / publish / validate / list / themes） | `npm run preview` / `publish` 等 |
+| `image-gen.ts` | YouMind 图像生成 + Nano Banana Pro 库 + CDN 降级 | `npm run image-gen` |
+| `youmind-api.ts` | YouMind OpenAPI 客户端（知识库、搜索、chat、公众号代理） | `npm run youmind-api` |
+| `fetch-stats.ts` | 拉公众号历史文章互动数据做分析 | `npm run fetch-stats` |
+| `build-playbook.ts` | 喂历史语料生成客户专属写作手册 | `npm run build-playbook` |
+| `learn-edits.ts` | 从人工改稿差异中提取风格经验 | `npm run learn-edits` |
+
+### Scripts (Python, 在 `scripts/` 下)
+
+| 文件 | 作用 |
+|------|------|
+| `scripts/fetch_hotspots.py` | 抓微博 / 知乎等热点榜单 |
+| `scripts/seo_keywords.py` | 关键词评分 + 去重 |
+| `scripts/validate_skill.py` | 结构校验（`npm run validate-skill` 调用） |
+
+### Agent config
+
+`agents/openai.yaml` — OpenAI / Codex agent 的 skill 接入清单。
+
+### Client templates
+
+`clients/demo/` 是客户配置模板（`style.yaml` + `history.yaml`）。复制到 `clients/{your-client}/` 并改写即可新建一个客户。
+
+### 验证
+
+跑 `npm run validate-skill` 检查目录结构、必需文件、必需 headings 是否完整。
 
 ---
 

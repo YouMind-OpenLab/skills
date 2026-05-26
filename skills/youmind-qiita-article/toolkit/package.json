@@ -1,0 +1,29 @@
+{
+  "name": "youmind-qiita-toolkit",
+  "version": "1.0.0",
+  "description": "YouMind Qiita: AI-powered article publishing",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "youmind-qiita": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "publish-article": "tsx src/cli.ts publish",
+    "preview": "tsx src/cli.ts preview",
+    "validate": "tsx src/cli.ts validate",
+    "youmind-api": "tsx src/youmind-api.ts"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "node-fetch": "^3.3.0",
+    "yaml": "^2.3.0",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

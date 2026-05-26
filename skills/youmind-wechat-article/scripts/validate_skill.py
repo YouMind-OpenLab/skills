@@ -60,6 +60,13 @@ REQUIRED_PACKAGE_SCRIPTS = [
     "validate-skill",
 ]
 
+THEME_KEY_SURFACE_PATHS = [
+    "README.md",
+    "config.example.yaml",
+    "clients/demo/style.yaml",
+    "references/style-template.md",
+]
+
 README_MUST_MENTION = [
     "agents/openai.yaml",
     "scripts/validate_skill.py",
@@ -163,6 +170,28 @@ def main() -> int:
                 if name not in scripts:
                     errors.append(f"toolkit/package.json is missing npm script: {name}")
 
+    theme_engine_text = read_text("toolkit/src/theme-engine.ts", errors)
+    if theme_engine_text:
+        theme_keys = extract_theme_keys(theme_engine_text, errors)
+        if theme_keys:
+            example_theme_ids = read_builtin_theme_ids(errors)
+            if example_theme_ids:
+                if example_theme_ids != theme_keys:
+                    errors.append(
+                        "references/builtin-themes.json theme IDs drift from toolkit/src/theme-engine.ts "
+                        f"(expected {theme_keys}, found {example_theme_ids})."
+                    )
+
+            for rel_path in THEME_KEY_SURFACE_PATHS:
+                surface_text = read_text(rel_path, errors)
+                if not surface_text:
+                    continue
+                missing_keys = [key for key in theme_keys if key not in surface_text]
+                if missing_keys:
+                    errors.append(
+                        f"{rel_path} is missing built-in theme keys: {', '.join(missing_keys)}"
+                    )
+
     referenced_paths = collect_local_doc_paths(
         [
             ROOT / "SKILL.md",
@@ -227,6 +256,56 @@ def check_frontmatter(rel_path: str, text: str, errors: list[str]) -> None:
     for field in ("name:", "description:"):
         if field not in frontmatter:
             errors.append(f"{rel_path} frontmatter is missing field: {field[:-1]}")
+
+
+def extract_theme_keys(theme_engine_text: str, errors: list[str]) -> list[str]:
+    start = theme_engine_text.find("const THEME_GENERATORS")
+    end = theme_engine_text.find("// --- Public API ---", start)
+    if start == -1 or end == -1:
+        errors.append("Unable to find THEME_GENERATORS in toolkit/src/theme-engine.ts.")
+        return []
+
+    body = theme_engine_text[start:end]
+    theme_keys = re.findall(r"^\s{2}([a-z][a-z-]*):\s*\{", body, re.MULTILINE)
+    if not theme_keys:
+        errors.append("No built-in theme keys found in toolkit/src/theme-engine.ts.")
+    return theme_keys
+
+
+def read_builtin_theme_ids(errors: list[str]) -> list[str]:
+    path = ROOT / "references" / "builtin-themes.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        errors.append("Missing required path: references/builtin-themes.json")
+        return []
+    except json.JSONDecodeError as exc:
+        errors.append(f"Invalid JSON in references/builtin-themes.json: {exc}")
+        return []
+    except OSError as exc:
+        errors.append(f"Unable to read references/builtin-themes.json: {exc}")
+        return []
+
+    if not isinstance(payload, list):
+        errors.append("references/builtin-themes.json must contain a JSON array.")
+        return []
+
+    theme_ids: list[str] = []
+    for index, item in enumerate(payload):
+        if not isinstance(item, dict):
+            errors.append(f"references/builtin-themes.json entry {index} must be an object.")
+            continue
+
+        meta = item.get("meta")
+        if not isinstance(meta, dict) or not isinstance(meta.get("id"), str):
+            errors.append(
+                f"references/builtin-themes.json entry {index} is missing meta.id."
+            )
+            continue
+
+        theme_ids.append(meta["id"])
+
+    return theme_ids
 
 
 def collect_local_doc_paths(doc_paths: list[Path]) -> list[tuple[Path, str, Path]]:

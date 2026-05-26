@@ -28,6 +28,8 @@ node dist/cli.js publish {markdown_path} \
   [--custom-theme {theme_json_path}]
 ```
 
+Successful runs print `media_id` plus `Result links`, so the user can click straight into the WeChat backend for draft review, publishing, and later stats checking.
+
 Parameter priority: `--custom-theme` > CLI args > `style.yaml` values > defaults
 
 ### Theme Comparison Preview
@@ -36,7 +38,7 @@ Parameter priority: `--custom-theme` > CLI args > `style.yaml` values > defaults
 node dist/cli.js theme-preview {markdown_path} --color "{hex}"
 ```
 
-Generates a side-by-side preview of all 4 themes with the given color.
+Generates a side-by-side preview of all built-in themes with the given color.
 
 ### List Themes and Colors
 
@@ -50,10 +52,10 @@ node dist/cli.js colors
 ## Image Generation
 
 ```bash
-# AI-generated image
+# AI-generated image (YouMind-only — uses youmind.api_key via chatGenerateImage)
 node dist/image-gen.js --prompt "{prompt}" \
   --output {output_path} --size {cover|article} \
-  [--color "{hex}"] [--mood "{mood}"] [--provider {youmind|gemini|openai|doubao}]
+  [--color "{hex}"] [--mood "{mood}"]
 
 # Search Nano Banana Pro library
 node dist/image-gen.js --search "{keywords}" --output {output_path}
@@ -62,7 +64,9 @@ node dist/image-gen.js --search "{keywords}" --output {output_path}
 node dist/image-gen.js --fallback-cover --color "{hex}" --output {output_path}
 ```
 
-Three-level fallback chain: API generation → Nano Banana library match → predefined covers from remote CDN → prompt-only output.
+Image generation uses YouMind's chat API (Nano Banana Pro) via `youmind.api_key`.
+
+Four-level fallback chain: YouMind generation → Nano Banana library match → predefined covers from remote CDN → prompt-only output.
 
 ---
 

@@ -1,0 +1,30 @@
+# Demo client — published article history
+#
+# Appended to after each successful dispatch (Step 7.5 of the pipeline).
+# Used for:
+#   - Topic deduplication (Step 2.5) — avoid writing about the same thing twice
+#   - Analytics (fetch-stats.ts) — correlate titles with engagement
+#   - Style learning (learn-edits.ts) — compare drafts vs. published versions
+#
+# Schema: list of entries, newest first.
+# Each entry records what was published and when.
+
+articles: []
+
+# Example entry (commented out — uncomment and fill when the first article publishes):
+#
+# articles:
+#   - published_at: "2026-04-16T10:00:00+08:00"
+#     title: "AI 编程的三个拐点"
+#     digest: "从 Copilot 到 Agent，编程范式正在被重写..."
+#     media_id: "abc123xyz"              # WeChat returned media_id
+#     theme: "simple"
+#     theme_color: "#3498db"
+#     word_count: 2100
+#     framework: "insight-first"         # which framework from frameworks.md was used
+#     topic_source: "trending"           # trending | user-specified | playbook
+#     cover_source: "youmind"            # youmind | nano-banana-library | fallback
+#     hotspot_signals:                   # what triggered topic selection
+#       - "AI 编程 Agent 周排行 #3"
+#     lessons_applied:                   # which entries from lessons/ influenced this piece
+#       - "lesson-2026-04-10-tone-shift"

@@ -29,9 +29,7 @@ blacklist:
 reference_accounts: [Account1, Account2, Account3]
 
 # Theme engine settings (overridden by CLI --theme / --color)
-theme: "simple"           # Built-in: simple | center | decoration | prominent
-                          #           ink-literary | tech-deep | warm-narrative
-                          #           jade-fresh | rose-editorial | mist-minimal
+theme: "simple"           # Built-in: pure | simple | center | decoration | prominent | gorgeous
                           # Or: any custom theme ID from clients/{client}/themes/
 theme_color: "#3498db"    # Any HEX color. Overrides the theme's primary color.
 
@@ -45,13 +43,20 @@ line_height: ""           # e.g., "1.85"
 letter_spacing: ""        # e.g., "0.5px"
 text_indent: ""           # e.g., "2em" — first-line indent for literary styles
 
-# YouMind 知识库关联 (可选 — 需要在 config.yaml 配置 youmind.api_key)
+# YouMind 知识库关联 (可选 — 需要在 ~/.youmind/config.yaml 配置 youmind.api_key)
 youmind:
   source_boards: []          # 素材来源 board ID 列表 (写文章时自动搜索这些 board 中的素材)
   save_board: ""             # 发布后归档到的 board ID (留空不归档)
 
 cover_style: "Cover image style description for AI image generation"
 author: "Author name displayed on article"
+
+conversion:
+  primary_goal: "follow"          # follow | save | comment | next_read | mini_program | wecom_add | customer_group | manual_service | transaction
+  landing_type: "read_more"       # read_more | mini_program | wecom_add | customer_group | manual_service
+  handoff_owner: "公众号客服"       # e.g. 公众号客服 | 企业微信成员 | 群运营 | 小程序表单
+  cta_location: "footer"          # header | body_mid | footer | read_original | menu
+  topic_cluster: ""               # e.g. AI workflow / B2B lead gen / health myth busting
 ```
 
 ---
@@ -92,12 +97,24 @@ List 2-3 WeChat accounts whose style you want to emulate. The agent uses these a
 
 ### `youmind` — Knowledge Base Integration
 
-Optional. Requires `youmind.api_key` in `config.yaml`.
+Optional. Requires `youmind.api_key` in `~/.youmind/config.yaml`.
 
 | Field | Effect |
 |-------|--------|
 | `source_boards` | Agent searches these boards for relevant materials/documents as writing references. Leave empty to search all. |
 | `save_board` | After publishing, the article is archived to this board as a YouMind document. Leave empty to skip. |
+
+### `conversion` — Handoff Design
+
+Professional公众号文章 should define one main next step instead of asking for everything.
+
+| Field | Effect |
+|-------|--------|
+| `primary_goal` | The article's main action after reading. Use exactly one. |
+| `landing_type` | Tells the agent where the CTA should send the reader next. |
+| `handoff_owner` | Clarifies who receives the user after the article. |
+| `cta_location` | Keeps CTA placement intentional instead of scattered. |
+| `topic_cluster` | Helps matrix operations and later review. |
 
 ### `blacklist` — Hard Boundaries
 

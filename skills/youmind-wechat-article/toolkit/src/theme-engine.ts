@@ -4,7 +4,7 @@
  * Ported from YouMind's styles.ts — generates WeChat-compatible inline CSS
  * dynamically based on theme key + color. No YAML theme files needed.
  *
- * 4 themes: simple | center | decoration | prominent
+ * Built-in themes: pure | simple | center | decoration | prominent | gorgeous
  * 8 preset colors + custom HEX color support
  */
 
@@ -27,7 +27,13 @@ export const DEFAULT_THEME = 'simple';
 
 // --- Types ---
 
-export type ThemeKey = 'simple' | 'center' | 'decoration' | 'prominent';
+export type ThemeKey =
+  | 'pure'
+  | 'simple'
+  | 'center'
+  | 'decoration'
+  | 'prominent'
+  | 'gorgeous';
 export type HeadingSize = 'minus2' | 'minus1' | 'standard' | 'plus1';
 export type ParagraphSpacing = 'compact' | 'normal' | 'loose';
 export type FontFamily = 'default' | 'optima' | 'serif';
@@ -187,6 +193,11 @@ export class ColorPalette {
   get primaryDark(): string {
     if (this.luminance < 0.4) return this.mix(this.mainColor, '#ffffff', 0.85);
     return this.adjustBrightness(this.mainColor, -0.2);
+  }
+
+  get primaryDarker(): string {
+    if (this.luminance < 0.4) return this.mix(this.mainColor, '#ffffff', 0.75);
+    return this.adjustBrightness(this.mainColor, -0.35);
   }
 
   get primaryLight(): string {
@@ -419,13 +430,108 @@ function genProminent(p: ColorPalette, ff: string | undefined, fs: number, ps: P
   };
 }
 
+function genPure(p: ColorPalette, ff: string | undefined, fs: number, ps: ParagraphSpacing, hs: HeadingSize): ThemeStyles {
+  const fv = getFontVal(ff);
+  const font = `font-family: ${fv};`;
+  const pl = pLayout(fs, ps);
+  const ink = '#1a1a1a';
+  const inkSoft = '#2c2c2c';
+  const inkMuted = '#6b6b6b';
+  const lineSoft = '#e5e5e5';
+  const lineStrong = '#d0d0d0';
+  const bgSoft = 'rgba(0, 0, 0, 0.03)';
+
+  return {
+    container: containerStyle(ff, fs),
+    h1: `font-size: ${headingFontSize(28, hs)}px; font-weight: 800; color: ${ink} !important; ${headingLayout(44, 28, hs)} letter-spacing: -0.02em; ${font}`,
+    h2: `font-size: ${headingFontSize(23, hs)}px; font-weight: 700; color: ${ink} !important; ${headingLayout(36, 24, hs)} letter-spacing: -0.01em; ${font}`,
+    h3: `font-size: ${headingFontSize(19, hs)}px; font-weight: 700; color: ${ink} !important; ${headingLayout(28, 20, hs)} ${font}`,
+    h4: `font-size: ${headingFontSize(17, hs)}px; font-weight: 600; color: ${ink} !important; ${headingLayout(22, 18, hs)} ${font}`,
+    h5: `font-size: ${headingFontSize(16, hs)}px; font-weight: 600; color: ${inkSoft} !important; ${headingLayout(16, 10, hs)} ${font}`,
+    h6: `font-size: ${headingFontSize(15, hs)}px; font-weight: 600; color: ${inkSoft} !important; ${headingLayout(14, 12, hs)} ${font}`,
+    p: `${pl} ${font}`,
+    strong: `font-weight: 700; color: ${p.primary} !important; ${font}`,
+    em: `font-style: italic; color: ${inkSoft} !important; ${font}`,
+    strike: `text-decoration: line-through; color: ${inkMuted} !important; ${font}`,
+    u: `text-decoration: underline; text-decoration-color: ${inkMuted}; text-underline-offset: 2px; ${font}`,
+    a: `color: ${ink} !important; text-decoration: underline; text-decoration-color: ${inkMuted}; text-underline-offset: 2px; ${font}`,
+    ul: `${LIST_LAYOUT} padding-left: 22px; list-style-type: disc; color: ${inkSoft}; ${font}`,
+    ol: `${LIST_LAYOUT} padding-left: 22px; list-style-type: decimal; color: ${inkSoft}; ${font}`,
+    li: `margin: 4px 0; line-height: 1.75 !important; ${font}`,
+    liText: `color: ${inkSoft}; ${font}`,
+    taskList: `${LIST_LAYOUT} padding-left: 8px; list-style: none; ${font}`,
+    taskListItem: `margin: 6px 0; line-height: 1.75 !important; list-style: none; color: ${inkSoft} !important; ${font}`,
+    taskListItemCheckbox: `margin-right: 10px; width: 16px; height: 16px; vertical-align: middle; cursor: pointer; accent-color: ${inkMuted};`,
+    blockquote: `${BQ_LAYOUT} border-left: 3px solid ${lineStrong}; background-color: ${bgSoft} !important; color: ${inkSoft} !important; font-style: italic; ${font}`,
+    code: `font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 14px; padding: 2px 5px; background-color: ${bgSoft} !important; color: ${ink} !important; border-radius: 3px;`,
+    pre: `margin: 24px 0; padding: 18px; background-color: ${bgSoft} !important; border: 1px solid ${lineSoft}; border-radius: 4px; overflow-x: auto; line-height: 1.6 !important;`,
+    hr: `margin: 2.5rem 0; border: none; height: 1px; background-color: ${lineSoft};`,
+    img: `max-width: 100%; max-height: 600px !important; height: auto; display: block; margin: 28px auto;`,
+    tableWrapper: `padding: 0 8px; margin: 12px 0; max-width: 100%; overflow: auto;`,
+    table: `min-width: 100%; border-collapse: collapse; font-size: 15px; ${font}`,
+    th: `padding: 12px 16px; text-align: left; border-bottom: 2px solid ${lineStrong}; font-weight: 700; color: ${ink} !important; word-break: keep-all; ${font}`,
+    td: `padding: 12px 16px; border-bottom: 1px solid ${lineSoft}; color: ${inkSoft} !important; word-break: keep-all; ${font}`,
+    tr: '',
+    codeBlockPre: `background: ${bgSoft}; padding: 0; border-radius: 4px; overflow-x: auto; overflow-y: hidden; margin: 24px 0; border: 1px solid ${lineSoft};`,
+    codeBlockCode: `color: ${ink}; font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 14px; line-height: 1.6; display: block; white-space: pre; padding: 18px;`,
+  };
+}
+
+function genGorgeous(p: ColorPalette, ff: string | undefined, fs: number, ps: ParagraphSpacing, hs: HeadingSize): ThemeStyles {
+  const fv = getFontVal(ff);
+  const font = `font-family: ${fv};`;
+  const pl = pLayout(fs, ps);
+  const highlightBg = `background-image: linear-gradient(to bottom, transparent 55%, ${p.rgba(0.28)} 55%, ${p.rgba(0.28)} 92%, transparent 92%);`;
+  const tripleLine = `background-image: linear-gradient(${p.primary}, ${p.primary}), linear-gradient(${p.rgba(0.4)}, ${p.rgba(0.4)}), linear-gradient(${p.rgba(0.2)}, ${p.rgba(0.2)}); background-size: 100% 2px, 100% 1px, 100% 1px; background-position: left top, left 5px, left 9px; background-repeat: no-repeat;`;
+  // WeChat clients do not reliably support text clipping, so keep H1 visible
+  // with a solid fallback color and use layered backgrounds for the flourish.
+  const titleWash = `background-image: linear-gradient(135deg, ${p.rgba(0.12)} 0%, ${p.rgba(0.05)} 58%, transparent 100%), linear-gradient(90deg, ${p.primary} 0%, ${p.primaryLight} 100%); background-size: 100% calc(100% - 6px), 100% 3px; background-position: left top, left bottom; background-repeat: no-repeat;`;
+
+  return {
+    container: containerStyle(ff, fs),
+    h1: `font-size: ${headingFontSize(30, hs)}px; font-weight: 800; color: ${p.primaryDarker} !important; ${headingLayout(48, 32, hs)} letter-spacing: 0.02em; padding: 0 0 ${headingSpacing(12, hs)}px 0; text-shadow: 0 1px 2px ${p.rgba(0.15)}; box-shadow: inset 0 -1px 0 ${p.rgba(0.08)}; ${titleWash} ${font}`,
+    h2: `font-size: ${headingFontSize(24, hs)}px; font-weight: 700; color: ${p.primaryDarker} !important; ${headingLayout(40, 26, hs)} padding-top: ${headingSpacing(14, hs)}px; letter-spacing: 0.01em; ${tripleLine} ${font}`,
+    h3: `font-size: ${headingFontSize(20, hs)}px; font-weight: 700; color: ${p.primaryDarker} !important; ${headingLayout(30, 20, hs)} padding: ${headingSpacing(2, hs)}px ${headingSpacing(10, hs)}px; display: inline-block; ${highlightBg} ${font}`,
+    h4: `font-size: ${headingFontSize(18, hs)}px; font-weight: 700; color: ${p.primary} !important; ${headingLayout(24, 18, hs)} padding-bottom: ${headingSpacing(6, hs)}px; background-image: linear-gradient(90deg, ${p.primary}, ${p.primaryLight}), linear-gradient(90deg, ${p.rgba(0.25)}, transparent); background-size: 40% 2px, 100% 1px; background-position: left bottom, left calc(100% - 3px); background-repeat: no-repeat; ${font}`,
+    h5: `font-size: ${headingFontSize(16, hs)}px; font-weight: 700; color: ${p.primary} !important; ${headingLayout(18, 12, hs)} padding-bottom: ${headingSpacing(4, hs)}px; border-bottom: 2px solid ${p.primary}; display: inline-block; ${font}`,
+    h6: `font-size: ${headingFontSize(15, hs)}px; font-weight: 600; color: ${p.primaryDarker} !important; ${headingLayout(14, 10, hs)} letter-spacing: 0.04em; text-transform: uppercase; ${font}`,
+    p: `${pl} ${font}`,
+    strong: `font-weight: 700; color: ${p.primaryDarker} !important; ${highlightBg} padding: 0 2px; ${font}`,
+    em: `font-style: italic; color: ${p.primary} !important; ${font}`,
+    strike: `text-decoration: line-through; text-decoration-color: ${p.rgba(0.5)}; color: #888888 !important; ${font}`,
+    u: `text-decoration: underline; text-decoration-color: ${p.primary}; text-decoration-thickness: 2px; text-underline-offset: 4px; ${font}`,
+    a: `color: ${p.primaryDarker} !important; text-decoration: none; background-image: linear-gradient(90deg, ${p.primary}, ${p.primaryLight}); background-size: 100% 2px; background-position: 0 100%; background-repeat: no-repeat; padding-bottom: 2px; ${font}`,
+    ul: `padding-left: 28px; list-style-type: disc; color: ${p.primary}; ${LIST_LAYOUT} ${font}`,
+    ol: `padding-left: 28px; list-style-type: decimal; color: ${p.primary}; ${LIST_LAYOUT} ${font}`,
+    li: `margin: 10px 0; line-height: 1.85 !important; ${font}`,
+    liText: `color: #2c2c2c; ${font}`,
+    taskList: `padding-left: 8px; list-style: none; ${LIST_LAYOUT} ${font}`,
+    taskListItem: `line-height: 1.85 !important; list-style: none; color: #2c2c2c !important; ${font}`,
+    taskListItemCheckbox: `margin-right: 10px; width: 16px; height: 16px; vertical-align: middle; cursor: pointer; accent-color: ${p.primary};`,
+    blockquote: `${BQ_LAYOUT} font-size: 15px; color: ${p.primaryDarker} !important; background: linear-gradient(135deg, ${p.rgba(0.1)} 0%, ${p.rgba(0.04)} 60%, transparent 100%); border-left: 5px solid ${p.primary}; border-radius: 0 14px 14px 0; line-height: 1.85 !important; box-shadow: 0 4px 16px ${p.rgba(0.08)}, inset 0 0 0 1px ${p.rgba(0.06)}; ${font}`,
+    code: `font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.9em; padding: 3px 8px; background: linear-gradient(135deg, ${p.rgba(0.1)}, ${p.rgba(0.06)}) !important; color: ${p.primaryDarker} !important; border-radius: 4px; box-shadow: inset 0 0 0 1px ${p.rgba(0.15)};`,
+    pre: `margin: 32px 0; padding: 22px; background: linear-gradient(135deg, ${p.rgba(0.04)}, ${p.rgba(0.02)}) !important; border-radius: 12px; overflow-x: auto; line-height: 1.6 !important; box-shadow: 0 4px 20px ${p.rgba(0.1)}, inset 0 0 0 1px ${p.rgba(0.08)};`,
+    hr: `margin: 3rem auto; border: none; height: 7px; background-image: linear-gradient(${p.primary}, ${p.primary}), linear-gradient(${p.rgba(0.4)}, ${p.rgba(0.4)}), linear-gradient(${p.rgba(0.2)}, ${p.rgba(0.2)}); background-size: 80% 2px, 60% 1px, 40% 1px; background-position: center 2px, center 0, center 6px; background-repeat: no-repeat;`,
+    img: `max-width: 100%; max-height: 600px !important; height: auto; display: block; margin: 32px auto; border-radius: 10px; box-shadow: 0 6px 12px ${p.rgba(0.12)}, 0 12px 32px ${p.rgba(0.08)}, 0 0 0 1px ${p.rgba(0.08)};`,
+    tableWrapper: `padding: 0 8px; margin: 16px 0; max-width: 100%; overflow: auto;`,
+    table: `min-width: 100%; border-collapse: collapse; font-size: 15px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 16px ${p.rgba(0.1)}, 0 0 0 1px ${p.rgba(0.15)}; ${font}`,
+    th: `background: linear-gradient(135deg, ${p.primary} 0%, ${p.primaryDark} 100%) !important; padding: 16px 22px; text-align: left; font-weight: 700; font-size: 15px; color: #ffffff !important; border: none; letter-spacing: 0.02em; word-break: keep-all; ${font}`,
+    td: `padding: 16px 22px; font-size: 15px; line-height: 1.75; background: #ffffff !important; color: #2c2c2c !important; border-bottom: 1px solid ${p.rgba(0.12)}; word-break: keep-all; ${font}`,
+    tr: '',
+    codeBlockPre: `background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%); padding: 0; border-radius: 12px; overflow-x: auto; overflow-y: hidden; margin: 32px 0; box-shadow: 0 6px 24px ${p.rgba(0.18)}, inset 0 0 0 1px ${p.rgba(0.25)};`,
+    codeBlockCode: `color: #e2e8f0; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 14px; line-height: 1.7; display: block; white-space: pre; padding: 22px;`,
+  };
+}
+
 // --- Theme Generator Registry ---
 
 const THEME_GENERATORS: Record<ThemeKey, { fn: ThemeGenerator; enName: string; cnName: string }> = {
+  pure: { fn: genPure, enName: 'Pure Authentic', cnName: '归真' },
   simple: { fn: genSimple, enName: 'Minimal Modern', cnName: '极简现代' },
   center: { fn: genCenter, enName: 'Elegant Centered', cnName: '优雅对称' },
   decoration: { fn: genDecoration, enName: 'Refined Ornamental', cnName: '精致装饰' },
   prominent: { fn: genProminent, enName: 'Bold Prominent', cnName: '醒目风格' },
+  gorgeous: { fn: genGorgeous, enName: 'Gorgeous Expressive', cnName: '绚丽' },
 };
 
 // --- Public API ---
