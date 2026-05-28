@@ -1,5 +1,27 @@
 /**
- * Beehiiv API client via YouMind OpenAPI.
+ * Beehiiv client via YouMind OpenAPI (aggregated publishing endpoints).
+ *
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=beehiiv 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data。
+ *
+ * 关键映射：
+ *   - post.content = { format: 'html', body: bodyContent }
+ *   - tags 直传 post.tags（adapter 内会改名成 contentTags）
+ *   - coverImageUrl → 由 adapter 映射到 thumbnailUrl
+ *   - 其他平台特有字段（subtitle / status / scheduledAt / subjectLine / previewText / postTemplateId
+ *     / recipients / emailSettings / webSettings / seoSettings / customLinkTrackingEnabled
+ *     / emailCaptureTypeOverride / overrideScheduledAt / socialShare / headers / customFields
+ *     / newsletterListId / blocks）走 post.extras
+ *   - taxonomy 走 listTaxonomy { filter: { kind: 'template' } }
+ *
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/createPost       body: { platform: 'beehiiv', post }
+ *   POST /openapi/v1/publishing/updatePost       body: { platform: 'beehiiv', post: { postId, ... } }
+ *   POST /openapi/v1/publishing/getPost          body: { platform: 'beehiiv', postId }
+ *   POST /openapi/v1/publishing/listPosts        body: { platform: 'beehiiv', filter: { paging } }
+ *   POST /openapi/v1/publishing/deletePost       body: { platform: 'beehiiv', postId }
+ *   POST /openapi/v1/publishing/validateConnection body: { platform: 'beehiiv' }
+ *   POST /openapi/v1/publishing/listTaxonomy     body: { platform: 'beehiiv', filter: { kind: 'template' } }
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -220,6 +242,20 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: BeehiivConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    payload,
+    config,
+  );
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -339,22 +375,96 @@ function normalizePostTemplate(template: Record<string, unknown>): BeehiivPostTe
   };
 }
 
+// 把 SDK 旧的扁平 create options 折叠成聚合层 UnifiedPost
+function toUnifiedCreatePost(options: CreateBeehiivPostOptions): Record<string, unknown> {
+  const post: Record<string, unknown> = {
+    title: options.title,
+  };
+  if (options.bodyContent !== undefined) {
+    post.content = { format: 'html', body: options.bodyContent };
+  }
+  if (options.contentTags?.length) post.tags = options.contentTags;
+  if (options.thumbnailImageUrl !== undefined) post.coverImageUrl = options.thumbnailImageUrl;
+  if (options.scheduledAt !== undefined) post.scheduledAt = options.scheduledAt;
+  if (options.status === 'draft') post.state = 'draft';
+  else if (options.status === 'confirmed') post.state = 'published';
+
+  // 平台特有字段进 extras——adapter 内的 toNative 会把它们展开回 native payload
+  const extras: Record<string, unknown> = {};
+  if (options.subtitle !== undefined) extras.subtitle = options.subtitle;
+  if (options.postTemplateId !== undefined) extras.postTemplateId = options.postTemplateId;
+  if (options.blocks !== undefined) extras.blocks = options.blocks;
+  if (options.customLinkTrackingEnabled !== undefined) {
+    extras.customLinkTrackingEnabled = options.customLinkTrackingEnabled;
+  }
+  if (options.emailCaptureTypeOverride !== undefined) {
+    extras.emailCaptureTypeOverride = options.emailCaptureTypeOverride;
+  }
+  if (options.overrideScheduledAt !== undefined) extras.overrideScheduledAt = options.overrideScheduledAt;
+  if (options.socialShare !== undefined) extras.socialShare = options.socialShare;
+  if (options.recipients !== undefined) extras.recipients = options.recipients;
+  if (options.emailSettings !== undefined) extras.emailSettings = options.emailSettings;
+  if (options.webSettings !== undefined) extras.webSettings = options.webSettings;
+  if (options.seoSettings !== undefined) extras.seoSettings = options.seoSettings;
+  if (options.headers !== undefined) extras.headers = options.headers;
+  if (options.customFields !== undefined) extras.customFields = options.customFields;
+  if (options.newsletterListId !== undefined) extras.newsletterListId = options.newsletterListId;
+  // status 同时也放 extras——某些 native 路径仍读 status 字段
+  if (options.status !== undefined) extras.status = options.status;
+  if (Object.keys(extras).length > 0) post.extras = extras;
+
+  return post;
+}
+
+function toUnifiedUpdatePost(options: UpdateBeehiivPostOptions): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.title !== undefined) post.title = options.title;
+  if (options.bodyContent !== undefined) {
+    post.content = { format: 'html', body: options.bodyContent };
+  }
+  if (options.contentTags !== undefined) post.tags = options.contentTags;
+  if (options.thumbnailImageUrl !== undefined) post.coverImageUrl = options.thumbnailImageUrl;
+  if (options.scheduledAt !== undefined) post.scheduledAt = options.scheduledAt;
+
+  const extras: Record<string, unknown> = {};
+  if (options.subtitle !== undefined) extras.subtitle = options.subtitle;
+  if (options.blocks !== undefined) extras.blocks = options.blocks;
+  if (options.customLinkTrackingEnabled !== undefined) {
+    extras.customLinkTrackingEnabled = options.customLinkTrackingEnabled;
+  }
+  if (options.emailCaptureTypeOverride !== undefined) {
+    extras.emailCaptureTypeOverride = options.emailCaptureTypeOverride;
+  }
+  if (options.overrideScheduledAt !== undefined) extras.overrideScheduledAt = options.overrideScheduledAt;
+  if (options.socialShare !== undefined) extras.socialShare = options.socialShare;
+  if (options.emailSettings !== undefined) extras.emailSettings = options.emailSettings;
+  if (options.webSettings !== undefined) extras.webSettings = options.webSettings;
+  if (options.seoSettings !== undefined) extras.seoSettings = options.seoSettings;
+  if (Object.keys(extras).length > 0) post.extras = extras;
+
+  return post;
+}
+
 export async function validateConnection(
   config?: BeehiivConfig,
 ): Promise<BeehiivConnectionResult> {
-  return postJson<BeehiivConnectionResult>('/beehiiv/validateConnection', {}, config);
+  return callPublishing<BeehiivConnectionResult>(
+    'validateConnection',
+    { platform: 'beehiiv' },
+    config,
+  );
 }
 
 export async function createPost(
   config: BeehiivConfig,
   options: CreateBeehiivPostOptions,
 ): Promise<BeehiivPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/beehiiv/createPost',
-    { ...options },
+  const data = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'beehiiv', post: toUnifiedCreatePost(options) },
     config,
   );
-  return normalizePost(post);
+  return normalizePost(data);
 }
 
 export async function updatePost(
@@ -362,24 +472,37 @@ export async function updatePost(
   id: string,
   options: UpdateBeehiivPostOptions,
 ): Promise<BeehiivPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/beehiiv/updatePost',
-    { id, ...options },
+  const post = { postId: id, ...toUnifiedUpdatePost(options) };
+  const data = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    { platform: 'beehiiv', post },
     config,
   );
-  return normalizePost(post);
+  return normalizePost(data);
 }
 
 export async function getPost(config: BeehiivConfig, id: string): Promise<BeehiivPost> {
-  const post = await postJson<Record<string, unknown>>('/beehiiv/getPost', { id }, config);
-  return normalizePost(post);
+  const data = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { platform: 'beehiiv', postId: id },
+    config,
+  );
+  return normalizePost(data);
 }
 
 export async function deletePost(
   config: BeehiivConfig,
   id: string,
 ): Promise<{ ok: boolean; id: string }> {
-  return postJson<{ ok: boolean; id: string }>('/beehiiv/deletePost', { id }, config);
+  const data = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { platform: 'beehiiv', postId: id },
+    config,
+  );
+  return {
+    ok: Boolean(data.ok ?? true),
+    id: String(data.id ?? id),
+  };
 }
 
 export async function listPosts(
@@ -393,29 +516,32 @@ export async function listPosts(
         ? 'displayed_date'
         : options.orderBy;
 
-  const response = await postJson<BeehiivPostListResponse>(
-    '/beehiiv/listPosts',
-    {
-      ...(options.page !== undefined ? { page: options.page } : {}),
-      ...(options.limit !== undefined ? { limit: options.limit } : {}),
-      ...(options.status ? { status: options.status } : {}),
-      ...(options.audience ? { audience: options.audience } : {}),
-      ...(options.platform ? { platform: options.platform } : {}),
-      ...(options.contentTags?.length ? { contentTags: options.contentTags } : {}),
-      ...(options.slugs?.length ? { slugs: options.slugs } : {}),
-      ...(options.authors?.length ? { authors: options.authors } : {}),
-      ...(options.premiumTiers?.length ? { premiumTiers: options.premiumTiers } : {}),
-      ...(options.expand?.length ? { expand: options.expand } : {}),
-      ...(normalizedOrderBy ? { orderBy: normalizedOrderBy } : {}),
-      ...(options.direction ? { direction: options.direction } : {}),
-      ...(options.hiddenFromFeed ? { hiddenFromFeed: options.hiddenFromFeed } : {}),
-    },
+  // beehiiv adapter 只把 filter.paging 直传给底层 list 服务；
+  // 所有 beehiiv 原生分页/过滤参数都打包进 paging
+  const paging: Record<string, unknown> = {};
+  if (options.page !== undefined) paging.page = options.page;
+  if (options.limit !== undefined) paging.limit = options.limit;
+  if (options.status) paging.status = options.status;
+  if (options.audience) paging.audience = options.audience;
+  if (options.platform) paging.platform = options.platform;
+  if (options.contentTags?.length) paging.contentTags = options.contentTags;
+  if (options.slugs?.length) paging.slugs = options.slugs;
+  if (options.authors?.length) paging.authors = options.authors;
+  if (options.premiumTiers?.length) paging.premiumTiers = options.premiumTiers;
+  if (options.expand?.length) paging.expand = options.expand;
+  if (normalizedOrderBy) paging.orderBy = normalizedOrderBy;
+  if (options.direction) paging.direction = options.direction;
+  if (options.hiddenFromFeed) paging.hiddenFromFeed = options.hiddenFromFeed;
+
+  const data = await callPublishing<BeehiivPostListResponse>(
+    'listPosts',
+    { platform: 'beehiiv', filter: { paging } },
     config,
   );
 
   return {
-    ...response,
-    posts: response.posts.map((post) =>
+    ...data,
+    posts: (data.posts ?? []).map((post) =>
       normalizePost(post as unknown as Record<string, unknown>),
     ),
   };
@@ -425,20 +551,24 @@ export async function listPostTemplates(
   config: BeehiivConfig,
   options: ListBeehiivPostTemplatesOptions = {},
 ): Promise<BeehiivPostTemplateListResponse> {
-  const response = await postJson<BeehiivPostTemplateListResponse>(
-    '/beehiiv/listPostTemplates',
+  const paging: Record<string, unknown> = {};
+  if (options.page !== undefined) paging.page = options.page;
+  if (options.limit !== undefined) paging.limit = options.limit;
+  if (options.order) paging.order = options.order;
+  if (options.orderBy) paging.orderBy = options.orderBy;
+
+  const data = await callPublishing<BeehiivPostTemplateListResponse>(
+    'listTaxonomy',
     {
-      ...(options.page !== undefined ? { page: options.page } : {}),
-      ...(options.limit !== undefined ? { limit: options.limit } : {}),
-      ...(options.order ? { order: options.order } : {}),
-      ...(options.orderBy ? { orderBy: options.orderBy } : {}),
+      platform: 'beehiiv',
+      filter: { kind: 'template', paging },
     },
     config,
   );
 
   return {
-    ...response,
-    templates: response.templates.map((template) =>
+    ...data,
+    templates: (data.templates ?? []).map((template) =>
       normalizePostTemplate(template as unknown as Record<string, unknown>),
     ),
   };

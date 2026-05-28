@@ -1,19 +1,32 @@
 /**
- * WeChat API client via YouMind OpenAPI.
+ * WeChat client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's WeChat
- * Official Account appid + secret are configured once inside YouMind
- * (Connector → WeChat), and the YouMind backend manages access_token
- * caching and proxies all cgi-bin calls.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=wechat 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data。
+ *
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/validateConnection    body: { platform: 'wechat' }
+ *   POST /openapi/v1/publishing/uploadMedia           body: { platform: 'wechat', media: { kind, filename, source } }
+ *   POST /openapi/v1/publishing/createPost            body: { platform: 'wechat', post: {...} }
+ *   POST /openapi/v1/publishing/getPost               body: { platform: 'wechat', postId, state? }
+ *   POST /openapi/v1/publishing/deletePost            body: { platform: 'wechat', postId, state? }
+ *   POST /openapi/v1/publishing/listPosts             body: { platform: 'wechat', filter? }
+ *   POST /openapi/v1/publishing/transitionPostState   body: { platform: 'wechat', postId, toState }
+ *   POST /openapi/v1/publishing/getPublishJob         body: { platform: 'wechat', jobId }
+ *   POST /openapi/v1/publishing/getInsights           body: { platform: 'wechat', scope, postId?, dateRange? }
+ *
+ * 跨边界注意：
+ * - 草稿 mediaId ↔ unified postId；发布 articleId ↔ unified postId（用 state 区分）。
+ * - 一稿多图文：把多个 article 放进 post.extras.articles（adapter 优先读这个数组）。
+ * - 素材 / 永久素材接口（uploadMaterial / listMaterial 等）当前 toolkit 用不到，未在此暴露。
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // ---------------------------------------------------------------------------
-// Public types
+// Public types — 维持旧 toolkit 对外契约，调用方（cli / publisher / fetch-stats）零改动
 // ---------------------------------------------------------------------------
 
 export interface WeChatConfig {
@@ -95,10 +108,25 @@ export interface WeChatPublishStatus {
   resultLinks?: WeChatResultLink[];
 }
 
+export interface WeChatArticleStatsItem {
+  refDate: string;
+  msgid: string;
+  title?: string;
+  intPageReadUser: number;
+  intPageReadCount: number;
+  oriPageReadUser: number;
+  oriPageReadCount: number;
+  shareUser: number;
+  shareCount: number;
+  addToFavUser: number;
+  addToFavCount: number;
+}
+
 const WECHAT_PLATFORM_URL = 'https://mp.weixin.qq.com/';
+const PLATFORM = 'wechat' as const;
 
 // ---------------------------------------------------------------------------
-// Config loading — canonical ~/.youmind shared config + skill override
+// Config loading
 // ---------------------------------------------------------------------------
 
 export function loadWeChatConfig(): WeChatConfig {
@@ -159,6 +187,20 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: WeChatConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    { platform: PLATFORM, ...payload },
+    config,
+  );
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -196,80 +238,7 @@ function readFileAsBase64(filePath: string): { base64: string; filename: string 
 }
 
 // ---------------------------------------------------------------------------
-// Public API — Connection
-// ---------------------------------------------------------------------------
-
-export async function validateConnection(config?: WeChatConfig): Promise<WeChatConnectionResult> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wechat/validateConnection',
-    {},
-    config,
-  );
-  return {
-    ok: Boolean(r.ok),
-    message: String(r.message ?? ''),
-    appid: String(r.appid ?? ''),
-    tokenExpiresIn: Number(r.tokenExpiresIn ?? 0),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Public API — Backwards-compatible: getAccessToken / uploadImage / uploadThumb
-//
-// The `accessToken` arg is ignored in the new world (YouMind manages tokens
-// server-side). Existing callers (cli.ts, fetch-stats.ts) keep working
-// without changes; new callers should pass an empty string.
-// ---------------------------------------------------------------------------
-
-const PROXY_TOKEN_PLACEHOLDER = 'youmind-managed-token';
-
-export async function getAccessToken(
-  _appid?: string,
-  _secret?: string,
-  _forceRefresh = false,
-  config?: WeChatConfig,
-): Promise<string> {
-  // Validate via the proxy so the caller fails fast if creds aren't bound.
-  await validateConnection(config);
-  return PROXY_TOKEN_PLACEHOLDER;
-}
-
-export async function uploadImage(
-  _accessToken: string,
-  imagePath: string,
-  config?: WeChatConfig,
-): Promise<string> {
-  const { base64, filename } = readFileAsBase64(imagePath);
-  const r = await postJson<{ url?: string }>(
-    '/wechat/uploadImage',
-    { filename, contentBase64: base64 },
-    config,
-  );
-  if (!r.url) {
-    throw new Error('uploadImage returned empty URL');
-  }
-  return r.url;
-}
-
-export async function uploadThumb(
-  _accessToken: string,
-  imagePath: string,
-  config?: WeChatConfig,
-): Promise<string> {
-  const { base64, filename } = readFileAsBase64(imagePath);
-  const r = await postJson<{ mediaId?: string }>(
-    '/wechat/uploadThumb',
-    { filename, contentBase64: base64 },
-    config,
-  );
-  if (!r.mediaId) {
-    throw new Error('uploadThumb returned empty media_id');
-  }
-  return r.mediaId;
-}
-
-// ---------------------------------------------------------------------------
-// Public API — Drafts
+// Normalizers
 // ---------------------------------------------------------------------------
 
 function normalizeArticle(a: Record<string, unknown>): WeChatArticle {
@@ -289,11 +258,13 @@ function normalizeArticle(a: Record<string, unknown>): WeChatArticle {
 }
 
 function normalizeDraft(d: Record<string, unknown>): WeChatDraft {
+  // 聚合层 createPost / getPost 返回的对象，把 postId 当作 mediaId（WeChat 草稿 = mediaId）
+  const mediaId = String(d.mediaId ?? d.postId ?? '');
   const articles = Array.isArray(d.articles)
     ? d.articles.map((a) => normalizeArticle(a as Record<string, unknown>))
     : [];
   return {
-    mediaId: String(d.mediaId ?? ''),
+    mediaId,
     articles,
     updateTime: typeof d.updateTime === 'number' ? d.updateTime : undefined,
     resultLinks: buildResultLinks({
@@ -365,11 +336,117 @@ function buildResultLinks(options: {
   return deduped.length > 0 ? deduped : undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Public API — Connection
+// ---------------------------------------------------------------------------
+
+export async function validateConnection(config?: WeChatConfig): Promise<WeChatConnectionResult> {
+  const r = await callPublishing<Record<string, unknown>>('validateConnection', {}, config);
+  return {
+    ok: Boolean(r.ok),
+    message: String(r.message ?? ''),
+    appid: String(r.appid ?? ''),
+    tokenExpiresIn: Number(r.tokenExpiresIn ?? 0),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Backwards-compatible: getAccessToken / uploadImage / uploadThumb
+//
+// The `accessToken` arg is ignored (YouMind manages tokens server-side).
+// 老的调用方（cli.ts / fetch-stats.ts）不用动签名。
+// ---------------------------------------------------------------------------
+
+const PROXY_TOKEN_PLACEHOLDER = 'youmind-managed-token';
+
+export async function getAccessToken(
+  _appid?: string,
+  _secret?: string,
+  _forceRefresh = false,
+  config?: WeChatConfig,
+): Promise<string> {
+  // Validate via the proxy so the caller fails fast if creds aren't bound.
+  await validateConnection(config);
+  return PROXY_TOKEN_PLACEHOLDER;
+}
+
+export async function uploadImage(
+  _accessToken: string,
+  imagePath: string,
+  config?: WeChatConfig,
+): Promise<string> {
+  const { base64, filename } = readFileAsBase64(imagePath);
+  const r = await callPublishing<Record<string, unknown>>(
+    'uploadMedia',
+    {
+      media: {
+        kind: 'image',
+        filename,
+        source: { base64 },
+      },
+    },
+    config,
+  );
+  const url = String(r.url ?? '');
+  if (!url) {
+    throw new Error('uploadImage returned empty URL');
+  }
+  return url;
+}
+
+export async function uploadThumb(
+  _accessToken: string,
+  imagePath: string,
+  config?: WeChatConfig,
+): Promise<string> {
+  const { base64, filename } = readFileAsBase64(imagePath);
+  const r = await callPublishing<Record<string, unknown>>(
+    'uploadMedia',
+    {
+      media: {
+        kind: 'thumb',
+        filename,
+        source: { base64 },
+      },
+    },
+    config,
+  );
+  const mediaId = String(r.mediaId ?? '');
+  if (!mediaId) {
+    throw new Error('uploadThumb returned empty media_id');
+  }
+  return mediaId;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Drafts (mapped onto createPost / getPost / deletePost / listPosts)
+//
+// WeChat 一稿可多图文，统一通过 post.extras.articles 整体下发。adapter 会优先读
+// extras.articles，没有时才用 post 本体的 title/content。
+// ---------------------------------------------------------------------------
+
 export async function createDraftFull(
   articles: WeChatArticleInput[],
   config?: WeChatConfig,
 ): Promise<WeChatDraft> {
-  const r = await postJson<Record<string, unknown>>('/wechat/createDraft', { articles }, config);
+  if (!articles.length) {
+    throw new Error('createDraftFull requires at least one article');
+  }
+  const first = articles[0];
+  const r = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    {
+      post: {
+        title: first.title,
+        content: { format: 'html', body: first.content },
+        excerpt: first.digest,
+        mediaIds: first.thumbMediaId ? [first.thumbMediaId] : undefined,
+        canonicalUrl: first.contentSourceUrl,
+        extras: { articles, author: first.author },
+      },
+    },
+    config,
+  );
   return normalizeDraft(r);
 }
 
@@ -377,7 +454,11 @@ export async function getDraft(
   mediaId: string,
   config?: WeChatConfig,
 ): Promise<WeChatDraft> {
-  const r = await postJson<Record<string, unknown>>('/wechat/getDraft', { mediaId }, config);
+  const r = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { postId: mediaId, state: 'draft' },
+    config,
+  );
   return normalizeDraft(r);
 }
 
@@ -385,12 +466,12 @@ export async function deleteDraft(
   mediaId: string,
   config?: WeChatConfig,
 ): Promise<{ ok: boolean; id: string }> {
-  const r = await postJson<{ ok?: boolean; id?: string }>(
-    '/wechat/deleteDraft',
-    { mediaId },
+  const r = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { postId: mediaId, state: 'draft' },
     config,
   );
-  return { ok: Boolean(r.ok), id: String(r.id ?? mediaId) };
+  return { ok: Boolean(r.ok ?? true), id: String(r.id ?? mediaId) };
 }
 
 export async function listDrafts(
@@ -399,9 +480,14 @@ export async function listDrafts(
   noContent = false,
   config?: WeChatConfig,
 ): Promise<WeChatDraftListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wechat/listDrafts',
-    { offset, count, noContent },
+  const r = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    {
+      filter: {
+        state: 'draft',
+        paging: { offset, count, noContent },
+      },
+    },
     config,
   );
   return {
@@ -416,26 +502,33 @@ export async function listDrafts(
 export async function countDrafts(
   config?: WeChatConfig,
 ): Promise<{ totalCount: number }> {
-  const r = await postJson<{ totalCount?: number }>('/wechat/countDrafts', {}, config);
+  const r = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    {
+      filter: { state: 'draft', countOnly: true },
+    },
+    config,
+  );
   return { totalCount: Number(r.totalCount ?? 0) };
 }
 
 // ---------------------------------------------------------------------------
-// Public API — Publishing
+// Public API — Publishing (mapped onto transitionPostState / getPublishJob /
+//   getPost(state=published) / deletePost(state=published))
 // ---------------------------------------------------------------------------
 
 export async function publishDraft(
   mediaId: string,
   config?: WeChatConfig,
 ): Promise<WeChatPublishSubmit> {
-  const r = await postJson<{ publishId?: string; msgDataId?: string; resultLinks?: unknown[] }>(
-    '/wechat/publishDraft',
-    { mediaId },
+  const r = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { postId: mediaId, toState: 'published' },
     config,
   );
   return {
     publishId: String(r.publishId ?? ''),
-    msgDataId: r.msgDataId,
+    msgDataId: r.msgDataId as string | undefined,
     resultLinks: buildResultLinks({
       upstream: r.resultLinks,
       platformLabel: 'WeChat backend / publish management',
@@ -447,9 +540,9 @@ export async function getPublishStatus(
   publishId: string,
   config?: WeChatConfig,
 ): Promise<WeChatPublishStatus> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wechat/getPublishStatus',
-    { publishId },
+  const r = await callPublishing<Record<string, unknown>>(
+    'getPublishJob',
+    { jobId: publishId },
     config,
   );
   const articles = Array.isArray(r.articles)
@@ -475,9 +568,9 @@ export async function getPublished(
   articleId: string,
   config?: WeChatConfig,
 ): Promise<WeChatPublishedItem> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wechat/getPublished',
-    { articleId },
+  const r = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { postId: articleId, state: 'published' },
     config,
   );
   const articles = Array.isArray(r.articles)
@@ -502,40 +595,31 @@ export async function deletePublished(
   index?: number,
   config?: WeChatConfig,
 ): Promise<{ ok: boolean; id: string }> {
-  const r = await postJson<{ ok?: boolean; id?: string }>(
-    '/wechat/deletePublished',
-    index !== undefined ? { articleId, index } : { articleId },
-    config,
-  );
-  return { ok: Boolean(r.ok), id: String(r.id ?? articleId) };
+  const payload: Record<string, unknown> = {
+    postId: articleId,
+    state: 'published',
+  };
+  if (typeof index === 'number') payload.articleIndex = index;
+
+  const r = await callPublishing<Record<string, unknown>>('deletePost', payload, config);
+  return { ok: Boolean(r.ok ?? true), id: String(r.id ?? articleId) };
 }
 
 // ---------------------------------------------------------------------------
-// Public API — Stats
+// Public API — Stats (mapped onto getInsights)
 // ---------------------------------------------------------------------------
-
-export interface WeChatArticleStatsItem {
-  refDate: string;
-  msgid: string;
-  title?: string;
-  intPageReadUser: number;
-  intPageReadCount: number;
-  oriPageReadUser: number;
-  oriPageReadCount: number;
-  shareUser: number;
-  shareCount: number;
-  addToFavUser: number;
-  addToFavCount: number;
-}
 
 export async function getArticleStats(
   beginDate: string,
   endDate: string,
   config?: WeChatConfig,
 ): Promise<WeChatArticleStatsItem[]> {
-  const r = await postJson<{ items?: WeChatArticleStatsItem[] }>(
-    '/wechat/getArticleStats',
-    { beginDate, endDate },
+  const r = await callPublishing<{ items?: WeChatArticleStatsItem[] }>(
+    'getInsights',
+    {
+      scope: 'post',
+      dateRange: { beginDate, endDate },
+    },
     config,
   );
   return r.items ?? [];
@@ -546,9 +630,12 @@ export async function getArticleSummary(
   endDate: string,
   config?: WeChatConfig,
 ): Promise<WeChatArticleStatsItem[]> {
-  const r = await postJson<{ items?: WeChatArticleStatsItem[] }>(
-    '/wechat/getArticleSummary',
-    { beginDate, endDate },
+  const r = await callPublishing<{ items?: WeChatArticleStatsItem[] }>(
+    'getInsights',
+    {
+      scope: 'summary',
+      dateRange: { beginDate, endDate },
+    },
     config,
   );
   return r.items ?? [];

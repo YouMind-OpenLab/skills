@@ -1,9 +1,8 @@
 /**
- * Dev.to API client via YouMind OpenAPI.
+ * Dev.to API client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's Dev.to token
- * is configured once inside YouMind, and the YouMind backend attaches it when
- * proxying Dev.to requests.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=devto 通过 discriminated union 区分。
+ * 响应统一是 { platform, data }，callPublishing helper 自动解出 data。
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -105,6 +104,16 @@ async function post<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：自动从 { platform, data } 解出 data
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: DevtoConfig,
+): Promise<T> {
+  const wrapped = await post<{ platform: string; data: T }>(`/publishing/${op}`, payload, config);
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -183,20 +192,33 @@ function normalizeArticle(article: Record<string, unknown>): DevtoArticle {
   };
 }
 
+// 把 CreateArticleOptions / UpdateArticleOptions 映射到 UnifiedPost
+function toUnifiedPost(options: Partial<CreateArticleOptions>): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.title !== undefined) post.title = options.title;
+  if (options.bodyMarkdown !== undefined) {
+    post.content = { format: 'markdown', body: options.bodyMarkdown };
+  }
+  if (options.description !== undefined) post.excerpt = options.description;
+  if (options.tags !== undefined) post.tags = options.tags;
+  if (options.canonicalUrl !== undefined) post.canonicalUrl = options.canonicalUrl;
+  if (options.coverImage !== undefined) post.coverImageUrl = options.coverImage;
+  if (options.published !== undefined) {
+    post.state = options.published ? 'published' : 'draft';
+  }
+  if (options.series !== undefined) post.extras = { series: options.series };
+  return post;
+}
+
 export async function createArticle(
   config: DevtoConfig,
   options: CreateArticleOptions,
 ): Promise<DevtoArticle> {
-  const article = await post<Record<string, unknown>>('/devto/createArticle', {
-    title: options.title,
-    bodyMarkdown: options.bodyMarkdown,
-    published: options.published ?? false,
-    tags: options.tags,
-    description: options.description,
-    canonicalUrl: options.canonicalUrl,
-    coverImage: options.coverImage,
-    series: options.series,
-  }, config);
+  const article = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'devto', post: toUnifiedPost(options) },
+    config,
+  );
 
   return normalizeArticle(article);
 }
@@ -206,10 +228,14 @@ export async function updateArticle(
   id: number,
   options: UpdateArticleOptions,
 ): Promise<DevtoArticle> {
-  const article = await post<Record<string, unknown>>('/devto/updateArticle', {
-    id,
-    ...options,
-  }, config);
+  const article = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    {
+      platform: 'devto',
+      post: { postId: String(id), ...toUnifiedPost(options) },
+    },
+    config,
+  );
 
   return normalizeArticle(article);
 }
@@ -218,7 +244,11 @@ export async function getArticle(
   config: DevtoConfig,
   id: number,
 ): Promise<DevtoArticle> {
-  const article = await post<Record<string, unknown>>('/devto/getArticle', { id }, config);
+  const article = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { platform: 'devto', postId: String(id) },
+    config,
+  );
   return normalizeArticle(article);
 }
 
@@ -227,13 +257,13 @@ export async function listMyArticles(
   page = 1,
   perPage = 30,
 ): Promise<DevtoArticle[]> {
-  const articles = await post<Record<string, unknown>[]>(
-    '/devto/listMyArticles',
-    { page, per_page: perPage },
+  const data = await callPublishing<unknown>(
+    'listPosts',
+    // paging 走 snake_case：后端 service 用 dto.per_page 读取，x-use-camel-case=true 不会改写 body
+    { platform: 'devto', filter: { state: 'all', paging: { page, per_page: perPage } } },
     config,
   );
-
-  return articles.map((article) => normalizeArticle(article));
+  return normalizeListResponse(data);
 }
 
 export async function listDraftArticles(
@@ -241,13 +271,12 @@ export async function listDraftArticles(
   page = 1,
   perPage = 30,
 ): Promise<DevtoArticle[]> {
-  const articles = await post<Record<string, unknown>[]>(
-    '/devto/listDrafts',
-    { page, per_page: perPage },
+  const data = await callPublishing<unknown>(
+    'listPosts',
+    { platform: 'devto', filter: { state: 'draft', paging: { page, per_page: perPage } } },
     config,
   );
-
-  return articles.map((article) => normalizeArticle(article));
+  return normalizeListResponse(data);
 }
 
 export async function listPublishedArticles(
@@ -255,20 +284,23 @@ export async function listPublishedArticles(
   page = 1,
   perPage = 30,
 ): Promise<DevtoArticle[]> {
-  const articles = await post<Record<string, unknown>[]>(
-    '/devto/listPublished',
-    { page, per_page: perPage },
+  const data = await callPublishing<unknown>(
+    'listPosts',
+    { platform: 'devto', filter: { state: 'published', paging: { page, per_page: perPage } } },
     config,
   );
-
-  return articles.map((article) => normalizeArticle(article));
+  return normalizeListResponse(data);
 }
 
 export async function publishArticle(
   config: DevtoConfig,
   id: number,
 ): Promise<DevtoArticle> {
-  const article = await post<Record<string, unknown>>('/devto/publishArticle', { id }, config);
+  const article = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { platform: 'devto', postId: String(id), toState: 'published' },
+    config,
+  );
   return normalizeArticle(article);
 }
 
@@ -276,6 +308,25 @@ export async function unpublishArticle(
   config: DevtoConfig,
   id: number,
 ): Promise<DevtoArticle> {
-  const article = await post<Record<string, unknown>>('/devto/unpublishArticle', { id }, config);
+  const article = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { platform: 'devto', postId: String(id), toState: 'draft' },
+    config,
+  );
   return normalizeArticle(article);
+}
+
+// listPosts 在不同 adapter 实现里有可能返裸数组或 { articles: [] } 包装；这里两种都兼容
+function normalizeListResponse(raw: unknown): DevtoArticle[] {
+  if (Array.isArray(raw)) {
+    return raw.map((a) => normalizeArticle(a as Record<string, unknown>));
+  }
+  if (raw && typeof raw === 'object') {
+    const obj = raw as Record<string, unknown>;
+    const list = (obj.articles ?? obj.items ?? obj.posts) as unknown[] | undefined;
+    if (Array.isArray(list)) {
+      return list.map((a) => normalizeArticle(a as Record<string, unknown>));
+    }
+  }
+  return [];
 }

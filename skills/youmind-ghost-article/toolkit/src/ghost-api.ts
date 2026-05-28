@@ -1,14 +1,16 @@
 /**
- * Ghost API client via YouMind OpenAPI.
+ * Ghost client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's Ghost
- * site URL and Ghost Admin API key are configured once inside YouMind, and
- * the YouMind backend attaches them when proxying Ghost requests.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=ghost 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data，并把 UnifiedPost / UnifiedMedia
+ * 映射回 toolkit 原本的 Ghost 类型形状（保持 cli/publisher 调用稳定）。
+ *
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/{op}    body: { platform: 'ghost', ...payload }
  */
 
-import { basename, dirname, extname, resolve } from 'node:path';
+import { basename, extname, resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 export interface GhostConfig {
@@ -74,6 +76,8 @@ export interface GhostConnectionResult {
   total?: number;
 }
 
+const PLATFORM = 'ghost' as const;
+
 interface OpenApiErrorDetail {
   connectUrl?: string;
   upgradeUrl?: string;
@@ -125,6 +129,20 @@ async function postJson<T = unknown>(
   }
 
   return response.json() as Promise<T>;
+}
+
+// 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: GhostConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    { platform: PLATFORM, ...payload },
+    config,
+  );
+  return wrapped.data;
 }
 
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
@@ -198,12 +216,46 @@ function normalizePost(post: Record<string, unknown>): GhostPost {
   };
 }
 
+// Ghost adapter 只接受 string 列表的 tag 名（toNative 内 post.tags 直传），所以这里把
+// {name}|{id} 全部展平成字符串名。
 function normalizeTagNames(tags?: Array<{ name: string } | { id: string }>): string[] | undefined {
   if (!tags?.length) return undefined;
   return tags
     .map((tag) => ('name' in tag ? tag.name : tag.id))
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+// CreatePostOptions → UnifiedPost-shaped payload（Ghost adapter 内 toNative
+// 会从 unified.state ∈ {draft, published} 映射到 native status）。
+function buildUnifiedPost(
+  options: Partial<CreatePostOptions> & { updated_at?: string },
+): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.title !== undefined) post.title = options.title;
+  if (options.html !== undefined) {
+    post.content = { format: 'html', body: options.html };
+  }
+  if (options.custom_excerpt !== undefined) post.excerpt = options.custom_excerpt;
+  if (options.status !== undefined) {
+    // Ghost adapter 只看 'draft' 与其他（非 draft 视为 published）；scheduled 也走 published 路径，
+    // 由 publishedAt 字段决定排程。
+    post.state = options.status === 'draft' ? 'draft' : 'published';
+  }
+  if (options.tags !== undefined) {
+    const names = normalizeTagNames(options.tags);
+    if (names) post.tags = names;
+  }
+  if (options.feature_image !== undefined) post.coverImageUrl = options.feature_image;
+  if (options.slug !== undefined) post.slug = options.slug;
+  if (options.published_at !== undefined) post.scheduledAt = options.published_at;
+  // Ghost-only 字段（featured / visibility / canonicalUrl / updated_at）下放到 extras 透传。
+  const extras: Record<string, unknown> = {};
+  if (options.featured !== undefined) extras.featured = options.featured;
+  if (options.visibility !== undefined) extras.visibility = options.visibility;
+  if (options.updated_at !== undefined) extras.updatedAt = options.updated_at;
+  if (Object.keys(extras).length > 0) post.extras = extras;
+  return post;
 }
 
 function detectMimeType(filename: string): string | undefined {
@@ -228,23 +280,11 @@ export async function createPost(
   config: GhostConfig,
   options: CreatePostOptions,
 ): Promise<GhostPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/ghost/createPost',
-    {
-      title: options.title,
-      html: options.html,
-      customExcerpt: options.custom_excerpt,
-      status: options.status ?? 'draft',
-      tags: normalizeTagNames(options.tags),
-      featureImage: options.feature_image,
-      featured: options.featured,
-      visibility: options.visibility,
-      slug: options.slug,
-      publishedAt: options.published_at,
-    },
+  const post = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { post: buildUnifiedPost(options) },
     config,
   );
-
   return normalizePost(post);
 }
 
@@ -253,39 +293,38 @@ export async function updatePost(
   postId: string,
   options: Partial<CreatePostOptions> & { updated_at?: string },
 ): Promise<GhostPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/ghost/updatePost',
-    {
-      id: postId,
-      title: options.title,
-      html: options.html,
-      customExcerpt: options.custom_excerpt,
-      status: options.status,
-      tags: normalizeTagNames(options.tags),
-      featureImage: options.feature_image,
-      featured: options.featured,
-      visibility: options.visibility,
-      slug: options.slug,
-      publishedAt: options.published_at,
-    },
+  const post = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    { post: { postId, ...buildUnifiedPost(options) } },
     config,
   );
-
   return normalizePost(post);
 }
 
 export async function getPost(config: GhostConfig, postId: string): Promise<GhostPost> {
-  const post = await postJson<Record<string, unknown>>('/ghost/getPost', { id: postId }, config);
+  const post = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { postId },
+    config,
+  );
   return normalizePost(post);
 }
 
 export async function publishPost(config: GhostConfig, postId: string): Promise<GhostPost> {
-  const post = await postJson<Record<string, unknown>>('/ghost/publishPost', { id: postId }, config);
+  const post = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { postId, toState: 'published' },
+    config,
+  );
   return normalizePost(post);
 }
 
 export async function unpublishPost(config: GhostConfig, postId: string): Promise<GhostPost> {
-  const post = await postJson<Record<string, unknown>>('/ghost/unpublishPost', { id: postId }, config);
+  const post = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { postId, toState: 'draft' },
+    config,
+  );
   return normalizePost(post);
 }
 
@@ -293,7 +332,15 @@ export async function deletePost(
   config: GhostConfig,
   postId: string,
 ): Promise<{ ok: boolean; id: string }> {
-  return postJson<{ ok: boolean; id: string }>('/ghost/deletePost', { id: postId }, config);
+  const r = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { postId },
+    config,
+  );
+  return {
+    ok: Boolean(r.ok ?? true),
+    id: String(r.id ?? r.postId ?? postId),
+  };
 }
 
 export async function listPosts(
@@ -302,15 +349,23 @@ export async function listPosts(
   limit = 15,
   status?: GhostPost['status'],
 ): Promise<{ posts: GhostPost[]; total: number }> {
-  const response = await postJson<{ posts?: Record<string, unknown>[]; total?: number }>(
-    '/ghost/listPosts',
-    { page, limit, status },
+  // Ghost adapter 接 paging 透传给 ghost-openapi.service.listPosts，原 dto 里只看 page/limit。
+  const state =
+    !status
+      ? 'all'
+      : status === 'sent'
+        ? 'all' // unified PostState 没有 'sent'，回退到全量；调用方很少用这个值
+        : status; // 'draft' / 'published' / 'scheduled'
+  const r = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    { filter: { state, paging: { page, limit } } },
     config,
   );
-
   return {
-    posts: (response.posts ?? []).map((entry) => normalizePost(entry)),
-    total: Number(response.total ?? 0),
+    posts: Array.isArray(r.posts)
+      ? r.posts.map((entry) => normalizePost(entry as Record<string, unknown>))
+      : [],
+    total: Number(r.total ?? 0),
   };
 }
 
@@ -338,24 +393,27 @@ export async function uploadImage(config: GhostConfig, filePath: string): Promis
 
   const filename = basename(resolvedPath);
   const content = readFileSync(resolvedPath);
-  const response = await postJson<Record<string, unknown>>(
-    '/ghost/uploadImage',
-    {
-      filename,
-      contentBase64: content.toString('base64'),
-      contentType: detectMimeType(filename),
-    },
+  const media: Record<string, unknown> = {
+    kind: 'image',
+    filename,
+    source: { base64: content.toString('base64') },
+  };
+  const contentType = detectMimeType(filename);
+  if (contentType) media.contentType = contentType;
+
+  const response = await callPublishing<Record<string, unknown>>(
+    'uploadMedia',
+    { media },
     config,
   );
-
   return {
-    url: String(response.url ?? ''),
+    url: String(response.url ?? response.sourceUrl ?? ''),
     ref: (response.ref as string | null | undefined) ?? null,
   };
 }
 
 export async function validateConnection(config: GhostConfig): Promise<GhostConnectionResult> {
-  const response = await postJson<Record<string, unknown>>('/ghost/validateConnection', {}, config);
+  const response = await callPublishing<Record<string, unknown>>('validateConnection', {}, config);
   return {
     ok: Boolean(response.ok),
     message: String(response.message ?? ''),

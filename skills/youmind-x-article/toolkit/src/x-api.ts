@@ -1,32 +1,18 @@
 /**
- * X (Twitter) client via YouMind OpenAPI.
+ * X (Twitter) client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's X account is
- * connected once inside YouMind (OAuth 2.0 PKCE), and the YouMind backend
- * attaches the X access token when proxying the tweet request.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=x 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data。
  *
- * Backend contract (apps/youapi):
- *   POST /openapi/v1/createXPost
- *   headers:   x-api-key, x-use-camel-case: true
- *   request:   {
- *     text: string (1-280),
- *     mediaUrls?: string[] (≤4, cdn.gooo.ai only),
- *     mediaIds?: string[] (≤4, upload local files first via uploadXMedia),
- *     replyToPostId?: string (numeric tweet ID; build threads by chaining)
- *   }
- *   response:  { postId: string, text: string, url: string }
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/createPost
+ *   body: { platform: 'x', post: { content: { format, body }, mediaUrls?, mediaIds?, replyToPostId? } }
  *
- *   POST /openapi/v1/uploadXMedia
- *   request:   {
- *     filename: string,
- *     contentBase64: string,
- *     contentType?: string
- *   }
- *   response:  { mediaId: string }
+ *   POST /openapi/v1/publishing/uploadMedia
+ *   body: { platform: 'x', media: { kind: 'image', filename, source: { base64 }, contentType? } }
  *
- * Threads are published as a native X reply chain by passing each previous
- * tweet's postId as the next tweet's replyToPostId. Quote-tweets and local
- * media upload are supported via uploadXMedia + mediaIds.
+ *   POST /openapi/v1/publishing/deletePost
+ *   body: { platform: 'x', postId }
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -123,6 +109,20 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: XConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    payload,
+    config,
+  );
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -174,45 +174,49 @@ export async function createXPost(
   config: XConfig,
   options: CreateXPostOptions,
 ): Promise<XPost> {
-  const body: Record<string, unknown> = { text: options.text };
-  if (options.mediaUrls?.length) {
-    body.mediaUrls = options.mediaUrls;
-  }
-  if (options.mediaIds?.length) {
-    body.mediaIds = options.mediaIds;
-  }
-  if (options.replyToPostId) {
-    body.replyToPostId = options.replyToPostId;
-  }
-  const raw = await postJson<Record<string, unknown>>('/createXPost', body, config);
-  return normalizePost(raw);
+  const post: Record<string, unknown> = {
+    content: { format: 'plain', body: options.text },
+  };
+  if (options.mediaUrls?.length) post.mediaUrls = options.mediaUrls;
+  if (options.mediaIds?.length) post.mediaIds = options.mediaIds;
+  if (options.replyToPostId) post.replyToPostId = options.replyToPostId;
+  const data = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'x', post },
+    config,
+  );
+  return normalizePost(data);
 }
 
 export async function uploadXMedia(
   config: XConfig,
   options: UploadXMediaOptions,
 ): Promise<UploadedXMedia> {
-  const raw = await postJson<Record<string, unknown>>(
-    '/uploadXMedia',
-    {
-      filename: options.filename,
-      contentBase64: options.contentBase64,
-      contentType: options.contentType,
-    },
+  const media: Record<string, unknown> = {
+    kind: 'image',
+    filename: options.filename,
+    source: { base64: options.contentBase64 },
+  };
+  if (options.contentType) media.contentType = options.contentType;
+  const data = await callPublishing<Record<string, unknown>>(
+    'uploadMedia',
+    { platform: 'x', media },
     config,
   );
-  return {
-    mediaId: String(raw.mediaId ?? raw.media_id ?? ''),
-  };
+  return { mediaId: String(data.mediaId ?? data.media_id ?? '') };
 }
 
 export async function deleteXPost(
   config: XConfig,
   postId: string,
 ): Promise<DeleteXPostResult> {
-  const raw = await postJson<Record<string, unknown>>('/deleteXPost', { postId }, config);
+  const data = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { platform: 'x', postId },
+    config,
+  );
   return {
-    ok: Boolean(raw.ok),
-    postId: String(raw.postId ?? raw.post_id ?? postId),
+    ok: Boolean(data.ok ?? true),
+    postId: String(data.postId ?? data.post_id ?? postId),
   };
 }

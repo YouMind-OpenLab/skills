@@ -1,3 +1,18 @@
+/**
+ * Tumblr client via YouMind OpenAPI (aggregated publishing endpoints).
+ *
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=tumblr 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data。
+ *
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/createPost      body: { platform:'tumblr', post: UnifiedPost }
+ *   POST /openapi/v1/publishing/deletePost      body: { platform:'tumblr', postId }
+ *   POST /openapi/v1/publishing/listPosts       body: { platform:'tumblr', filter: { state, blogIdentifier, paging } }
+ *   POST /openapi/v1/publishing/listEngagement  body: { platform:'tumblr', filter: { postId, kind } }
+ *   POST /openapi/v1/publishing/listSocial      body: { platform:'tumblr', kind: 'follower'|'activity' }
+ *   POST /openapi/v1/publishing/manageQueue     body: { platform:'tumblr', action: 'reorder'|'shuffle', postId?, afterPostId? }
+ *   POST /openapi/v1/publishing/getInsights     body: { platform:'tumblr', scope: 'account' }
+ */
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 export interface TumblrConfig {
@@ -253,6 +268,20 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: TumblrConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    payload,
+    config,
+  );
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -279,6 +308,18 @@ function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string
   }
 
   return parts.join(' | ') || rawText.slice(0, 300);
+}
+
+// Tumblr 旧 state ('queue') → 统一 PostState ('queued')，其余原样下放
+function toUnifiedPostState(state?: TumblrPostState): string | undefined {
+  if (!state) return undefined;
+  return state === 'queue' ? 'queued' : state;
+}
+
+// listPosts 的 state 多了 'submission'；保持透传，后端不识别会自然 422
+function toUnifiedListState(state?: TumblrListState): string | undefined {
+  if (!state) return undefined;
+  return state === 'queue' ? 'queued' : state;
 }
 
 function normalizePost(raw: Record<string, unknown>): TumblrPost {
@@ -444,189 +485,151 @@ export async function createTumblrPost(
   config: TumblrConfig,
   options: CreateTumblrPostOptions,
 ): Promise<TumblrPost> {
-  const body: Record<string, unknown> = {
+  // Article 内容是 HTML 富文本（content-adapter 输出），后端 adapter 直接下放给 Tumblr API
+  const post: Record<string, unknown> = {
+    postType: 'text',
     title: options.title,
-    content: options.content,
+    content: { format: 'html', body: options.content },
   };
+  if (options.tags?.length) post.tags = options.tags;
+  if (options.coverImageUrl) post.coverImageUrl = options.coverImageUrl;
+  if (options.blogIdentifier) post.blogIdentifier = options.blogIdentifier;
+  const state = toUnifiedPostState(options.state);
+  if (state) post.state = state;
+  if (options.publishOn) post.publishOn = options.publishOn;
+  if (options.date) post.scheduledAt = options.date;
+  if (options.slug) post.slug = options.slug;
 
-  if (options.tags?.length) {
-    body.tags = options.tags;
-  }
-  if (options.coverImageUrl) {
-    body.coverImageUrl = options.coverImageUrl;
-  }
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
-  if (options.state) {
-    body.state = options.state;
-  }
-  if (options.publishOn) {
-    body.publishOn = options.publishOn;
-  }
-  if (options.date) {
-    body.date = options.date;
-  }
-  if (options.slug) {
-    body.slug = options.slug;
-  }
-
-  const raw = await postJson<Record<string, unknown>>('/createTumblrPost', body, config);
-  return normalizePost(raw);
+  const data = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'tumblr', post },
+    config,
+  );
+  return normalizePost(data);
 }
 
 export async function createTumblrPhotoPost(
   config: TumblrConfig,
   options: CreateTumblrPhotoPostOptions,
 ): Promise<TumblrPhotoPost> {
-  const body: Record<string, unknown> = {
-    sourceUrl: options.sourceUrl,
+  const post: Record<string, unknown> = {
+    postType: 'photo',
+    mediaUrls: [options.sourceUrl],
   };
+  if (options.caption) post.content = { format: 'html', body: options.caption };
+  if (options.link) post.canonicalUrl = options.link;
+  if (options.tags?.length) post.tags = options.tags;
+  if (options.blogIdentifier) post.blogIdentifier = options.blogIdentifier;
+  const state = toUnifiedPostState(options.state);
+  if (state) post.state = state;
+  if (options.publishOn) post.publishOn = options.publishOn;
+  if (options.date) post.scheduledAt = options.date;
+  if (options.slug) post.slug = options.slug;
 
-  if (options.caption) {
-    body.caption = options.caption;
-  }
-  if (options.link) {
-    body.link = options.link;
-  }
-  if (options.tags?.length) {
-    body.tags = options.tags;
-  }
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
-  if (options.state) {
-    body.state = options.state;
-  }
-  if (options.publishOn) {
-    body.publishOn = options.publishOn;
-  }
-  if (options.date) {
-    body.date = options.date;
-  }
-  if (options.slug) {
-    body.slug = options.slug;
-  }
-
-  const raw = await postJson<Record<string, unknown>>('/createTumblrPhotoPost', body, config);
-  return normalizePhotoPost(raw);
+  const data = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'tumblr', post },
+    config,
+  );
+  return normalizePhotoPost(data);
 }
 
 export async function listTumblrPosts(
   config: TumblrConfig,
   options: ListTumblrPostsOptions = {},
 ): Promise<TumblrPostList> {
-  const body: Record<string, unknown> = {};
-  if (options.state) {
-    body.state = options.state;
-  }
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
-  if (typeof options.limit === 'number') {
-    body.limit = options.limit;
-  }
-  if (typeof options.offset === 'number') {
-    body.offset = options.offset;
-  }
-  if (typeof options.notesInfo === 'boolean') {
-    body.notesInfo = options.notesInfo;
-  }
+  const filter: Record<string, unknown> = {};
+  const state = toUnifiedListState(options.state);
+  if (state) filter.state = state;
+  if (options.blogIdentifier) filter.blogIdentifier = options.blogIdentifier;
 
-  const raw = await postJson<Record<string, unknown>>('/listTumblrPosts', body, config);
-  return normalizePostList(raw);
+  const paging: Record<string, unknown> = {};
+  if (typeof options.limit === 'number') paging.limit = options.limit;
+  if (typeof options.offset === 'number') paging.offset = options.offset;
+  if (Object.keys(paging).length > 0) filter.paging = paging;
+
+  // notesInfo 通过 filter.paging 透传——adapter 会 spread 进 svc dto
+  if (typeof options.notesInfo === 'boolean') paging.notesInfo = options.notesInfo;
+
+  const payload: Record<string, unknown> = { platform: 'tumblr' };
+  if (Object.keys(filter).length > 0) payload.filter = filter;
+
+  const data = await callPublishing<Record<string, unknown>>('listPosts', payload, config);
+  return normalizePostList(data);
 }
 
 export async function listTumblrNotes(
   config: TumblrConfig,
   options: ListTumblrNotesOptions,
 ): Promise<TumblrNoteList> {
-  const body: Record<string, unknown> = {
-    postId: options.postId,
-  };
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
-  if (options.mode) {
-    body.mode = options.mode;
-  }
-  if (typeof options.beforeTimestamp === 'number') {
-    body.beforeTimestamp = options.beforeTimestamp;
-  }
+  const filter: Record<string, unknown> = { postId: options.postId };
+  if (options.mode) filter.kind = options.mode;
+  if (options.blogIdentifier) filter.blogIdentifier = options.blogIdentifier;
+  if (options.beforeTimestamp) filter.beforeTimestamp = options.beforeTimestamp;
 
-  const raw = await postJson<Record<string, unknown>>('/listTumblrNotes', body, config);
-  return normalizeNotes(raw);
+  const data = await callPublishing<Record<string, unknown>>(
+    'listEngagement',
+    { platform: 'tumblr', filter },
+    config,
+  );
+  return normalizeNotes(data);
 }
 
 export async function listTumblrNotifications(
   config: TumblrConfig,
   options: ListTumblrNotificationsOptions = {},
 ): Promise<TumblrNotificationList> {
-  const body: Record<string, unknown> = {};
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
-  if (typeof options.before === 'number') {
-    body.before = options.before;
-  }
-  if (options.types?.length) {
-    body.types = options.types;
-  }
-  if (typeof options.rollups === 'boolean') {
-    body.rollups = options.rollups;
-  }
-  if (options.omitPostIds?.length) {
-    body.omitPostIds = options.omitPostIds;
-  }
+  const payload: Record<string, unknown> = { platform: 'tumblr', kind: 'activity' };
+  if (options.blogIdentifier) payload.blogIdentifier = options.blogIdentifier;
+  if (options.before) payload.before = options.before;
+  if (options.types) payload.types = options.types;
+  if (typeof options.rollups === 'boolean') payload.rollups = options.rollups;
+  if (options.omitPostIds) payload.omitPostIds = options.omitPostIds;
 
-  const raw = await postJson<Record<string, unknown>>('/listTumblrNotifications', body, config);
-  return normalizeNotifications(raw);
+  const data = await callPublishing<Record<string, unknown>>('listSocial', payload, config);
+  return normalizeNotifications(data);
 }
 
 export async function listTumblrFollowers(
   config: TumblrConfig,
   options: ListTumblrFollowersOptions = {},
 ): Promise<TumblrFollowerList> {
-  const body: Record<string, unknown> = {};
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
-  if (typeof options.limit === 'number') {
-    body.limit = options.limit;
-  }
-  if (typeof options.offset === 'number') {
-    body.offset = options.offset;
-  }
+  const payload: Record<string, unknown> = { platform: 'tumblr', kind: 'follower' };
+  if (options.blogIdentifier) payload.blogIdentifier = options.blogIdentifier;
+  if (typeof options.limit === 'number') payload.limit = options.limit;
+  if (typeof options.offset === 'number') payload.offset = options.offset;
 
-  const raw = await postJson<Record<string, unknown>>('/listTumblrFollowers', body, config);
-  return normalizeFollowers(raw);
+  const data = await callPublishing<Record<string, unknown>>('listSocial', payload, config);
+  return normalizeFollowers(data);
 }
 
 export async function getTumblrLimits(config: TumblrConfig): Promise<TumblrLimits> {
-  const raw = await postJson<Record<string, unknown>>('/getTumblrLimits', {}, config);
-  return normalizeLimits(raw);
+  const data = await callPublishing<Record<string, unknown>>(
+    'getInsights',
+    { platform: 'tumblr', scope: 'account' },
+    config,
+  );
+  return normalizeLimits(data);
 }
 
 export async function reorderTumblrQueue(
   config: TumblrConfig,
   options: ReorderTumblrQueueOptions,
 ): Promise<ReorderTumblrQueueResult> {
-  const body: Record<string, unknown> = {
+  const payload: Record<string, unknown> = {
+    platform: 'tumblr',
+    action: 'reorder',
     postId: options.postId,
   };
-  if (options.insertAfter) {
-    body.insertAfter = options.insertAfter;
-  }
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
+  if (options.insertAfter) payload.afterPostId = options.insertAfter;
+  if (options.blogIdentifier) payload.blogIdentifier = options.blogIdentifier;
 
-  const raw = await postJson<Record<string, unknown>>('/reorderTumblrQueue', body, config);
+  const data = await callPublishing<Record<string, unknown>>('manageQueue', payload, config);
   return {
-    ok: Boolean(raw.ok),
-    blogIdentifier: String(raw.blogIdentifier ?? raw.blog_identifier ?? ''),
-    postId: String(raw.postId ?? raw.post_id ?? ''),
-    insertAfter: String(raw.insertAfter ?? raw.insert_after ?? '0'),
+    ok: Boolean(data.ok ?? true),
+    blogIdentifier: String(data.blogIdentifier ?? data.blog_identifier ?? ''),
+    postId: String(data.postId ?? data.post_id ?? options.postId),
+    insertAfter: String(data.insertAfter ?? data.after_post_id ?? options.insertAfter ?? '0'),
   };
 }
 
@@ -634,15 +637,13 @@ export async function shuffleTumblrQueue(
   config: TumblrConfig,
   options: ShuffleTumblrQueueOptions = {},
 ): Promise<ShuffleTumblrQueueResult> {
-  const body: Record<string, unknown> = {};
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
+  const payload: Record<string, unknown> = { platform: 'tumblr', action: 'shuffle' };
+  if (options.blogIdentifier) payload.blogIdentifier = options.blogIdentifier;
 
-  const raw = await postJson<Record<string, unknown>>('/shuffleTumblrQueue', body, config);
+  const data = await callPublishing<Record<string, unknown>>('manageQueue', payload, config);
   return {
-    ok: Boolean(raw.ok),
-    blogIdentifier: String(raw.blogIdentifier ?? raw.blog_identifier ?? ''),
+    ok: Boolean(data.ok ?? true),
+    blogIdentifier: String(data.blogIdentifier ?? data.blog_identifier ?? ''),
   };
 }
 
@@ -650,17 +651,13 @@ export async function deleteTumblrPost(
   config: TumblrConfig,
   options: DeleteTumblrPostOptions,
 ): Promise<DeleteTumblrPostResult> {
-  const body: Record<string, unknown> = {
-    postId: options.postId,
-  };
-  if (options.blogIdentifier) {
-    body.blogIdentifier = options.blogIdentifier;
-  }
+  const payload: Record<string, unknown> = { platform: 'tumblr', postId: options.postId };
+  if (options.blogIdentifier) payload.blogIdentifier = options.blogIdentifier;
 
-  const raw = await postJson<Record<string, unknown>>('/deleteTumblrPost', body, config);
+  const data = await callPublishing<Record<string, unknown>>('deletePost', payload, config);
   return {
-    ok: Boolean(raw.ok),
-    postId: String(raw.postId ?? raw.post_id ?? ''),
-    blogIdentifier: String(raw.blogIdentifier ?? raw.blog_identifier ?? ''),
+    ok: Boolean(data.ok ?? true),
+    postId: String(data.postId ?? data.post_id ?? options.postId),
+    blogIdentifier: String(data.blogIdentifier ?? data.blog_identifier ?? ''),
   };
 }

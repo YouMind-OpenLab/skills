@@ -1,18 +1,11 @@
 /**
- * Qiita API client via YouMind OpenAPI.
+ * Qiita API client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's Qiita
- * personal access token is configured once inside YouMind, and the YouMind
- * backend attaches it when proxying Qiita requests.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=qiita 通过 discriminated union 区分。
+ * 响应统一是 { platform, data }，callPublishing helper 自动解出 data。
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
-
-// ---------------------------------------------------------------------------
-// Public types — stable contract. Field names match what YouMind returns
-// (camelCase), not Qiita's raw REST shape (snake_case). YouMind normalizes
-// the upstream response server-side.
-// ---------------------------------------------------------------------------
 
 export interface QiitaConfig {
   apiKey: string;
@@ -85,10 +78,6 @@ export interface DeleteItemResult {
   id: string;
 }
 
-// ---------------------------------------------------------------------------
-// Config loading — canonical ~/.youmind config paths.
-// ---------------------------------------------------------------------------
-
 const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
 
 interface OpenApiErrorDetail {
@@ -121,10 +110,6 @@ export function loadQiitaConfig(): QiitaConfig {
     baseUrl: normalizeBaseUrl(baseUrl) || DEFAULT_YOUMIND_OPENAPI_BASE_URL,
   };
 }
-
-// ---------------------------------------------------------------------------
-// HTTP transport
-// ---------------------------------------------------------------------------
 
 async function postJson<T = unknown>(
   endpoint: string,
@@ -159,6 +144,16 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：自动从 { platform, data } 解出 data
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: QiitaConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(`/publishing/${op}`, payload, config);
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -191,10 +186,6 @@ function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string
 
   return parts.join(' | ') || rawText.slice(0, 300);
 }
-
-// ---------------------------------------------------------------------------
-// Normalization
-// ---------------------------------------------------------------------------
 
 function normalizeTag(tag: Record<string, unknown>): QiitaTag {
   return {
@@ -235,25 +226,35 @@ function normalizeItem(item: Record<string, unknown>): QiitaItem {
   };
 }
 
-function buildItemPayload(options: UpdateItemOptions): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
-  if (options.title !== undefined) payload.title = options.title;
-  if (options.body !== undefined) payload.body = options.body;
-  if (options.tags !== undefined) payload.tags = options.tags;
-  if (options.private !== undefined) payload.private = options.private;
-  if (options.tweet !== undefined) payload.tweet = options.tweet;
-  if (options.slide !== undefined) payload.slide = options.slide;
-  return payload;
+// 把 Qiita 复合 tag 形状 (Array<string | QiitaTagInput>) 拍平到 string[]
+function flattenTagNames(tags: Array<string | QiitaTagInput> | undefined): string[] | undefined {
+  if (!tags) return undefined;
+  return tags.map((t) => (typeof t === 'string' ? t : t.name)).filter(Boolean);
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
+// 把 CreateItemOptions / UpdateItemOptions 映射到 UnifiedPost
+function toUnifiedPost(options: Partial<CreateItemOptions>): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.title !== undefined) post.title = options.title;
+  if (options.body !== undefined) {
+    post.content = { format: 'markdown', body: options.body };
+  }
+  const tagNames = flattenTagNames(options.tags);
+  if (tagNames) post.tags = tagNames;
+  if (options.private !== undefined) {
+    post.state = options.private ? 'private' : 'published';
+  }
+  const extras: Record<string, unknown> = {};
+  if (options.tweet !== undefined) extras.tweet = options.tweet;
+  if (options.slide !== undefined) extras.slide = options.slide;
+  if (Object.keys(extras).length > 0) post.extras = extras;
+  return post;
+}
 
 export async function validateConnection(config?: QiitaConfig): Promise<QiitaConnectionResult> {
-  const response = await postJson<Record<string, unknown>>(
-    '/qiita/validateConnection',
-    {},
+  const response = await callPublishing<Record<string, unknown>>(
+    'validateConnection',
+    { platform: 'qiita' },
     config,
   );
   return {
@@ -277,9 +278,9 @@ export async function createItem(
   config: QiitaConfig | undefined,
   options: CreateItemOptions,
 ): Promise<QiitaItem> {
-  const item = await postJson<Record<string, unknown>>(
-    '/qiita/createItem',
-    buildItemPayload(options),
+  const item = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'qiita', post: toUnifiedPost(options) },
     config,
   );
   return normalizeItem(item);
@@ -290,9 +291,12 @@ export async function updateItem(
   itemId: string,
   options: UpdateItemOptions,
 ): Promise<QiitaItem> {
-  const item = await postJson<Record<string, unknown>>(
-    '/qiita/updateItem',
-    { id: itemId, ...buildItemPayload(options) },
+  const item = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    {
+      platform: 'qiita',
+      post: { postId: itemId, ...toUnifiedPost(options) },
+    },
     config,
   );
   return normalizeItem(item);
@@ -302,7 +306,11 @@ export async function getItem(
   config: QiitaConfig | undefined,
   itemId: string,
 ): Promise<QiitaItem> {
-  const item = await postJson<Record<string, unknown>>('/qiita/getItem', { id: itemId }, config);
+  const item = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { platform: 'qiita', postId: itemId },
+    config,
+  );
   return normalizeItem(item);
 }
 
@@ -310,13 +318,13 @@ export async function deleteItem(
   config: QiitaConfig | undefined,
   itemId: string,
 ): Promise<DeleteItemResult> {
-  const response = await postJson<Record<string, unknown>>(
-    '/qiita/deleteItem',
-    { id: itemId },
+  const response = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { platform: 'qiita', postId: itemId },
     config,
   );
   return {
-    ok: Boolean(response.ok),
+    ok: Boolean(response.ok ?? true),
     id: String(response.id ?? itemId),
   };
 }
@@ -326,9 +334,13 @@ export async function listMyItems(
   page = 1,
   perPage = 20,
 ): Promise<QiitaItemListResponse> {
-  const response = await postJson<Record<string, unknown>>(
-    '/qiita/listMyItems',
-    { page, per_page: perPage },
+  const response = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    {
+      platform: 'qiita',
+      // paging 走 snake_case：后端 service 用 dto.per_page 读取，x-use-camel-case=true 不会改写 body
+      filter: { paging: { page, per_page: perPage } },
+    },
     config,
   );
   return {

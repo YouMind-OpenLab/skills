@@ -1,15 +1,16 @@
 /**
- * WordPress API client via YouMind OpenAPI.
+ * WordPress client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's WordPress
- * site URL, username, and Application Password are configured once inside
- * YouMind, and the YouMind backend attaches them when proxying WP requests.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=wordpress 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data，并把 UnifiedPost / UnifiedTaxonomy /
+ * UnifiedEngagement 映射回 toolkit 原本的 WP 类型形状（保持 cli/publisher 调用稳定）。
+ *
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/{op}    body: { platform: 'wordpress', ...payload }
  */
 
-import { dirname, resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { parse as parseYaml } from 'yaml';
+import { resolve } from 'node:path';
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
 
 // ---------------------------------------------------------------------------
@@ -199,6 +200,7 @@ export interface UpdateCommentInput {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_YOUMIND_OPENAPI_BASE_URL = 'https://youmind.com/openapi/v1';
+const PLATFORM = 'wordpress' as const;
 
 interface OpenApiErrorDetail {
   connectUrl?: string;
@@ -269,6 +271,20 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: WordPressConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    { platform: PLATFORM, ...payload },
+    config,
+  );
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -291,8 +307,44 @@ function formatOpenApiError(parsed: OpenApiErrorResponse | null, rawText: string
 }
 
 // ---------------------------------------------------------------------------
-// Normalization
+// Unified ↔ WP shape mapping
 // ---------------------------------------------------------------------------
+
+// WP 原生 status → toolkit 暴露的旧字符串；服务端把 PostState 映射回 WP native，
+// 所以这里只做兜底（直接返回值通常已经是 'publish'/'draft'/...）。
+function toWPStatus(raw: unknown): WPPostStatus {
+  const s = String(raw ?? 'draft');
+  // unified enum 名 → WP native（adapter 已经会用 toWordPressStatus 转回 native，
+  // 但万一上游直接回了 unified state 也兜住）
+  switch (s) {
+    case 'published':
+      return 'publish';
+    case 'scheduled':
+      return 'future';
+    case 'trashed':
+      return 'trash' as WPPostStatus;
+    default:
+      return s as WPPostStatus;
+  }
+}
+
+// toolkit 调用方传入的 WP status → PostState enum 值
+function wpStatusToPostState(s: WPPostStatus | undefined): string | undefined {
+  if (!s) return undefined;
+  switch (s) {
+    case 'publish':
+      return 'published';
+    case 'future':
+      return 'scheduled';
+    case 'private':
+      return 'private';
+    case 'pending':
+    case 'draft':
+      return 'draft';
+    default:
+      return undefined;
+  }
+}
 
 function normalizePost(post: Record<string, unknown>): WPPost {
   return {
@@ -300,15 +352,19 @@ function normalizePost(post: Record<string, unknown>): WPPost {
     title: String(post.title ?? ''),
     content: String(post.content ?? ''),
     excerpt: (post.excerpt as string | undefined) ?? undefined,
-    status: (post.status as WPPostStatus) ?? 'draft',
+    status: toWPStatus(post.status),
     slug: String(post.slug ?? ''),
     link: String(post.link ?? ''),
     author: Number(post.author ?? 0),
     featuredMedia: Number(post.featuredMedia ?? 0),
     categories: Array.isArray(post.categories)
-      ? post.categories.filter((n): n is number => typeof n === 'number')
+      ? post.categories
+          .map((n) => Number(n))
+          .filter((n) => Number.isFinite(n))
       : [],
-    tags: Array.isArray(post.tags) ? post.tags.filter((n): n is number => typeof n === 'number') : [],
+    tags: Array.isArray(post.tags)
+      ? post.tags.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+      : [],
     date: String(post.date ?? ''),
     modified: String(post.modified ?? ''),
     format: typeof post.format === 'string' ? post.format : undefined,
@@ -351,19 +407,44 @@ function normalizeTag(t: Record<string, unknown>): WPTag {
   };
 }
 
-function buildPostPayload(options: UpdatePostOptions): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
-  if (options.title !== undefined) payload.title = options.title;
-  if (options.content !== undefined) payload.content = options.content;
-  if (options.excerpt !== undefined) payload.excerpt = options.excerpt;
-  if (options.status !== undefined) payload.status = options.status;
-  if (options.tags !== undefined) payload.tags = options.tags;
-  if (options.categories !== undefined) payload.categories = options.categories;
-  if (options.featuredMedia !== undefined) payload.featuredMedia = options.featuredMedia;
-  if (options.slug !== undefined) payload.slug = options.slug;
-  if (options.date !== undefined) payload.date = options.date;
-  if (options.format !== undefined) payload.format = options.format;
-  return payload;
+function normalizeComment(c: Record<string, unknown>): WPComment {
+  return {
+    id: Number(c.id ?? 0),
+    post: Number(c.post ?? 0),
+    parent: Number(c.parent ?? 0),
+    author: Number(c.author ?? 0),
+    authorName: String(c.authorName ?? ''),
+    authorEmail: (c.authorEmail as string | undefined) ?? undefined,
+    authorUrl: (c.authorUrl as string | undefined) ?? undefined,
+    content: String(c.content ?? ''),
+    status: String(c.status ?? ''),
+    date: String(c.date ?? ''),
+    link: String(c.link ?? ''),
+  };
+}
+
+// CreatePostOptions / UpdatePostOptions → UnifiedPost-shaped payload
+function buildUnifiedPost(options: UpdatePostOptions): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.title !== undefined) post.title = options.title;
+  if (options.content !== undefined) {
+    post.content = { format: 'html', body: options.content };
+  }
+  if (options.excerpt !== undefined) post.excerpt = options.excerpt;
+  const state = wpStatusToPostState(options.status);
+  if (state !== undefined) post.state = state;
+  if (options.tags !== undefined) post.tags = options.tags;
+  if (options.categories !== undefined) post.categories = options.categories;
+  if (options.featuredMedia !== undefined) {
+    // featuredMedia 是 WP native 字段，下放到 extras 让 adapter 透传给 WP API
+    post.extras = { ...(post.extras as Record<string, unknown> | undefined), featuredMedia: options.featuredMedia };
+  }
+  if (options.slug !== undefined) post.slug = options.slug;
+  if (options.date !== undefined) post.scheduledAt = options.date;
+  if (options.format !== undefined) {
+    post.extras = { ...(post.extras as Record<string, unknown> | undefined), format: options.format };
+  }
+  return post;
 }
 
 // ---------------------------------------------------------------------------
@@ -371,7 +452,7 @@ function buildPostPayload(options: UpdatePostOptions): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 export async function validateConnection(config?: WordPressConfig): Promise<WPConnectionResult> {
-  const r = await postJson<Record<string, unknown>>('/wordpress/validateConnection', {}, config);
+  const r = await callPublishing<Record<string, unknown>>('validateConnection', {}, config);
   return {
     ok: Boolean(r.ok),
     message: String(r.message ?? ''),
@@ -386,9 +467,9 @@ export async function createPost(
   config: WordPressConfig | undefined,
   options: CreatePostOptions,
 ): Promise<WPPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/wordpress/createPost',
-    buildPostPayload(options),
+  const post = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { post: buildUnifiedPost(options) },
     config,
   );
   return normalizePost(post);
@@ -399,9 +480,9 @@ export async function updatePost(
   postId: number,
   options: UpdatePostOptions,
 ): Promise<WPPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/wordpress/updatePost',
-    { id: postId, ...buildPostPayload(options) },
+  const post = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    { post: { postId: String(postId), ...buildUnifiedPost(options) } },
     config,
   );
   return normalizePost(post);
@@ -412,9 +493,9 @@ export async function getPost(
   postId: number,
   context: WPViewContext = 'view',
 ): Promise<WPPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/wordpress/getPost',
-    { id: postId, context },
+  const post = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { postId: String(postId), context },
     config,
   );
   return normalizePost(post);
@@ -425,15 +506,15 @@ export async function deletePost(
   postId: number,
   force = false,
 ): Promise<WPDeleteResult> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/deletePost',
-    { id: postId, force },
+  const r = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { postId: String(postId), force },
     config,
   );
   return {
-    ok: Boolean(r.ok),
-    id: Number(r.id ?? postId),
-    deletedPermanently: Boolean(r.deletedPermanently),
+    ok: Boolean(r.ok ?? true),
+    id: Number(r.id ?? r.postId ?? postId),
+    deletedPermanently: Boolean(r.deletedPermanently ?? true),
   };
 }
 
@@ -441,9 +522,9 @@ export async function publishPost(
   config: WordPressConfig | undefined,
   postId: number,
 ): Promise<WPPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/wordpress/publishPost',
-    { id: postId },
+  const post = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { postId: String(postId), toState: 'published' },
     config,
   );
   return normalizePost(post);
@@ -453,9 +534,9 @@ export async function unpublishPost(
   config: WordPressConfig | undefined,
   postId: number,
 ): Promise<WPPost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/wordpress/unpublishPost',
-    { id: postId },
+  const post = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { postId: String(postId), toState: 'draft' },
     config,
   );
   return normalizePost(post);
@@ -467,13 +548,23 @@ export async function listPosts(
   perPage = 15,
   status?: WPListStatus,
 ): Promise<WPPostListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/listPosts',
-    { page, perPage, ...(status ? { status } : {}) },
+  const state =
+    !status || status === 'any'
+      ? 'all'
+      : status === 'publish'
+        ? 'published'
+        : status === 'future'
+          ? 'scheduled'
+          : status; // 'draft' / 'pending' / 'private' 直接透传
+  const r = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    { filter: { state, paging: { page, perPage } } },
     config,
   );
   return {
-    posts: Array.isArray(r.posts) ? r.posts.map((p) => normalizePost(p as Record<string, unknown>)) : [],
+    posts: Array.isArray(r.posts)
+      ? r.posts.map((p) => normalizePost(p as Record<string, unknown>))
+      : [],
     total: Number(r.total ?? 0),
     totalPages: Number(r.totalPages ?? 0),
     page: Number(r.page ?? page),
@@ -486,18 +577,7 @@ export async function listDraftPosts(
   page = 1,
   perPage = 15,
 ): Promise<WPPostListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/listDrafts',
-    { page, perPage },
-    config,
-  );
-  return {
-    posts: Array.isArray(r.posts) ? r.posts.map((p) => normalizePost(p as Record<string, unknown>)) : [],
-    total: Number(r.total ?? 0),
-    totalPages: Number(r.totalPages ?? 0),
-    page: Number(r.page ?? page),
-    perPage: Number(r.perPage ?? perPage),
-  };
+  return listPosts(config, page, perPage, 'draft');
 }
 
 export async function listPublishedPosts(
@@ -505,18 +585,7 @@ export async function listPublishedPosts(
   page = 1,
   perPage = 15,
 ): Promise<WPPostListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/listPublished',
-    { page, perPage },
-    config,
-  );
-  return {
-    posts: Array.isArray(r.posts) ? r.posts.map((p) => normalizePost(p as Record<string, unknown>)) : [],
-    total: Number(r.total ?? 0),
-    totalPages: Number(r.totalPages ?? 0),
-    page: Number(r.page ?? page),
-    perPage: Number(r.perPage ?? perPage),
-  };
+  return listPosts(config, page, perPage, 'publish');
 }
 
 // ---------------------------------------------------------------------------
@@ -534,18 +603,21 @@ export async function uploadMedia(
   const filename = input.filename || filePath.split('/').pop() || 'upload.bin';
   const contentBase64 = readFileSync(filePath).toString('base64');
 
-  const media = await postJson<Record<string, unknown>>(
-    '/wordpress/uploadMedia',
-    {
-      filename,
-      contentBase64,
-      ...(input.contentType ? { contentType: input.contentType } : {}),
-      ...(input.altText !== undefined ? { altText: input.altText } : {}),
-      ...(input.caption !== undefined ? { caption: input.caption } : {}),
-    },
+  const media: Record<string, unknown> = {
+    kind: 'image',
+    filename,
+    source: { base64: contentBase64 },
+  };
+  if (input.contentType) media.contentType = input.contentType;
+  // altText / caption 是 WP-only 字段，UnifiedMedia 没暴露——adapter 也没读，
+  // 所以这里就不再下发了（旧 OpenAPI 才直接接收）。
+
+  const result = await callPublishing<Record<string, unknown>>(
+    'uploadMedia',
+    { media },
     config,
   );
-  return normalizeMedia(media);
+  return normalizeMedia(result);
 }
 
 // ---------------------------------------------------------------------------
@@ -558,9 +630,14 @@ export async function listCategories(
   perPage = 50,
   search?: string,
 ): Promise<WPCategoryListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/listCategories',
-    { page, perPage, ...(search ? { search } : {}) },
+  const filter: Record<string, unknown> = {
+    kind: 'category',
+    paging: { page, perPage },
+  };
+  if (search) filter.query = search;
+  const r = await callPublishing<Record<string, unknown>>(
+    'listTaxonomy',
+    { filter },
     config,
   );
   return {
@@ -572,19 +649,26 @@ export async function listCategories(
   };
 }
 
-function normalizeComment(c: Record<string, unknown>): WPComment {
+export async function listTags(
+  config: WordPressConfig | undefined,
+  page = 1,
+  perPage = 50,
+  search?: string,
+): Promise<WPTagListResponse> {
+  const filter: Record<string, unknown> = {
+    kind: 'tag',
+    paging: { page, perPage },
+  };
+  if (search) filter.query = search;
+  const r = await callPublishing<Record<string, unknown>>(
+    'listTaxonomy',
+    { filter },
+    config,
+  );
   return {
-    id: Number(c.id ?? 0),
-    post: Number(c.post ?? 0),
-    parent: Number(c.parent ?? 0),
-    author: Number(c.author ?? 0),
-    authorName: String(c.authorName ?? ''),
-    authorEmail: (c.authorEmail as string | undefined) ?? undefined,
-    authorUrl: (c.authorUrl as string | undefined) ?? undefined,
-    content: String(c.content ?? ''),
-    status: String(c.status ?? ''),
-    date: String(c.date ?? ''),
-    link: String(c.link ?? ''),
+    tags: Array.isArray(r.tags) ? r.tags.map((t) => normalizeTag(t as Record<string, unknown>)) : [],
+    total: Number(r.total ?? 0),
+    totalPages: Number(r.totalPages ?? 0),
   };
 }
 
@@ -596,7 +680,15 @@ export async function createCategory(
   config: WordPressConfig | undefined,
   input: CreateCategoryInput,
 ): Promise<WPCategory> {
-  const cat = await postJson<Record<string, unknown>>('/wordpress/createCategory', { ...input }, config);
+  const taxonomy: Record<string, unknown> = { kind: 'category', name: input.name };
+  if (input.slug !== undefined) taxonomy.slug = input.slug;
+  if (input.description !== undefined) taxonomy.description = input.description;
+  if (input.parent !== undefined) taxonomy.parentId = String(input.parent);
+  const cat = await callPublishing<Record<string, unknown>>(
+    'upsertTaxonomy',
+    { taxonomy },
+    config,
+  );
   return normalizeCategory(cat);
 }
 
@@ -605,9 +697,14 @@ export async function updateCategory(
   id: number,
   input: Partial<CreateCategoryInput>,
 ): Promise<WPCategory> {
-  const cat = await postJson<Record<string, unknown>>(
-    '/wordpress/updateCategory',
-    { id, ...input } as Record<string, unknown>,
+  const taxonomy: Record<string, unknown> = { kind: 'category', id: String(id) };
+  if (input.name !== undefined) taxonomy.name = input.name;
+  if (input.slug !== undefined) taxonomy.slug = input.slug;
+  if (input.description !== undefined) taxonomy.description = input.description;
+  if (input.parent !== undefined) taxonomy.parentId = String(input.parent);
+  const cat = await callPublishing<Record<string, unknown>>(
+    'upsertTaxonomy',
+    { taxonomy },
     config,
   );
   return normalizeCategory(cat);
@@ -617,27 +714,41 @@ export async function deleteCategory(
   config: WordPressConfig | undefined,
   id: number,
 ): Promise<WPCategoryDeleteResult> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/deleteCategory',
-    { id },
+  const r = await callPublishing<Record<string, unknown>>(
+    'deleteTaxonomy',
+    { kind: 'category', taxonomyId: String(id) },
     config,
   );
   return {
-    ok: Boolean(r.ok),
-    id: Number(r.id ?? id),
-    deletedPermanently: Boolean(r.deletedPermanently),
+    ok: Boolean(r.ok ?? true),
+    id: Number(r.id ?? r.taxonomyId ?? id),
+    deletedPermanently: Boolean(r.deletedPermanently ?? true),
   };
 }
 
 // ---------------------------------------------------------------------------
-// Public API — Comments
+// Public API — Comments (走聚合 engagement)
 // ---------------------------------------------------------------------------
 
 export async function listComments(
   config: WordPressConfig | undefined,
   opts: { postId?: number; status?: WPCommentListStatus; page?: number; perPage?: number } = {},
 ): Promise<WPCommentListResponse> {
-  const r = await postJson<Record<string, unknown>>('/wordpress/listComments', opts as Record<string, unknown>, config);
+  const filter: Record<string, unknown> = { kind: 'comment' };
+  if (opts.postId !== undefined) filter.postId = String(opts.postId);
+  // status 是 WP-only 过滤项；UnifiedEngagement 的 filter 没显式暴露——透传，
+  // 服务端 adapter 会无视未识别 key。
+  if (opts.status !== undefined) filter.status = opts.status;
+  const paging: Record<string, unknown> = {};
+  if (opts.page !== undefined) paging.page = opts.page;
+  if (opts.perPage !== undefined) paging.perPage = opts.perPage;
+  if (Object.keys(paging).length > 0) filter.paging = paging;
+
+  const r = await callPublishing<Record<string, unknown>>(
+    'listEngagement',
+    { filter },
+    config,
+  );
   return {
     comments: Array.isArray(r.comments)
       ? r.comments.map((c) => normalizeComment(c as Record<string, unknown>))
@@ -653,15 +764,37 @@ export async function getComment(
   config: WordPressConfig | undefined,
   id: number,
 ): Promise<WPComment> {
-  const c = await postJson<Record<string, unknown>>('/wordpress/getComment', { id }, config);
-  return normalizeComment(c);
+  // 聚合层用 listEngagement + filter.commentId 来读单条；adapter 内部走 getComment。
+  const r = await callPublishing<Record<string, unknown>>(
+    'listEngagement',
+    { filter: { commentId: String(id) } },
+    config,
+  );
+  // adapter 直接回单 comment 对象（不包数组）。万一某个实现包了 comments[]，做下兜底。
+  if (Array.isArray(r.comments) && r.comments[0]) {
+    return normalizeComment(r.comments[0] as Record<string, unknown>);
+  }
+  return normalizeComment(r);
 }
 
 export async function createComment(
   config: WordPressConfig | undefined,
   input: CreateCommentInput,
 ): Promise<WPComment> {
-  const c = await postJson<Record<string, unknown>>('/wordpress/createComment', { ...input }, config);
+  const engagement: Record<string, unknown> = {
+    kind: 'comment',
+    postId: String(input.postId),
+    content: input.content,
+  };
+  if (input.parent !== undefined) engagement.parentId = String(input.parent);
+  if (input.authorName !== undefined) engagement.authorName = input.authorName;
+  if (input.authorEmail !== undefined) engagement.authorEmail = input.authorEmail;
+  if (input.authorUrl !== undefined) engagement.authorUrl = input.authorUrl;
+  const c = await callPublishing<Record<string, unknown>>(
+    'upsertEngagement',
+    { engagement },
+    config,
+  );
   return normalizeComment(c);
 }
 
@@ -670,9 +803,12 @@ export async function updateComment(
   id: number,
   input: UpdateCommentInput,
 ): Promise<WPComment> {
-  const c = await postJson<Record<string, unknown>>(
-    '/wordpress/updateComment',
-    { id, ...input } as Record<string, unknown>,
+  const engagement: Record<string, unknown> = { commentId: String(id) };
+  if (input.content !== undefined) engagement.content = input.content;
+  // status 字段 unified 没暴露——只有 content 可改。
+  const c = await callPublishing<Record<string, unknown>>(
+    'upsertEngagement',
+    { engagement },
     config,
   );
   return normalizeComment(c);
@@ -683,32 +819,14 @@ export async function deleteComment(
   id: number,
   force = false,
 ): Promise<WPCommentDeleteResult> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/deleteComment',
-    { id, force },
+  const r = await callPublishing<Record<string, unknown>>(
+    'deleteEngagement',
+    { commentId: String(id), force },
     config,
   );
   return {
-    ok: Boolean(r.ok),
-    id: Number(r.id ?? id),
-    deletedPermanently: Boolean(r.deletedPermanently),
-  };
-}
-
-export async function listTags(
-  config: WordPressConfig | undefined,
-  page = 1,
-  perPage = 50,
-  search?: string,
-): Promise<WPTagListResponse> {
-  const r = await postJson<Record<string, unknown>>(
-    '/wordpress/listTags',
-    { page, perPage, ...(search ? { search } : {}) },
-    config,
-  );
-  return {
-    tags: Array.isArray(r.tags) ? r.tags.map((t) => normalizeTag(t as Record<string, unknown>)) : [],
-    total: Number(r.total ?? 0),
-    totalPages: Number(r.totalPages ?? 0),
+    ok: Boolean(r.ok ?? true),
+    id: Number(r.id ?? r.commentId ?? id),
+    deletedPermanently: Boolean(r.deletedPermanently ?? true),
   };
 }
