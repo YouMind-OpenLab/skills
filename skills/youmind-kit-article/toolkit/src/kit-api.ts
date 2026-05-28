@@ -1,5 +1,8 @@
 /**
- * Kit API client via YouMind OpenAPI.
+ * Kit API client via YouMind OpenAPI (aggregated publishing endpoints).
+ *
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=kit 通过 discriminated union 区分。
+ * 响应统一是 { platform, data }，callPublishing helper 自动解出 data。
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -130,6 +133,16 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：自动从 { platform, data } 解出 data
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: KitConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(`/publishing/${op}`, payload, config);
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -235,17 +248,46 @@ function normalizePublicUrl(value: string | null | undefined, isPublic: boolean)
   return trimmed;
 }
 
+// 把 CreateKitBroadcastOptions 映射到 UnifiedPost
+function toUnifiedPost(options: Partial<CreateKitBroadcastOptions>): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.subject !== undefined) post.title = options.subject;
+  if (options.content !== undefined) {
+    post.content = { format: 'html', body: options.content };
+  }
+  if (options.description !== undefined) post.excerpt = options.description;
+
+  const extras: Record<string, unknown> = {};
+  if (options.previewText !== undefined) extras.previewText = options.previewText;
+  if (options.isPublic !== undefined) extras.isPublic = options.isPublic;
+  if (options.publishedAt !== undefined) extras.publishedAt = options.publishedAt;
+  if (options.sendAt !== undefined) extras.sendAt = options.sendAt;
+  if (options.thumbnailUrl !== undefined) extras.thumbnailUrl = options.thumbnailUrl;
+  if (options.thumbnailAlt !== undefined) extras.thumbnailAlt = options.thumbnailAlt;
+  if (options.emailTemplateId !== undefined) extras.emailTemplateId = options.emailTemplateId;
+  if (options.emailAddress !== undefined) extras.emailAddress = options.emailAddress;
+  if (options.subscriberFilter !== undefined) extras.subscriberFilter = options.subscriberFilter;
+  if (Object.keys(extras).length > 0) post.extras = extras;
+
+  return post;
+}
+
 export async function validateConnection(config?: KitConfig): Promise<KitConnectionResult> {
-  return postJson<KitConnectionResult>('/kit/validateConnection', {}, config);
+  const data = await callPublishing<KitConnectionResult>(
+    'validateConnection',
+    { platform: 'kit' },
+    config,
+  );
+  return data;
 }
 
 export async function createBroadcast(
   config: KitConfig,
   options: CreateKitBroadcastOptions,
 ): Promise<KitBroadcast> {
-  const broadcast = await postJson<Record<string, unknown>>(
-    '/kit/createBroadcast',
-    { ...options },
+  const broadcast = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'kit', post: toUnifiedPost(options) },
     config,
   );
   return normalizeBroadcast(broadcast);
@@ -256,16 +298,23 @@ export async function updateBroadcast(
   id: number,
   options: Partial<CreateKitBroadcastOptions>,
 ): Promise<KitBroadcast> {
-  const broadcast = await postJson<Record<string, unknown>>(
-    '/kit/updateBroadcast',
-    { id, ...options },
+  const broadcast = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    {
+      platform: 'kit',
+      post: { postId: String(id), ...toUnifiedPost(options) },
+    },
     config,
   );
   return normalizeBroadcast(broadcast);
 }
 
 export async function getBroadcast(config: KitConfig, id: number): Promise<KitBroadcast> {
-  const broadcast = await postJson<Record<string, unknown>>('/kit/getBroadcast', { id }, config);
+  const broadcast = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { platform: 'kit', postId: String(id) },
+    config,
+  );
   return normalizeBroadcast(broadcast);
 }
 
@@ -273,7 +322,15 @@ export async function deleteBroadcast(
   config: KitConfig,
   id: number,
 ): Promise<{ ok: boolean; id: number }> {
-  return postJson<{ ok: boolean; id: number }>('/kit/deleteBroadcast', { id }, config);
+  const data = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { platform: 'kit', postId: String(id) },
+    config,
+  );
+  return {
+    ok: Boolean(data.ok ?? true),
+    id: Number(data.id ?? id),
+  };
 }
 
 export async function listBroadcasts(
@@ -285,14 +342,17 @@ export async function listBroadcasts(
     includeTotalCount?: boolean;
   } = {},
 ): Promise<KitBroadcastListResponse> {
-  const response = await postJson<KitBroadcastListResponse>(
-    '/kit/listBroadcasts',
-    params,
+  const response = await callPublishing<KitBroadcastListResponse>(
+    'listPosts',
+    {
+      platform: 'kit',
+      filter: { paging: params },
+    },
     config,
   );
 
   return {
-    broadcasts: response.broadcasts.map((item) =>
+    broadcasts: (response.broadcasts ?? []).map((item) =>
       normalizeBroadcast(item as unknown as Record<string, unknown>),
     ),
     pagination: response.pagination,
@@ -308,14 +368,17 @@ export async function listEmailTemplates(
     includeTotalCount?: boolean;
   } = {},
 ): Promise<KitEmailTemplateListResponse> {
-  const response = await postJson<KitEmailTemplateListResponse>(
-    '/kit/listEmailTemplates',
-    params,
+  const response = await callPublishing<KitEmailTemplateListResponse>(
+    'listTaxonomy',
+    {
+      platform: 'kit',
+      filter: { kind: 'template', paging: params },
+    },
     config,
   );
 
   return {
-    emailTemplates: response.emailTemplates.map((item) => ({
+    emailTemplates: (response.emailTemplates ?? []).map((item) => ({
       id: Number(item.id ?? 0),
       name: String(item.name ?? ''),
       isDefault: Boolean(item.isDefault),

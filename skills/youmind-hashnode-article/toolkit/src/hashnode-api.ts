@@ -1,9 +1,27 @@
 /**
- * Hashnode API client via YouMind OpenAPI.
+ * Hashnode client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * The skill only requires a YouMind API key locally. The user's Hashnode
- * token and publication binding are managed inside YouMind, and the backend
- * attaches them when proxying Hashnode GraphQL requests.
+ * 后端统一在 /openapi/v1/publishing/<op>，platform=hashnode 通过 discriminated union 区分。
+ * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data。
+ *
+ * 关键映射：
+ *   - PostState enum: 'draft' / 'published' (草稿状态)
+ *   - post.content = { format: 'markdown', body: string }
+ *   - publicationId / disableComments / publishedAt / metaTitle / metaDescription / metaImage
+ *     / seriesId 等平台特有字段走 post.extras
+ *   - blogIdentifier = publicationId
+ *   - tags: string[]（slug 列表）
+ *   - taxonomy（series/tag）: listTaxonomy { filter: { kind } } + upsertTaxonomy { taxonomy: { kind: 'series', ... } }
+ *
+ * 端点契约（apps/youapi spec 016 v2）：
+ *   POST /openapi/v1/publishing/createPost      body: { platform: 'hashnode', post }
+ *   POST /openapi/v1/publishing/updatePost      body: { platform: 'hashnode', post: { postId, ... } }
+ *   POST /openapi/v1/publishing/getPost         body: { platform: 'hashnode', postId, state? }
+ *   POST /openapi/v1/publishing/listPosts       body: { platform: 'hashnode', filter: { state, paging } }
+ *   POST /openapi/v1/publishing/deletePost      body: { platform: 'hashnode', postId, state? }
+ *   POST /openapi/v1/publishing/transitionPostState body: { platform, postId, toState: 'published' }
+ *   POST /openapi/v1/publishing/validateConnection  body: { platform: 'hashnode' }
+ *   POST /openapi/v1/publishing/listTaxonomy    body: { platform: 'hashnode', filter: { kind: 'tag'|'series', query? } }
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -156,6 +174,20 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
+async function callPublishing<T = unknown>(
+  op: string,
+  payload: Record<string, unknown>,
+  config?: HashnodeConfig,
+): Promise<T> {
+  const wrapped = await postJson<{ platform: string; data: T }>(
+    `/publishing/${op}`,
+    payload,
+    config,
+  );
+  return wrapped.data;
+}
+
 function parseOpenApiError(text: string): OpenApiErrorResponse | null {
   try {
     return JSON.parse(text) as OpenApiErrorResponse;
@@ -278,40 +310,91 @@ function normalizeListResponse(payload: Record<string, unknown>): HashnodePostLi
   };
 }
 
+// 把 SDK 旧的扁平 options 折叠成聚合层的 UnifiedPost 形状
+function toUnifiedPost(options: CreateHashnodePostOptions | UpdateHashnodePostOptions): Record<string, unknown> {
+  const post: Record<string, unknown> = {};
+  if (options.title !== undefined) post.title = options.title;
+  if (options.contentMarkdown !== undefined) {
+    post.content = { format: 'markdown', body: options.contentMarkdown };
+  }
+  if (options.subtitle !== undefined) post.excerpt = options.subtitle;
+  if (options.tags !== undefined) post.tags = options.tags;
+  if (options.coverImageUrl !== undefined) post.coverImageUrl = options.coverImageUrl;
+  if (options.canonicalUrl !== undefined) post.canonicalUrl = options.canonicalUrl;
+  if (options.slug !== undefined) post.slug = options.slug;
+
+  // 平台特有字段进 extras——adapter 内的 toNative 会把它们展开回 native payload
+  const extras: Record<string, unknown> = {};
+  if (options.seriesId !== undefined) extras.seriesId = options.seriesId;
+  if (options.publishedAt !== undefined) extras.publishedAt = options.publishedAt;
+  if (options.disableComments !== undefined) extras.disableComments = options.disableComments;
+  if (options.metaTitle !== undefined) extras.metaTitle = options.metaTitle;
+  if (options.metaDescription !== undefined) extras.metaDescription = options.metaDescription;
+  if (options.metaImage !== undefined) extras.metaImage = options.metaImage;
+  if (Object.keys(extras).length > 0) post.extras = extras;
+
+  return post;
+}
+
 export async function createDraft(
   config: HashnodeConfig,
   options: CreateHashnodePostOptions,
 ): Promise<HashnodePost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/hashnode/createDraft',
-    { ...options },
+  const post = { ...toUnifiedPost(options), state: 'draft' };
+  const data = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'hashnode', post },
     config,
   );
-  return normalizePost(post);
+  return normalizePost(data);
 }
 
 export async function publishDraft(config: HashnodeConfig, id: string): Promise<HashnodePost> {
-  const post = await postJson<Record<string, unknown>>('/hashnode/publishDraft', { id }, config);
-  return normalizePost(post);
+  const data = await callPublishing<Record<string, unknown>>(
+    'transitionPostState',
+    { platform: 'hashnode', postId: id, toState: 'published' },
+    config,
+  );
+  return normalizePost(data);
 }
 
 export async function removeDraft(
   config: HashnodeConfig,
   id: string,
 ): Promise<{ ok: boolean; id: string }> {
-  return postJson<{ ok: boolean; id: string }>('/hashnode/removeDraft', { id }, config);
+  const data = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { platform: 'hashnode', postId: id, state: 'draft' },
+    config,
+  );
+  return {
+    ok: Boolean(data.ok ?? true),
+    id: String(data.id ?? id),
+  };
 }
 
 export async function removePost(
   config: HashnodeConfig,
   id: string,
 ): Promise<{ ok: boolean; id: string }> {
-  return postJson<{ ok: boolean; id: string }>('/hashnode/removePost', { id }, config);
+  const data = await callPublishing<Record<string, unknown>>(
+    'deletePost',
+    { platform: 'hashnode', postId: id },
+    config,
+  );
+  return {
+    ok: Boolean(data.ok ?? true),
+    id: String(data.id ?? id),
+  };
 }
 
 export async function getDraft(config: HashnodeConfig, id: string): Promise<HashnodePost> {
-  const post = await postJson<Record<string, unknown>>('/hashnode/getDraft', { id }, config);
-  return normalizePost(post);
+  const data = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { platform: 'hashnode', postId: id, state: 'draft' },
+    config,
+  );
+  return normalizePost(data);
 }
 
 export async function listDrafts(
@@ -319,24 +402,28 @@ export async function listDrafts(
   page = 1,
   limit = 15,
 ): Promise<HashnodePostListResponse> {
-  const payload = await postJson<Record<string, unknown>>(
-    '/hashnode/listDrafts',
-    { page, limit },
+  const data = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    {
+      platform: 'hashnode',
+      filter: { state: 'draft', paging: { page, limit } },
+    },
     config,
   );
-  return normalizeListResponse(payload);
+  return normalizeListResponse(data);
 }
 
 export async function createPost(
   config: HashnodeConfig,
   options: CreateHashnodePostOptions,
 ): Promise<HashnodePost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/hashnode/createPost',
-    { ...options },
+  const post = { ...toUnifiedPost(options), state: 'published' };
+  const data = await callPublishing<Record<string, unknown>>(
+    'createPost',
+    { platform: 'hashnode', post },
     config,
   );
-  return normalizePost(post);
+  return normalizePost(data);
 }
 
 export async function publishPost(
@@ -351,17 +438,22 @@ export async function updatePost(
   id: string,
   options: UpdateHashnodePostOptions,
 ): Promise<HashnodePost> {
-  const post = await postJson<Record<string, unknown>>(
-    '/hashnode/updatePost',
-    { id, ...options },
+  const post = { postId: id, ...toUnifiedPost(options) };
+  const data = await callPublishing<Record<string, unknown>>(
+    'updatePost',
+    { platform: 'hashnode', post },
     config,
   );
-  return normalizePost(post);
+  return normalizePost(data);
 }
 
 export async function getPost(config: HashnodeConfig, id: string): Promise<HashnodePost> {
-  const post = await postJson<Record<string, unknown>>('/hashnode/getPost', { id }, config);
-  return normalizePost(post);
+  const data = await callPublishing<Record<string, unknown>>(
+    'getPost',
+    { platform: 'hashnode', postId: id },
+    config,
+  );
+  return normalizePost(data);
 }
 
 export async function listPosts(
@@ -369,12 +461,12 @@ export async function listPosts(
   page = 1,
   limit = 15,
 ): Promise<HashnodePostListResponse> {
-  const payload = await postJson<Record<string, unknown>>(
-    '/hashnode/listPosts',
-    { page, limit },
+  const data = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    { platform: 'hashnode', filter: { paging: { page, limit } } },
     config,
   );
-  return normalizeListResponse(payload);
+  return normalizeListResponse(data);
 }
 
 export async function listPublishedPosts(
@@ -382,12 +474,15 @@ export async function listPublishedPosts(
   page = 1,
   limit = 15,
 ): Promise<HashnodePostListResponse> {
-  const payload = await postJson<Record<string, unknown>>(
-    '/hashnode/listPublished',
-    { page, limit },
+  const data = await callPublishing<Record<string, unknown>>(
+    'listPosts',
+    {
+      platform: 'hashnode',
+      filter: { state: 'published', paging: { page, limit } },
+    },
     config,
   );
-  return normalizeListResponse(payload);
+  return normalizeListResponse(data);
 }
 
 export async function searchTags(
@@ -395,14 +490,31 @@ export async function searchTags(
   query: string,
   limit = 5,
 ): Promise<HashnodeTag[]> {
-  const payload = await postJson<unknown[]>('/hashnode/searchTags', { query, limit }, config);
-  return Array.isArray(payload)
-    ? payload.map((tag) => normalizeTag(tag as Record<string, unknown>))
-    : [];
+  const data = await callPublishing<unknown>(
+    'listTaxonomy',
+    {
+      platform: 'hashnode',
+      filter: { kind: 'tag', query, paging: { limit } },
+    },
+    config,
+  );
+  // 后端响应可能是数组、或 { tags: [...] } / { items: [...] }——三种都吞下
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray((data as Record<string, unknown>)?.tags)
+      ? ((data as Record<string, unknown>).tags as unknown[])
+      : Array.isArray((data as Record<string, unknown>)?.items)
+        ? ((data as Record<string, unknown>).items as unknown[])
+        : [];
+  return list.map((tag) => normalizeTag(tag as Record<string, unknown>));
 }
 
 export async function validateConnection(
   config: HashnodeConfig,
 ): Promise<HashnodeConnectionResult> {
-  return postJson<HashnodeConnectionResult>('/hashnode/validateConnection', {}, config);
+  return callPublishing<HashnodeConnectionResult>(
+    'validateConnection',
+    { platform: 'hashnode' },
+    config,
+  );
 }

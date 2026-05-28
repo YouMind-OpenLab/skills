@@ -28,8 +28,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const TOOLKIT_DIR = resolve(__dirname, '..');
 const DIST_CLI = resolve(TOOLKIT_DIR, 'dist/cli.js');
-const KIT_CAMPAIGNS_URL = 'https://app.kit.com/campaigns';
-
 function requireNumber(value: unknown, label: string): number {
   const parsed = Number(value);
   assert.ok(Number.isFinite(parsed) && parsed > 0, `${label} must be a positive number`);
@@ -80,6 +78,20 @@ async function postOpenApi(
   throw new Error(`${endpoint} failed after retries`);
 }
 
+// 聚合层调用：自动从 { platform, data } 解出 data
+async function postPublishing(
+  op: string,
+  payload: JsonObject,
+  apiKey: string,
+  baseUrl: string,
+): Promise<JsonObject> {
+  const wrapped = (await postOpenApi(`/publishing/${op}`, payload, apiKey, baseUrl)) as {
+    platform: string;
+    data: JsonObject;
+  };
+  return wrapped.data;
+}
+
 function runCli(args: string[]): string {
   const result = spawnSync(process.execPath, [DIST_CLI, ...args], {
     cwd: TOOLKIT_DIR,
@@ -104,17 +116,20 @@ async function runDirectOpenApiChecks(
 ): Promise<JsonObject> {
   const report: JsonObject = {};
 
-  const validate = (await postOpenApi('/kit/validateConnection', {}, apiKey, baseUrl)) as JsonObject;
+  const validate = await postPublishing('validateConnection', { platform: 'kit' }, apiKey, baseUrl);
   assert.equal(validate.ok, true, 'validateConnection should return ok=true');
   assert.equal(typeof validate.accountId, 'string', 'validateConnection should return accountId');
   report.validateConnection = validate;
 
-  const templates = (await postOpenApi(
-    '/kit/listEmailTemplates',
-    { perPage: 10, includeTotalCount: true },
+  const templates = await postPublishing(
+    'listTaxonomy',
+    {
+      platform: 'kit',
+      filter: { kind: 'template', paging: { perPage: 10, includeTotalCount: true } },
+    },
     apiKey,
     baseUrl,
-  )) as JsonObject;
+  );
   const emailTemplates = Array.isArray(templates.emailTemplates)
     ? (templates.emailTemplates as JsonObject[])
     : [];
@@ -128,64 +143,78 @@ async function runDirectOpenApiChecks(
     pagination: templates.pagination,
   };
 
-  const created = (await postOpenApi(
-    '/kit/createBroadcast',
+  // 聚合层 createPost: post 字段映射参考 kit-api.ts 的 toUnifiedPost
+  const created = await postPublishing(
+    'createPost',
     {
-      subject: 'YouMind Kit deep-check create',
-      content: '<p>direct create path</p>',
-      description: 'direct create path',
-      previewText: 'direct create preview',
-      public: false,
-      sendAt: null,
-      emailAddress: senderEmail,
-      emailTemplateId: templateId,
+      platform: 'kit',
+      post: {
+        title: 'YouMind Kit deep-check create',
+        content: { format: 'html', body: '<p>direct create path</p>' },
+        excerpt: 'direct create path',
+        extras: {
+          previewText: 'direct create preview',
+          isPublic: false,
+          sendAt: null,
+          emailAddress: senderEmail,
+          emailTemplateId: templateId,
+        },
+      },
     },
     apiKey,
     baseUrl,
-  )) as JsonObject;
+  );
   const createdId = requireNumber(created.id, 'created broadcast id');
   cleanupIds.push(createdId);
   assert.equal(created.isPublic, false, 'legacy public=false alias should create a private broadcast');
   assert.equal(created.publicUrl, null, 'private create should not expose a fake publicUrl');
   report.createBroadcast = created;
 
-  const fetched = (await postOpenApi(
-    '/kit/getBroadcast',
-    { id: createdId },
+  const fetched = await postPublishing(
+    'getPost',
+    { platform: 'kit', postId: String(createdId) },
     apiKey,
     baseUrl,
-  )) as JsonObject;
-  assert.equal(fetched.id, createdId, 'getBroadcast should return the created broadcast');
+  );
+  assert.equal(Number(fetched.id), createdId, 'getBroadcast should return the created broadcast');
   assert.equal(fetched.publicUrl, null, 'private get should not expose a fake publicUrl');
   report.getBroadcast = fetched;
 
-  const updated = (await postOpenApi(
-    '/kit/updateBroadcast',
+  const updated = await postPublishing(
+    'updatePost',
     {
-      id: createdId,
-      subject: 'YouMind Kit deep-check updated',
-      content: '<p>direct update path</p>',
-      description: 'direct update path',
-      previewText: 'direct update preview',
-      isPublic: false,
-      sendAt: null,
-      emailAddress: senderEmail,
-      emailTemplateId: templateId,
-      subscriberFilter: fetched.subscriberFilter,
+      platform: 'kit',
+      post: {
+        postId: String(createdId),
+        title: 'YouMind Kit deep-check updated',
+        content: { format: 'html', body: '<p>direct update path</p>' },
+        excerpt: 'direct update path',
+        extras: {
+          previewText: 'direct update preview',
+          isPublic: false,
+          sendAt: null,
+          emailAddress: senderEmail,
+          emailTemplateId: templateId,
+          subscriberFilter: fetched.subscriberFilter,
+        },
+      },
     },
     apiKey,
     baseUrl,
-  )) as JsonObject;
-  assert.equal(updated.id, createdId, 'updateBroadcast should update the created broadcast');
+  );
+  assert.equal(Number(updated.id), createdId, 'updateBroadcast should update the created broadcast');
   assert.equal(updated.subject, 'YouMind Kit deep-check updated');
   report.updateBroadcast = updated;
 
-  const listed = (await postOpenApi(
-    '/kit/listBroadcasts',
-    { perPage: 10, includeTotalCount: true },
+  const listed = await postPublishing(
+    'listPosts',
+    {
+      platform: 'kit',
+      filter: { paging: { perPage: 10, includeTotalCount: true } },
+    },
     apiKey,
     baseUrl,
-  )) as JsonObject;
+  );
   const listedBroadcasts = Array.isArray(listed.broadcasts) ? (listed.broadcasts as JsonObject[]) : [];
   assert.ok(
     listedBroadcasts.some((item) => Number(item.id) === createdId),
@@ -209,21 +238,24 @@ async function runGenericPublisherChecks(
   const markdown = '# YouMind Kit Generic Publish\n\nThis post is created via createTokenPlatformPost.';
   const adapted = await adaptForKit({ markdown });
 
-  const created = (await postOpenApi(
-    '/createTokenPlatformPost',
+  // 聚合层 createPost 取代旧 /createTokenPlatformPost；kit adapter 返回 Kit broadcast 形状（id 即 broadcast id）
+  // 通过聚合层创建一条 public broadcast；旧 /createTokenPlatformPost 的 completion URL 包装在新链路里不再产生
+  const created = await postPublishing(
+    'createPost',
     {
       platform: 'kit',
-      title: adapted.subject,
-      content: adapted.html,
+      post: {
+        title: adapted.subject,
+        content: { format: 'html', body: adapted.html },
+        extras: { isPublic: true },
+      },
     },
     apiKey,
     baseUrl,
-  )) as JsonObject;
+  );
 
-  const createdId = requireNumber(created.postId, 'generic publish postId');
+  const createdId = requireNumber(created.id, 'generic publish broadcast id');
   cleanupIds.push(createdId);
-  assert.equal(typeof created.url, 'string', 'generic publish should return a completion URL');
-  assert.equal(typeof created.message, 'string', 'generic publish should return a completion note');
   report.createTokenPlatformPost = created;
 
   const fetched = await getBroadcast(loadKitConfig(), createdId);
@@ -236,27 +268,6 @@ async function runGenericPublisherChecks(
     isPublic: fetched.isPublic,
     publicUrl: fetched.publicUrl ?? null,
   };
-
-  const completionUrl = String(created.url ?? '');
-  const completionMessage = String(created.message ?? '');
-  if (fetched.publicUrl) {
-    assert.equal(
-      completionUrl,
-      fetched.publicUrl,
-      'generic publish should prefer the real Kit publicUrl when available',
-    );
-  } else {
-    assert.equal(
-      completionUrl,
-      KIT_CAMPAIGNS_URL,
-      'generic publish should fall back to the Kit campaigns dashboard when no publicUrl is available',
-    );
-    assert.match(
-      completionMessage,
-      /https:\/\/app\.kit\.com\/campaigns/,
-      'generic publish note should point to the Kit campaigns dashboard when no publicUrl is available',
-    );
-  }
 
   return report;
 }
