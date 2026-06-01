@@ -1,8 +1,10 @@
 /**
  * Qiita API client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * 后端统一在 /openapi/v1/publishing/<op>，platform=qiita 通过 discriminated union 区分。
- * 响应统一是 { platform, data }，callPublishing helper 自动解出 data。
+ * 后端把 publishing 收敛到 6 个 resource 端点：connections / posts / media /
+ * engagement / taxonomy / insights，body 带 { platform, action, [actionKey] }。
+ * platform=qiita 通过 discriminated union 区分；callPublishing helper 通过
+ * buildPublishingRequest 把旧 op 名映射到新端点，响应统一是 { platform, data }。
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -144,13 +146,75 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// ─── 6-endpoint adapter: 后端把 26 个 publishing op 合并成 6 个 resource 端点 ───
+// 每个端点 body = { platform, action, [actionKey]: <payload> }；insights 无 action（payload 平铺）。
+const PUBLISHING_OP_MAP: Record<
+  string,
+  { route: string; action: string | null; key: string | null }
+> = {
+  // connections
+  listConnections: { route: 'connections', action: 'list', key: 'list' },
+  validateConnection: { route: 'connections', action: 'validate', key: null },
+  disconnect: { route: 'connections', action: 'disconnect', key: 'disconnect' },
+  authenticate: { route: 'connections', action: 'authenticate', key: 'authenticate' },
+  getCredentials: { route: 'connections', action: 'getCredentials', key: null },
+  // posts
+  createPost: { route: 'posts', action: 'create', key: 'create' },
+  updatePost: { route: 'posts', action: 'update', key: 'update' },
+  getPost: { route: 'posts', action: 'get', key: 'get' },
+  listPosts: { route: 'posts', action: 'list', key: 'list' },
+  deletePost: { route: 'posts', action: 'delete', key: 'delete' },
+  transitionPostState: { route: 'posts', action: 'transition', key: 'transition' },
+  getPublishJob: { route: 'posts', action: 'getJob', key: 'getJob' },
+  manageQueue: { route: 'posts', action: 'manageQueue', key: 'manageQueue' },
+  // media
+  uploadMedia: { route: 'media', action: 'upload', key: 'upload' },
+  listMedia: { route: 'media', action: 'list', key: 'list' },
+  deleteMedia: { route: 'media', action: 'delete', key: 'delete' },
+  // engagement
+  listEngagement: { route: 'engagement', action: 'list', key: 'list' },
+  upsertEngagement: { route: 'engagement', action: 'upsert', key: 'upsert' },
+  deleteEngagement: { route: 'engagement', action: 'delete', key: 'delete' },
+  listSocial: { route: 'engagement', action: 'listSocial', key: 'listSocial' },
+  setSocialAction: { route: 'engagement', action: 'setSocialAction', key: 'setSocialAction' },
+  // taxonomy
+  listTaxonomy: { route: 'taxonomy', action: 'list', key: 'list' },
+  upsertTaxonomy: { route: 'taxonomy', action: 'upsert', key: 'upsert' },
+  deleteTaxonomy: { route: 'taxonomy', action: 'delete', key: 'delete' },
+  attachPostToTaxonomy: { route: 'taxonomy', action: 'attachPost', key: 'attachPost' },
+  // insights（单操作，无 action 区分符）
+  getInsights: { route: 'insights', action: null, key: null },
+};
+
+// 把旧的 { platform, ...payload } 调用重塑成新的 6-端点 body：{ platform, action, [key]: rest }。
+function buildPublishingRequest(
+  op: string,
+  payload: Record<string, unknown>,
+): { route: string; body: Record<string, unknown> } {
+  const mapping = PUBLISHING_OP_MAP[op];
+  if (!mapping) {
+    throw new Error('Unknown publishing op: ' + op);
+  }
+  const { platform, ...rest } = payload;
+  if (mapping.action === null) {
+    // insights：scope / postId / dateRange 平铺，无 action
+    return { route: mapping.route, body: { platform, ...rest } };
+  }
+  if (mapping.key === null) {
+    // validate / getCredentials：仅需 platform + action，无 sub-payload
+    return { route: mapping.route, body: { platform, action: mapping.action } };
+  }
+  return { route: mapping.route, body: { platform, action: mapping.action, [mapping.key]: rest } };
+}
+
 // 聚合层调用：自动从 { platform, data } 解出 data
 async function callPublishing<T = unknown>(
   op: string,
   payload: Record<string, unknown>,
   config?: QiitaConfig,
 ): Promise<T> {
-  const wrapped = await postJson<{ platform: string; data: T }>(`/publishing/${op}`, payload, config);
+  const { route, body } = buildPublishingRequest(op, payload);
+  const wrapped = await postJson<{ platform: string; data: T }>(`/publishing/${route}`, body, config);
   return wrapped.data;
 }
 
