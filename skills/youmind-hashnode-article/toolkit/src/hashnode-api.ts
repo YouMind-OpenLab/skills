@@ -1,7 +1,10 @@
 /**
  * Hashnode client via YouMind OpenAPI (aggregated publishing endpoints).
  *
- * 后端统一在 /openapi/v1/publishing/<op>，platform=hashnode 通过 discriminated union 区分。
+ * 后端把原先 26 个 per-op 端点合并成 6 个 resource 端点：
+ *   /publishing/{connections,posts,media,engagement,taxonomy,insights}
+ * 每个 body = { platform, action, [actionKey]: payload }（insights 无 action，payload 平铺）。
+ * platform=hashnode 通过 discriminated union 区分；旧 op 名经 buildPublishingRequest 重塑路由。
  * 所有响应统一为 { platform, data }，本层自动解嵌套返回 data。
  *
  * 关键映射：
@@ -13,15 +16,10 @@
  *   - tags: string[]（slug 列表）
  *   - taxonomy（series/tag）: listTaxonomy { filter: { kind } } + upsertTaxonomy { taxonomy: { kind: 'series', ... } }
  *
- * 端点契约（apps/youapi spec 016 v2）：
- *   POST /openapi/v1/publishing/createPost      body: { platform: 'hashnode', post }
- *   POST /openapi/v1/publishing/updatePost      body: { platform: 'hashnode', post: { postId, ... } }
- *   POST /openapi/v1/publishing/getPost         body: { platform: 'hashnode', postId, state? }
- *   POST /openapi/v1/publishing/listPosts       body: { platform: 'hashnode', filter: { state, paging } }
- *   POST /openapi/v1/publishing/deletePost      body: { platform: 'hashnode', postId, state? }
- *   POST /openapi/v1/publishing/transitionPostState body: { platform, postId, toState: 'published' }
- *   POST /openapi/v1/publishing/validateConnection  body: { platform: 'hashnode' }
- *   POST /openapi/v1/publishing/listTaxonomy    body: { platform: 'hashnode', filter: { kind: 'tag'|'series', query? } }
+ * 端点契约（apps/youapi spec 016 v2，6-resource 端点；旧 op 名见 PUBLISHING_OP_MAP）：
+ *   posts:    create / update / get / list / delete / transition（post/postId/filter 嵌套在 action key 下）
+ *   taxonomy: list（filter: { kind: 'tag'|'series', query? } 嵌套在 list 下）
+ *   connections: validate（仅 { platform, action }）
  */
 
 import { loadYouMindConfig, YOUMIND_CONFIG_ERROR_HINT } from './config.js';
@@ -174,15 +172,77 @@ async function postJson<T = unknown>(
   return response.json() as Promise<T>;
 }
 
+// ─── 6-endpoint adapter: 后端把 26 个 publishing op 合并成 6 个 resource 端点 ───
+// 每个端点 body = { platform, action, [actionKey]: <payload> }；insights 无 action（payload 平铺）。
+const PUBLISHING_OP_MAP: Record<
+  string,
+  { route: string; action: string | null; key: string | null }
+> = {
+  // connections
+  listConnections: { route: 'connections', action: 'list', key: 'list' },
+  validateConnection: { route: 'connections', action: 'validate', key: null },
+  disconnect: { route: 'connections', action: 'disconnect', key: 'disconnect' },
+  authenticate: { route: 'connections', action: 'authenticate', key: 'authenticate' },
+  getCredentials: { route: 'connections', action: 'getCredentials', key: null },
+  // posts
+  createPost: { route: 'posts', action: 'create', key: 'create' },
+  updatePost: { route: 'posts', action: 'update', key: 'update' },
+  getPost: { route: 'posts', action: 'get', key: 'get' },
+  listPosts: { route: 'posts', action: 'list', key: 'list' },
+  deletePost: { route: 'posts', action: 'delete', key: 'delete' },
+  transitionPostState: { route: 'posts', action: 'transition', key: 'transition' },
+  getPublishJob: { route: 'posts', action: 'getJob', key: 'getJob' },
+  manageQueue: { route: 'posts', action: 'manageQueue', key: 'manageQueue' },
+  // media
+  uploadMedia: { route: 'media', action: 'upload', key: 'upload' },
+  listMedia: { route: 'media', action: 'list', key: 'list' },
+  deleteMedia: { route: 'media', action: 'delete', key: 'delete' },
+  // engagement
+  listEngagement: { route: 'engagement', action: 'list', key: 'list' },
+  upsertEngagement: { route: 'engagement', action: 'upsert', key: 'upsert' },
+  deleteEngagement: { route: 'engagement', action: 'delete', key: 'delete' },
+  listSocial: { route: 'engagement', action: 'listSocial', key: 'listSocial' },
+  setSocialAction: { route: 'engagement', action: 'setSocialAction', key: 'setSocialAction' },
+  // taxonomy
+  listTaxonomy: { route: 'taxonomy', action: 'list', key: 'list' },
+  upsertTaxonomy: { route: 'taxonomy', action: 'upsert', key: 'upsert' },
+  deleteTaxonomy: { route: 'taxonomy', action: 'delete', key: 'delete' },
+  attachPostToTaxonomy: { route: 'taxonomy', action: 'attachPost', key: 'attachPost' },
+  // insights（单操作，无 action 区分符）
+  getInsights: { route: 'insights', action: null, key: null },
+};
+
+// 把旧的 { platform, ...payload } 调用重塑成新的 6-端点 body：{ platform, action, [key]: rest }。
+function buildPublishingRequest(
+  op: string,
+  payload: Record<string, unknown>,
+): { route: string; body: Record<string, unknown> } {
+  const mapping = PUBLISHING_OP_MAP[op];
+  if (!mapping) {
+    throw new Error('Unknown publishing op: ' + op);
+  }
+  const { platform, ...rest } = payload;
+  if (mapping.action === null) {
+    // insights：scope / postId / dateRange 平铺，无 action
+    return { route: mapping.route, body: { platform, ...rest } };
+  }
+  if (mapping.key === null) {
+    // validate / getCredentials：仅需 platform + action，无 sub-payload
+    return { route: mapping.route, body: { platform, action: mapping.action } };
+  }
+  return { route: mapping.route, body: { platform, action: mapping.action, [mapping.key]: rest } };
+}
+
 // 聚合层调用：包一层自动从 { platform, data } 解出 data，对外保持旧接口形状
 async function callPublishing<T = unknown>(
   op: string,
   payload: Record<string, unknown>,
   config?: HashnodeConfig,
 ): Promise<T> {
+  const { route, body } = buildPublishingRequest(op, payload);
   const wrapped = await postJson<{ platform: string; data: T }>(
-    `/publishing/${op}`,
-    payload,
+    `/publishing/${route}`,
+    body,
     config,
   );
   return wrapped.data;
