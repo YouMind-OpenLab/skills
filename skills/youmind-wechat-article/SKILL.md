@@ -114,15 +114,7 @@ Read files on demand — do NOT load everything upfront. Five always-relevant en
 
 Write drafts to `~/.youmind/articles/wechat/<client>/<slug>.md`; only fall back to `output/` if `~/.youmind/` is unavailable.
 
-For the full path contract, dispatch interop, execution modes, and result-links behavior, see [`references/runtime-rules.md`](references/runtime-rules.md).
-
----
-
-## Dispatch Integration (Optional)
-
-Standalone by default. If you need dispatch interop details, read [`references/runtime-rules.md`](references/runtime-rules.md).
-
-When dispatch or the caller makes it clear that the article is already finished, skip topic mining, hotspot research, framework selection, and fresh drafting. Use the supplied article as source of truth and switch to the skill's built-in formatting + direct-send capability.
+For the full path contract, execution modes, and result-links behavior, see [`references/runtime-rules.md`](references/runtime-rules.md).
 
 ---
 
@@ -212,7 +204,7 @@ If the request is about improving this skill itself, refactoring its structure, 
 
 ## Gotchas — Common Failure Patterns
 
-Six named anti-patterns observed across real dispatches. Call them out by name instead of re-deriving the problem.
+Six named anti-patterns observed across real runs. Call them out by name instead of re-deriving the problem.
 
 - **The AI Essay** — correct, comprehensive, boring; no person behind it
 - **The Generic Hot Take** — summary of other summaries; no unique angle

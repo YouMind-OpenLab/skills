@@ -30,7 +30,7 @@ This is the complete file inventory. Read on demand — do NOT load everything u
 |------|---------|-------------|
 | `references/operations.md` | Post-publish commands, client onboarding, themes, first-run setup | Operational tasks |
 | `references/setup.md` | Full one-time installation, config resolution, validation | First-run setup |
-| `references/runtime-rules.md` | Draft paths, dispatch interop, execution modes, result-links contract | Runtime invariants |
+| `references/runtime-rules.md` | Draft paths, execution modes, result-links contract | Runtime invariants |
 | `references/style-template.md` | Client config template with field guide | New client onboarding |
 | `references/theme-dsl.md` | Custom theme design language (integrates Impeccable if installed) | Creating custom themes |
 | `references/openapi-document.md` | YouMind OpenAPI full endpoint schemas | Calling YouMind API directly |

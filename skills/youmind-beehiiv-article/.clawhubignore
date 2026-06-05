@@ -1,8 +1,0 @@
-references/environment.md
-toolkit/package-lock.json
-toolkit/node_modules/
-
-# User data — never publish
-config.yaml
-.env
-output/

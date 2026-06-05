@@ -10,10 +10,7 @@ YouMind article skills now share one canonical home directory:
     youmind-x-article.yaml
     ...
   author-profile.yaml
-  dispatch-roster.yaml
   articles/
-    devto/
-    ghost/
     wechat/
     x/
     ...
@@ -38,7 +35,6 @@ This is now a hard requirement. Article skills do **not** read repo-local `confi
 - Shared API credentials: `~/.youmind/config.yaml`
 - Skill-specific overrides: `~/.youmind/config/<skill>.yaml`
 - Cross-platform author profile: `~/.youmind/author-profile.yaml`
-- Dispatch platform roster: `~/.youmind/dispatch-roster.yaml`
 - Local article drafts: `~/.youmind/articles/<platform>/<slug>.md`
 
 ## Migration Notes

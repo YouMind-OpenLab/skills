@@ -18,15 +18,9 @@ Local file ≠ WeChat draft box; the draft box is a server-side publish target, 
 
 ---
 
-## Dispatch Integration
+## Author Profile
 
-This skill is self-contained and standalone. The `youmind-article-dispatch` hub is an optional companion, never a dependency.
-
-- Read `~/.youmind/author-profile.yaml` for cross-platform voice preferences.
-- If dispatch invokes this skill with `resolved_author`, use it as extra context.
-- If dispatch or the caller makes it clear that the article is already finished, keep the existing article as source of truth and use the skill's built-in formatting + direct-send capability.
-- The de-AI protocol in `writing-guide.md` remains mandatory regardless of invocation path.
-- Optional interop contract: `dispatch-capabilities.yaml` and `shared/DISPATCH_CONTRACT.md`.
+Read `~/.youmind/author-profile.yaml` for cross-platform voice preferences when it exists, and use any `resolved_author` the caller supplies as extra context. The de-AI protocol in `writing-guide.md` remains mandatory regardless of invocation path.
 
 ---
 

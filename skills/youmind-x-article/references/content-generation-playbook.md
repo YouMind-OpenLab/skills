@@ -92,7 +92,7 @@ Final tweet (Close):
 
 If a canonical-spec element cannot fit X's constraints, apply the resolution ladder in order:
 
-1. **Refuse + recommend**: "This content requires extended exposition — recommend publishing as a blog post (Ghost/WordPress/Dev.to) and creating a teaser thread with link."
+1. **Refuse + recommend**: "This content requires extended exposition — recommend publishing as a long-form blog post and creating a teaser thread with link."
 2. **Serialize**: Break into a thread of 5–15 tweets; each tweet = one atomic claim.
 3. **Summarize + link**: Thread = summary of key points + link to canonical full-length source.
 4. **Split**: Hook thread on X + companion long-form on another platform.

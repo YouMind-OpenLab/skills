@@ -20,7 +20,7 @@ Get your YouMind API key from: <https://youmind.com/settings/api-keys>
 
 - The skill reads `youmind.api_key` and `youmind.base_url` from `~/.youmind/config.yaml` plus optional `~/.youmind/config/youmind-x-article.yaml`
 - The user has already connected their X account inside YouMind (one-click OAuth)
-- The current YouMind plan allows dispatch OpenAPI (`Pro` / `Max`) — same gating as `createTokenPlatformPost`
+- The current YouMind plan allows publishing via OpenAPI (`Pro` / `Max`) — same gating as `createTokenPlatformPost`
 - The user's credit balance covers the tweet cost (base + per-image). The handler pre-checks credits before calling X and refuses with `InsufficientCreditsException` if the balance is too low
 
 ## Endpoints Used
@@ -78,7 +78,7 @@ Threads are fully supported now via `replyToPostId` — the skill publishes the 
 |--------|---------|
 | 400 | X rejected the request (e.g., duplicate tweet, media URL not under cdn.gooo.ai, invalid `replyToPostId`) |
 | 401 | Invalid or missing YouMind API key, or X access token revoked (YouMind clears the stored credentials in this case) |
-| 402 | Current YouMind plan is not eligible for dispatch OpenAPI — upgrade link is in the response |
+| 402 | Current YouMind plan is not eligible for publishing via OpenAPI — upgrade link is in the response |
 | 402 (credits) | `InsufficientCreditsException` — YouMind credit balance is below the tweet cost |
 | 403 | X forbids this action (account suspended, app quota exceeded) |
 | 404 | `X_ACCOUNT_NOT_CONNECTED` — the user has not connected an X account in YouMind yet |

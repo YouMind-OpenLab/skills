@@ -1,6 +1,6 @@
 # Demo client — published article history
 #
-# Appended to after each successful dispatch (Step 7.5 of the pipeline).
+# Appended to after each successful run (Step 7.5 of the pipeline).
 # Used for:
 #   - Topic deduplication (Step 2.5) — avoid writing about the same thing twice
 #   - Analytics (fetch-stats.ts) — correlate titles with engagement
