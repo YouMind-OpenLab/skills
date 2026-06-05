@@ -64,16 +64,16 @@ After dispatch invokes a platform skill, the skill should produce a result that 
 
 ```yaml
 # Platform skill result
-platform: "devto"                # platform identifier (matches capability manifest)
+platform: "x"                    # platform identifier (matches capability manifest)
 status: "published"              # published | draft | failed | skipped
-url: "https://dev.to/..."        # null if not available yet
+url: "https://x.com/..."         # null if not available yet
 result_links:                    # best clickable result entry points
   - label: "Published article"
     kind: "public_post"
-    url: "https://dev.to/..."
+    url: "https://x.com/..."
   - label: "Dashboard / results"
     kind: "dashboard"
-    url: "https://dev.to/dashboard"
+    url: "https://x.com/..."
 title: "The final title used"    # may differ from brief due to platform adaptation
 post_id: "abc123"                # platform-specific ID
 error: null                      # populated only if status=failed
@@ -92,9 +92,9 @@ Each platform skill declares its capabilities in `dispatch-capabilities.yaml` at
 
 ```yaml
 # skills/youmind-{platform}-article/dispatch-capabilities.yaml
-platform: "devto"
-skill_name: "youmind-devto-article"
-display_name: "Dev.to"
+platform: "x"
+skill_name: "youmind-x-article"
+display_name: "X"
 
 # One-line description for dispatch onboarding and roster display.
 tagline: "Developer tutorials, OSS showcases"

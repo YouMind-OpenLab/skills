@@ -12,8 +12,6 @@ YouMind article skills now share one canonical home directory:
   author-profile.yaml
   dispatch-roster.yaml
   articles/
-    devto/
-    ghost/
     wechat/
     x/
     ...

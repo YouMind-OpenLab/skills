@@ -21,16 +21,7 @@ AI agent skills powered by [YouMind](https://youmind.com?utm_source=github-skill
 
 | Skill | Description | ClawHub |
 |-------|-------------|---------|
-| [youmind-article-dispatch](skills/youmind-article-dispatch/) | Multi-platform article dispatch hub — route one brief across supported publishing skills | — |
-| [youmind-beehiiv-article](skills/youmind-beehiiv-article/) | Write and publish Beehiiv posts — newsletter-first workflow | — |
-| [youmind-devto-article](skills/youmind-devto-article/) | Write and publish Dev.to posts — developer blog flow with formatting and publish support | — |
-| [youmind-ghost-article](skills/youmind-ghost-article/) | Write and publish Ghost posts — long-form publishing through YouMind | — |
-| [youmind-hashnode-article](skills/youmind-hashnode-article/) | Write and publish Hashnode posts — developer publishing via YouMind | — |
-| [youmind-kit-article](skills/youmind-kit-article/) | Write and publish Kit posts — newsletter publishing via YouMind | — |
-| [youmind-qiita-article](skills/youmind-qiita-article/) | Write and publish Qiita posts — Japanese dev-community publishing | — |
-| [youmind-tumblr-article](skills/youmind-tumblr-article/) | Write and publish Tumblr posts — long-form blogging with simple HTML adaptation | — |
 | [youmind-wechat-article](skills/youmind-wechat-article/) | Write and publish WeChat articles end-to-end — topic mining to draft box | — |
-| [youmind-wordpress-article](skills/youmind-wordpress-article/) | Write and publish WordPress posts — convert Markdown, upload media, publish via YouMind | — |
 | [youmind-x-article](skills/youmind-x-article/) | Write and publish X threads/posts — short-form social publishing via YouMind | — |
 
 ## Quick Install
@@ -84,7 +75,7 @@ youmind:
 EOF
 ```
 
-Platform credentials for WeChat, WordPress, X, Ghost, Hashnode, Dev.to, and other publishing targets are configured once in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=github-skills-repo), not in this repo.
+Platform credentials for WeChat and X are configured once in [YouMind Connector Settings](https://youmind.com/settings/connector?utm_source=github-skills-repo), not in this repo.
 
 ## Works With
 
