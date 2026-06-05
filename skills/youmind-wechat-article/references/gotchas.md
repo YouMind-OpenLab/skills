@@ -1,6 +1,6 @@
 # Gotchas — Common Failure Patterns
 
-These are content-quality anti-patterns observed across real WeChat article dispatches. Each one has a name so you can call it out by pattern instead of re-deriving the problem every time.
+These are content-quality anti-patterns observed across real WeChat article runs. Each one has a name so you can call it out by pattern instead of re-deriving the problem every time.
 
 ## "The AI Essay"
 
@@ -44,8 +44,8 @@ These are content-quality anti-patterns observed across real WeChat article disp
 
 ## "The Broken Pipeline Halt"
 
-**Symptom:** Stopping the entire dispatch flow because one step failed. E.g., image generation failed → user gets no article at all, instead of getting an article with a placeholder note about missing cover.
+**Symptom:** Stopping the entire generation run because one step failed. E.g., image generation failed → user gets no article at all, instead of getting an article with a placeholder note about missing cover.
 
 **Fix:** NEVER halt the pipeline on a single-step failure. Use the fallback chain in `references/resilience.md`. If the fallback also fails, skip and NOTE — never halt.
 
-**Detection:** Any dispatch run that ends with < all steps attempted and no clear skip notes → halt anti-pattern.
+**Detection:** Any pipeline run that ends with < all steps attempted and no clear skip notes → halt anti-pattern.

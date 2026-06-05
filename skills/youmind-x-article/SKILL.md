@@ -159,17 +159,6 @@ This skill is a folder. Read files on demand -- do NOT load everything upfront.
 - Wrong: skill root directly, `references/`, `toolkit/`, or an ad-hoc `drafts/` directory
 
 Both locations are git-ignored. Create directories on demand (`mkdir -p ~/.youmind/articles/x`). Kebab-case filenames (`my-thread.md`), descriptive slugs over timestamps.
-## Dispatch Integration (Optional)
-
-This skill is **self-contained and fully usable standalone.** The `youmind-article-dispatch` hub is an optional companion; it is NOT required for anything.
-
-- **Primary mode — standalone:** Invoke directly ("Write a tweet about X" / "Write a thread about Y"). Works with zero other YouMind skills installed.
-- **Author voice lookup:** This skill reads `~/.youmind/author-profile.yaml` (shared home directory — see `shared/YOUMIND_HOME.md`) for cross-platform voice preferences (hook style, max thread length). Works whether or not dispatch is installed.
-- **Optional dispatch-mode invocation:** When dispatch invokes this skill with a content brief containing `resolved_author`, the skill uses those fields as extra context. X's 280-char discipline and thread decomposition stay native to this skill regardless of invocation path — particularly when adapting a long-form source.
-- **Capability manifest (opt-in):** `dispatch-capabilities.yaml` declares thread limits and hook-style defaults. Deleting it reverts to defaults; it never breaks this skill.
-- **Optional interop protocol:** [`shared/DISPATCH_CONTRACT.md`](shared/DISPATCH_CONTRACT.md) (v1.0).
-
----
 
 ## Content Modes
 
